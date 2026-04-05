@@ -1,0 +1,422 @@
+<%- include('partials/head') %>
+
+    <!-- Font for Thin Neon theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ÔöÇÔöÇ Monitor Frame (index only) ÔöÇÔöÇ */
+        .monitor-frame {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .monitor-bezel {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: hsl(var(--background) / 0.1);
+            border: 1px solid hsl(207 90% 67% / 0.4);
+            box-shadow: inset 0 0 0 1px hsl(207 90% 67% / 0.2);
+        }
+
+        .monitor-screen {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: hsl(var(--background) / 0.15);
+            /* Allow clicks to pass through to background */
+            pointer-events: none;
+        }
+
+        /* Make interactive children clickable again */
+        .monitor-screen>div {
+            pointer-events: none;
+            /* Flex container */
+        }
+
+        .monitor-screen aside,
+        /* Sidebar */
+        .monitor-screen .logo-container,
+        .monitor-screen .timer-display-container,
+        .monitor-screen .contest-card,
+        .monitor-screen button,
+        .monitor-screen a,
+        .monitor-screen .scrollable-content {
+            pointer-events: auto;
+        }
+
+        /* Allow scrolling in main content */
+        .monitor-screen main {
+            pointer-events: none;
+        }
+
+        .monitor-screen .overflow-y-auto {
+            pointer-events: auto;
+        }
+
+        /* ÔöÇÔöÇ Timer (index only) ÔöÇÔöÇ */
+        .timer-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.25rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: hsl(210 40% 93%);
+            text-shadow:
+                0 0 10px hsl(207 90% 67% / 0.4),
+                0 0 20px hsl(207 90% 67% / 0.2);
+        }
+
+        /* ÔöÇÔöÇ Slide-in animation (index only) ÔöÇÔöÇ */
+        @keyframes slide-in-right {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .animate-slide-in-right {
+            animation: slide-in-right 0.3s ease-out;
+        }
+
+        /* Thin Neon Theme Overlays */
+        .vintage-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.4;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0px, rgba(0, 255, 255, 0.03) 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 11;
+            mix-blend-mode: overlay;
+        }
+
+        .nostalgic-text {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: #00ffaa;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            z-index: 12;
+            text-shadow: 0 0 5px #00ffaa, 0 0 10px #00ffaa;
+            opacity: 0.5;
+            font-family: 'Courier New', monospace;
+        }
+
+        .nostalgic-text:before {
+            content: ">";
+            margin-right: 5px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 0.98;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.98;
+            }
+        }
+
+        /* Apply flicker to body content except background canvas (canvas is absolute positioned anyway) */
+        .flicker-effect {
+            animation: flicker 0.5s infinite;
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: transparent;
+            /* Using a pseudo-element or separate div might be safer to avoid shaking layout */
+        }
+    </style>
+
+    <body>
+        <div class="fixed inset-0 w-screen h-screen overflow-hidden">
+            <!-- Thin Neon / Edge Flow overlays -->
+            <div class="vintage-overlay"></div>
+            <div class="scanlines"></div>
+            <div class="nostalgic-text">THIN NEON // EDGE FLOW</div>
+            <div class="flicker-effect"></div>
+
+            <!-- 3D Animated Background -->
+            <div class="absolute inset-0 z-0" id="bg-container"></div>
+
+            <!-- Monitor Container -->
+            <div class="relative z-10 w-screen h-screen">
+                <div class="monitor-frame">
+                    <div class="monitor-bezel">
+                        <div class="monitor-screen">
+                            <div class="flex h-full relative">
+                                <!-- Sidebar -->
+                                <%- include('partials/sidebar') %>
+
+                                    <!-- Main Content -->
+                                    <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                                        <div class="relative z-10 flex flex-col h-full overflow-hidden">
+                                            <!-- Logo -->
+                                            <div class="flex items-center py-4 px-4 md:px-6 relative">
+                                                <div
+                                                    class="absolute bottom-0 left-6 w-24 h-0.5 bg-gradient-to-r from-white/20 via-white/40 to-transparent">
+                                                </div>
+                                                <%- include('partials/logo') %>
+                                            </div>
+
+                                            <!-- Scrollable Content -->
+                                            <div class="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-6 pb-6">
+                                                <!-- Daily Challenge Timer -->
+                                                <div class="pt-4 pb-4 px-4 relative"
+                                                    style="padding-left:20px;border-left:2px solid transparent;border-image:linear-gradient(to bottom, rgba(210,210,210,0.2), rgba(210,210,210,0.8), rgba(210,210,210,0.2)) 1">
+                                                    <h2
+                                                        class="text-lg font-semibold text-foreground mb-2 tracking-wide">
+                                                        DAILY BYTE CHALLENGE</h2>
+                                                    <div class="relative inline-block">
+                                                        <div
+                                                            class="absolute -inset-3 bg-gradient-to-r from-primary/15 via-primary/25 to-primary/10 blur-xl rounded-lg">
+                                                        </div>
+                                                        <div class="timer-display text-foreground relative z-10 tabular-nums tracking-widest"
+                                                            id="timer">09:59:45</div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Spacer to push content down and show keyboard -->
+                                                <!-- Spacer removed -->
+
+                                                <div class="h-6 md:h-12"></div>
+
+                                                <div class="h-6 md:h-12"></div>
+
+                                                <!-- Spacer to push contests down a bit (reduced height) -->
+                                                <div class="h-8 md:h-12"></div>
+
+                                                <!-- Active Contests Restored -->
+                                                <section class="mb-8">
+                                                    <h2 class="section-title mb-4">ACTIVE CONTESTS</h2>
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <% if (typeof contests !=='undefined' && contests.length> 0) {
+                                                            %>
+                                                            <% contests.forEach(function(c) { const dc={
+                                                                easy: "status-easy" , medium: "status-medium" ,
+                                                                hard: "status-hard" }[c.difficulty] || "status-easy" ;
+                                                                const dl=c.difficulty.toUpperCase(); const rl=c.timeLeft
+                                                                || "TIME LEFT" ; %>
+                                                                <div class="contest-card cursor-pointer"
+                                                                    onclick="window.location.href='/contest/<%= c.id %>'">
+                                                                    <div class="flex items-start justify-between mb-2">
+                                                                        <h3
+                                                                            class="font-semibold text-foreground text-sm">
+                                                                            <%= c.title %>
+                                                                        </h3>
+                                                                        <span
+                                                                            class="<%= dc %> text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                                            <%= dl %>
+                                                                        </span>
+                                                                    </div>
+                                                                    <p
+                                                                        class="text-muted-foreground text-xs mb-3 truncate">
+                                                                        <%= c.subtitle || 'Join the challenge!' %>
+                                                                    </p>
+                                                                    <div class="flex items-center justify-between">
+                                                                        <span class="text-muted-foreground text-xs">
+                                                                            <%= c.problems %> Problems
+                                                                        </span>
+                                                                        <span
+                                                                            class="text-[10px] font-medium text-primary px-2 py-1 rounded tabular-nums"
+                                                                            style="background:hsl(207 90% 67% / 0.1)">
+                                                                            <%= rl %>
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <% }); %>
+                                                                    <% } else { %>
+                                                                        <div
+                                                                            class="col-span-full text-center py-8 text-muted-foreground text-sm">
+                                                                            No active contests at the moment.</div>
+                                                                        <% } %>
+                                                    </div>
+                                                </section>
+
+                                                <div class="h-6 md:h-12"></div><!-- Spacer -->
+
+                                                <!-- Recent Problem Solvers -->
+                                                <section class="mb-6">
+                                                    <h2 class="section-title mb-4">RECENT PROBLEM SOLVERS</h2>
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        <% const solvers=[ { name: "Raj" ,
+                                                            subtitle: "For Innovabon Challenges" , stat: "Sored 00:1th"
+                                                            , difficulty: "easy" , rightLabel: "INVALID" }, {
+                                                            name: "Algorithm Challenge" , subtitle: "Foe:Bonus" ,
+                                                            stat: "58 Mano:cowhoses" , difficulty: "medium" ,
+                                                            rightLabel: "NULL ONL" }, { name: "Algro Arenad" ,
+                                                            subtitle: "100 oiherioiebe cooers" ,
+                                                            stat: "551 iltxmeodored" , difficulty: "hard" ,
+                                                            rightLabel: "TIME LEFT" }, ]; solvers.forEach(function(s) {
+                                                            const dc={ easy: "status-easy" , medium: "status-medium" ,
+                                                            hard: "status-hard" }[s.difficulty]; const
+                                                            dl=s.difficulty.toUpperCase(); %>
+                                                            <div class="contest-card">
+                                                                <div class="flex items-start justify-between mb-2">
+                                                                    <h3 class="font-semibold text-foreground text-sm">
+                                                                        <%= s.name %>
+                                                                    </h3>
+                                                                    <span
+                                                                        class="<%= dc %> text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                                        <%= dl %>
+                                                                    </span>
+                                                                </div>
+                                                                <p class="text-muted-foreground text-xs mb-3">
+                                                                    <%= s.subtitle %>
+                                                                </p>
+                                                                <div class="flex items-center justify-between">
+                                                                    <span class="text-muted-foreground text-xs">
+                                                                        <%= s.stat %>
+                                                                    </span>
+                                                                    <span
+                                                                        class="text-[10px] font-medium text-primary/80 bg-primary/10 px-2 py-1 rounded">
+                                                                        <%= s.rightLabel %>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <% }); %>
+                                                    </div>
+                                                </section>
+
+                                                <!-- Recent Problems -->
+                                                <section class="mb-6">
+                                                        <% const recentProbs=[ { title: "Arrays & Strings" ,
+                                                            subtitle: "Fer.Bitbseet1Moneh" , time: "5.50 Meoad:ago" ,
+                                                            difficulty: "easy" , rightLabel: "7 MIN" }, {
+                                                            title: "Graph Theory" , subtitle: "Toooi:" ,
+                                                            time: "13 min ort ago" , difficulty: "easy" ,
+                                                            rightLabel: "7 MIN" }, { title: "Hard" , subtitle: "Toorer:"
+                                                            , time: "11 min om ago" , difficulty: "hard" ,
+                                                            rightLabel: "7 MIN" }, ]; recentProbs.forEach(function(p) {
+                                                            const dc={ easy: "status-easy" , medium: "status-medium" ,
+                                                            hard: "status-hard" }[p.difficulty]; const
+                                                            dl=p.difficulty.toUpperCase(); %>
+                                                            <div class="contest-card">
+                                                                <div class="flex items-start justify-between mb-2">
+                                                                    <h3 class="font-semibold text-foreground text-sm">
+                                                                        <%= p.title %>
+                                                                    </h3>
+                                                                    <span
+                                                                        class="<%= dc %> text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                                        <%= dl %>
+                                                                    </span>
+                                                                </div>
+                                                                <p class="text-muted-foreground text-xs mb-3">
+                                                                    <%= p.subtitle %>
+                                                                </p>
+                                                                <div class="flex items-center justify-between">
+                                                                    <span class="text-muted-foreground text-xs">
+                                                                        <%= p.time %>
+                                                                    </span>
+                                                                    <span
+                                                                        class="text-[10px] font-medium text-primary/80 bg-primary/10 px-2 py-1 rounded">
+                                                                        <%= p.rightLabel %>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <% }); %>
+                                                    </div>
+                                                </section>
+                                            </div>
+                                        </div>
+                                    </main>
+
+                                    <!-- Friends Toggle Button -->
+                                    <button data-friends-toggle onclick="toggleFriends()"
+                                        class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 p-3 rounded-full bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
+                                        title="Toggle Friends">
+                                        <i data-lucide="users"
+                                            class="w-5 h-5 md:w-6 md:h-6 text-primary-foreground"></i>
+                                    </button>
+
+                                    <!-- Friends Panel Overlay -->
+                                    <aside id="friends-aside"
+                                        class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-2xl hidden">
+                                        <%- include('partials/friends-panel') %>
+                                    </aside>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+        <!-- Load OrbitControls (global script version compatible with r128) -->
+        <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+        <script src="/js/background.js?v=8"></script>
+        <script>
+            // Daily Challenge Timer - Fixed to start at 09:59:45 every time
+            document.addEventListener('DOMContentLoaded', function () {
+                const timerElement = document.getElementById('timer');
+
+                // Set initial time to 9 hours, 59 minutes, 45 seconds
+                let totalSeconds = (9 * 60 * 60) + (59 * 60) + 45; // 09:59:45
+
+                // Format time function
+                function formatTime(seconds) {
+                    const hrs = Math.floor(seconds / 3600);
+                    const mins = Math.floor((seconds % 3600) / 60);
+                    const secs = seconds % 60;
+
+                    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+
+                // Initial display
+                timerElement.textContent = formatTime(totalSeconds);
+
+                // Update timer every second
+                const timerInterval = setInterval(() => {
+                    if (totalSeconds > 0) {
+                        totalSeconds--;
+                        timerElement.textContent = formatTime(totalSeconds);
+                    } else {
+                        clearInterval(timerInterval);
+                        // Optionally, you could reset to 09:59:45 when it reaches 0
+                        // totalSeconds = (9 * 60 * 60) + (59 * 60) + 45;
+                    }
+                }, 1000);
+            });
+        </script>
+        <script src="/js/friends-panel.js"></script>
+        <script src="/js/card-effects.js"></script>
+        <script>lucide.createIcons();</script>
+    </body>
+
+    </html>

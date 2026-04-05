@@ -1,0 +1,96 @@
+<%- include('partials/head') %>
+
+    <body>
+        <div class="min-h-screen bg-background">
+            <div class="fixed inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5"></div>
+            <div class="fixed inset-0 opacity-30">
+                <div
+                    class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent">
+                </div>
+            </div>
+
+            <div class="relative z-10 min-h-screen">
+                <header class="border-b border-border/30 backdrop-blur-sm bg-background/50 sticky top-0 z-20">
+                    <div class="container mx-auto px-4 py-4 flex items-center gap-4">
+                        <a href="/" class="p-2 rounded-lg hover:bg-secondary/50 transition-colors">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-muted-foreground"></i>
+                        </a>
+                        <%- include('partials/logo') %>
+                    </div>
+                </header>
+
+                <div class="container mx-auto px-4 py-8" id="profile-root">
+                    <div class="text-center py-8 text-muted-foreground" id="profile-loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                fetch('/api/user/profile', { credentials: 'include' })
+                    .then(r => r.json())
+                    .then(data => renderProfile(data))
+                    .catch(() => {
+                        document.getElementById('profile-loading').innerHTML = '<span class="text-destructive">Failed to load profile</span>';
+                    });
+
+                function renderProfile(data) {
+                    const { user, achievements, activity } = data;
+                    const root = document.getElementById('profile-root');
+                    const skillBars = (user.skills || []).map(s =>
+                        '<div><div class="flex justify-between mb-1"><span class="text-sm text-foreground">' + s.name + '</span><span class="text-sm text-muted-foreground">' + s.level + '%</span></div><div class="h-2 bg-secondary rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500" style="width:' + s.level + '%"></div></div></div>'
+                    ).join('');
+
+                    const activityItems = activity.map(a =>
+                        '<div class="flex items-center gap-3 p-3 rounded-lg bg-card/50 hover:bg-card transition-all"><div class="w-2 h-2 rounded-full flex-shrink-0 bg-primary"></div><div class="flex-1 min-w-0"><div class="text-sm font-medium text-foreground truncate">' + a.title + '</div><div class="text-xs text-muted-foreground">' + new Date(a.time).toLocaleString() + '</div></div></div>'
+                    ).join('');
+
+                    const achItems = achievements.map(a => {
+                        const earned = a.earned;
+                        return '<div class="glass-card p-4 transition-all ' + (earned ? 'border-primary/30' : 'opacity-50 grayscale') + '"><div class="flex items-center gap-3 mb-2"><span class="text-2xl md:text-3xl">' + a.icon + '</span><div class="min-w-0"><div class="font-bold text-foreground truncate">' + a.name + '</div><div class="text-xs text-muted-foreground">' + a.description + '</div></div></div>' + (earned ? '<div class="flex items-center gap-1 text-xs text-success mt-2"><i data-lucide="calendar" class="w-3 h-3"></i><span>Earned ' + (a.date ? new Date(a.date).toLocaleDateString() : '') + '</span></div>' : '') + '</div>';
+                    }).join('');
+
+                    const socialLinks = [];
+                    if (user.social && user.social.github) socialLinks.push('<a href="' + user.social.github + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="github" class="w-5 h-5"></i></a>');
+                    if (user.social && user.social.twitter) socialLinks.push('<a href="' + user.social.twitter + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="twitter" class="w-5 h-5"></i></a>');
+                    if (user.social && user.social.linkedin) socialLinks.push('<a href="' + user.social.linkedin + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="linkedin" class="w-5 h-5"></i></a>');
+                    if (user.social && user.social.website) socialLinks.push('<a href="' + user.social.website + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="globe" class="w-5 h-5"></i></a>');
+
+                    root.innerHTML = '' +
+                        '<!-- Profile Header -->' +
+                        '<div class="glass-card p-4 md:p-6 mb-6 relative overflow-hidden">' +
+                        '<div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30"></div>' +
+                        '<div class="relative flex flex-col md:flex-row md:items-end gap-4 md:gap-6 pt-8">' +
+                        '<div class="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl md:text-4xl font-bold text-primary-foreground shadow-xl ring-4 ring-background">AC</div>' +
+                        '<div class="flex-1 pb-2">' +
+                        '<div class="flex flex-wrap items-center gap-3 mb-2"><h1 class="text-xl md:text-2xl font-bold text-foreground">' + (user.name || user.username) + '</h1></div>' +
+                        '<p class="text-sm md:text-base text-muted-foreground mb-3">' + user.bio + '</p>' +
+                        '<div class="flex items-center gap-4">' + socialLinks.join('') + '</div>' +
+                        '</div>' +
+                        '<button class="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-all self-start md:self-auto"><i data-lucide="edit-2" class="w-4 h-4"></i> Edit Profile</button>' +
+                        '</div>' +
+                        '</div>' +
+
+                        '<!-- Stats -->' +
+                        '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">' +
+                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="target" class="w-4 h-4 md:w-5 md:h-5 text-primary"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.solved || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Problems Solved</div></div>' +
+                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-success/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="flame" class="w-4 h-4 md:w-5 md:h-5 text-success"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.streak || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Day Streak</div></div>' +
+                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-warning/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="trophy" class="w-4 h-4 md:w-5 md:h-5 text-warning"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">#' + (user.stats.globalRank || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Global Rank</div></div>' +
+                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-accent/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="award" class="w-4 h-4 md:w-5 md:h-5 text-accent"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.contestsWon || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Contests Won</div></div>' +
+                        '<div class="glass-card p-3 md:p-4 text-center col-span-2 sm:col-span-1"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-destructive/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="trending-up" class="w-4 h-4 md:w-5 md:h-5 text-destructive"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.rating || 1500) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Rating</div></div>' +
+                        '</div>' +
+
+                        '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">' +
+                        '<div class="glass-card p-4 md:p-6"><h2 class="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-primary"></i> Skill Progress</h2><div class="space-y-4">' + skillBars + '</div></div>' +
+                        '<div class="glass-card p-4 md:p-6"><h2 class="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-primary"></i> Recent Activity</h2><div class="space-y-3">' + activityItems + '</div></div>' +
+                        '</div>' +
+
+                        '<section class="mt-6"><h2 class="section-title mb-4">ACHIEVEMENTS</h2><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">' + achItems + '</div></section>';
+
+                    lucide.createIcons();
+                }
+            })();
+        </script>
+    </body>
+
+    </html>

@@ -1,0 +1,516 @@
+<%- include('partials/head') %>
+
+    <body class="min-h-screen bg-background">
+        <div class="relative z-10 min-h-screen">
+            <!-- Header -->
+            <header class="border-b border-border/30 backdrop-blur-xl bg-background/50 sticky top-0 z-20">
+                <div class="container mx-auto px-4 py-4 flex items-center gap-4">
+                    <a href="/contests" class="p-2 rounded-lg hover:bg-secondary/50 transition-colors group">
+                        <i data-lucide="chevron-left"
+                            class="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"></i>
+                    </a>
+                    <%- include('partials/logo') %>
+                        <div class="flex-1"></div>
+
+                        <!-- Status indicator based on dynamic status -->
+                        <% if (contest.status==='active' ) { %>
+                            <div
+                                class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                                <div class="relative">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                                    <div class="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping">
+                                    </div>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-400">LIVE</span>
+                            </div>
+                            <% } else if (contest.status==='upcoming' ) { %>
+                                <div
+                                    class="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30">
+                                    <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                                    <span class="text-sm font-semibold text-amber-400">UPCOMING</span>
+                                </div>
+                                <% } else { %>
+                                    <div
+                                        class="flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/10 border border-rose-500/30">
+                                        <i data-lucide="lock" class="w-4 h-4 text-rose-400"></i>
+                                        <span class="text-sm font-semibold text-rose-400">ENDED</span>
+                                    </div>
+                                    <% } %>
+                </div>
+            </header>
+
+            <div class="container mx-auto px-4 py-8">
+                <!-- Hero Section -->
+                <div class="relative overflow-hidden rounded-2xl mb-8"
+                    style="background: linear-gradient(135deg, hsl(217 45% 12%) 0%, hsl(220 50% 8%) 50%, hsl(207 30% 15%) 100%);">
+                    <!-- Decorative elements -->
+                    <div
+                        class="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2">
+                    </div>
+                    <div
+                        class="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2">
+                    </div>
+
+                    <div class="relative p-8 md:p-12">
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <!-- Left: Title & info -->
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                                    <%= contest.difficulty === 'easy' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                        contest.difficulty === 'medium' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                        'bg-rose-500/20 text-rose-400 border border-rose-500/30' %>">
+                                        <%= contest.difficulty %>
+                                    </span>
+                                    <% if (contest.tags && contest.tags.length> 0) { %>
+                                        <% contest.tags.forEach(function(tag) { %>
+                                            <span
+                                                class="px-3 py-1 rounded-full text-xs font-medium bg-secondary/50 text-muted-foreground border border-border/30">
+                                                <%= tag %>
+                                            </span>
+                                            <% }); %>
+                                                <% } %>
+                                </div>
+
+                                <h1 class="text-3xl md:text-4xl font-bold text-foreground mb-3 tracking-tight">
+                                    <%= contest.title %>
+                                </h1>
+                                <p class="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
+                                    <%= contest.description %>
+                                </p>
+
+                                <div class="flex items-center gap-3 mb-8">
+                                    <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <i data-lucide="user" class="w-4 h-4"></i>
+                                        <span>Organized by <strong class="text-foreground">
+                                                <%= contest.organizer || 'CodeWith? Team' %>
+                                            </strong></span>
+                                    </div>
+                                </div>
+
+                                <!-- Action buttons -->
+                                <div class="flex flex-wrap gap-4">
+                                    <% if (contest.status==='past' ) { %>
+                                        <button disabled
+                                            class="group relative px-8 py-4 rounded-xl font-bold text-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 cursor-not-allowed opacity-75">
+                                            <span class="relative z-10 flex items-center gap-3">
+                                                <i data-lucide="lock" class="w-5 h-5"></i>
+                                                <span>Contest Ended</span>
+                                            </span>
+                                        </button>
+                                        <% } else { %>
+                                            <!-- Join/Register Button (shown when not joined) -->
+                                            <button id="joinBtn" onclick="toggleJoin()"
+                                                class="group relative px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 overflow-hidden
+                                            <%= contest.status === 'active'
+                                                ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105'
+                                                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105' %>">
+                                                <span class="relative z-10 flex items-center gap-3">
+                                                    <i data-lucide="<%= contest.status === 'active' ? 'play' : 'bell' %>"
+                                                        class="w-5 h-5" id="joinIcon"></i>
+                                                    <span id="joinText">
+                                                        <%= contest.status==='active' ? 'Join Contest' : 'Register Now'
+                                                            %>
+                                                    </span>
+                                                </span>
+                                                <div
+                                                    class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                                </div>
+                                            </button>
+
+                                            <!-- Go to Problems Button (shown when joined and contest is active) -->
+                                            <a href="/contest/<%= contest.id %>/problems" id="problemsBtn"
+                                                style="display: none;"
+                                                class="group relative px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105">
+                                                <span class="relative z-10 flex items-center gap-3">
+                                                    <i data-lucide="code-2" class="w-5 h-5"></i>
+                                                    <span>Go to Problems</span>
+                                                </span>
+                                                <div
+                                                    class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                                </div>
+                                            </a>
+
+                                            <!-- Leave Button (only for upcoming contests) -->
+                                            <button id="leaveBtn" onclick="toggleJoin()" style="display: none;"
+                                                class="px-6 py-4 rounded-xl font-medium border border-rose-500/50 text-rose-400 hover:bg-rose-500/10 transition-all duration-300 flex items-center gap-2">
+                                                <i data-lucide="log-out" class="w-5 h-5"></i>
+                                                Leave Contest
+                                            </button>
+                                            <% } %>
+
+                                                <button onclick="shareContest()"
+                                                    class="px-6 py-4 rounded-xl font-medium border border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-300 flex items-center gap-2">
+                                                    <i data-lucide="share-2" class="w-5 h-5"></i>
+                                                    Share
+                                                </button>
+                                </div>
+                            </div>
+
+                            <!-- Right: Stats cards -->
+                            <div class="flex flex-col gap-4 lg:w-80 self-start">
+                                <!-- Timer Card -->
+                                <div class="glass-card p-6 text-center relative overflow-hidden group">
+                                    <div
+                                        class="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                                    </div>
+                                    <div class="relative z-10">
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                                            <i data-lucide="<%= contest.status === 'past' ? 'lock' : (contest.status === 'active' ? 'timer' : 'calendar-clock') %>"
+                                                class="w-5 h-5 text-primary"></i>
+                                        </div>
+                                        <div class="text-4xl font-mono font-bold text-foreground tracking-tight mb-2 tabular-nums"
+                                            id="countdownTimer">
+                                            <%= contest.status==='past' ? 'Ended' : (contest.status==='active' ?
+                                                contest.timeLeft : 'Starts in ' + contest.timeUntilStart) %>
+                                        </div>
+                                        <div class="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                                            <%= contest.status==='past' ? 'Contest Ended' : (contest.status==='active'
+                                                ? 'Time Remaining' : 'Time Until Start' ) %>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Participants Card -->
+                                <div class="glass-card p-6 text-center relative overflow-hidden group">
+                                    <div
+                                        class="absolute inset-0 bg-success/5 group-hover:bg-success/10 transition-colors">
+                                    </div>
+                                    <div class="relative z-10">
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
+                                            <i data-lucide="users" class="w-5 h-5 text-success"></i>
+                                        </div>
+                                        <div class="text-3xl font-bold text-foreground tracking-tight mb-2"
+                                            id="participantCount">
+                                            <%= contest.participants.toLocaleString() %>
+                                        </div>
+                                        <div class="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                                            Participants
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live join feed (only for non-past contests) -->
+            <% if (contest.status !=='past' ) { %>
+                <div id="joinFeed" class="mb-6 overflow-hidden px-4 md:px-8"
+                    style="max-height: 0; transition: max-height 0.5s ease;">
+                    <div class="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span class="text-sm text-emerald-400 font-medium" id="joinFeedText">Live updates will appear
+                            here...</span>
+                    </div>
+                </div>
+                <% } %>
+
+                    <!-- Main content grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left column: Problems + Rules -->
+                        <div class="lg:col-span-2 space-y-8 pl-4 md:pl-8">
+                            <!-- Rules Section -->
+                            <div class="glass-card p-6">
+                                <h2 class="text-xl font-bold text-foreground flex items-center gap-3 mb-5">
+                                    <i data-lucide="scroll-text" class="w-5 h-5 text-primary"></i>
+                                    Contest Rules
+                                </h2>
+                                <div class="space-y-3">
+                                    <% if (contest.rules && contest.rules.length> 0) { %>
+                                        <% contest.rules.forEach(function(rule, i) { %>
+                                            <div
+                                                class="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/30 transition-colors">
+                                                <div
+                                                    class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                                                    <%= i + 1 %>
+                                                </div>
+                                                <p class="text-sm text-muted-foreground leading-relaxed">
+                                                    <%= rule %>
+                                                </p>
+                                            </div>
+                                            <% }); %>
+                                                <% } else { %>
+                                                    <div class="text-center p-6">
+                                                        <p class="text-sm text-muted-foreground">Standard contest
+                                                            rules
+                                                            apply.</p>
+                                                    </div>
+                                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right column: Leaderboard -->
+                        <div class="space-y-8 pr-4 md:pr-8">
+                            <!-- Leaderboard -->
+                            <div class="glass-card overflow-hidden">
+                                <div class="p-6 border-b border-border/30">
+                                    <h2 class="text-xl font-bold text-foreground flex items-center gap-3">
+                                        <i data-lucide="trophy" class="w-5 h-5 text-amber-400"></i>
+                                        Leaderboard
+                                        <% if (contest.status==='active' ) { %>
+                                            <div class="ml-auto flex items-center gap-1.5">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse">
+                                                </div>
+                                                <span class="text-xs text-emerald-400 font-medium">Live</span>
+                                            </div>
+                                            <% } %>
+                                    </h2>
+                                </div>
+                                <% if (contest.status==='past' ) { %>
+                                    <% if (contest.leaderboard && contest.leaderboard.length> 0) { %>
+                                        <div class="p-3">
+                                            <% contest.leaderboard.forEach(function(entry) { %>
+                                                <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-all group
+                                            <%= entry.rank <= 3 ? 'mb-1' : '' %>">
+                                                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0
+                                                <%= entry.rank === 1 ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-black' :
+                                                    entry.rank === 2 ? 'bg-gradient-to-br from-slate-300 to-slate-500 text-black' :
+                                                    entry.rank === 3 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-white' :
+                                                    'bg-secondary/50 text-muted-foreground' %>">
+                                                        <%= entry.rank %>
+                                                    </div>
+                                                    <div
+                                                        class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/60 to-accent/60 flex items-center justify-center text-xs font-semibold text-primary-foreground shrink-0">
+                                                        <%= entry.avatar %>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <p
+                                                            class="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                                                            <%= entry.name %>
+                                                        </p>
+                                                        <div
+                                                            class="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                                            <span>
+                                                                <%= entry.solved %> solved
+                                                            </span>
+                                                            <span>·</span>
+                                                            <span>
+                                                                <%= entry.time %>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <div class="text-sm font-bold text-primary">
+                                                            <%= entry.score %>
+                                                        </div>
+                                                        <div class="text-xs text-muted-foreground">pts</div>
+                                                    </div>
+                                                </div>
+                                                <% }); %>
+                                        </div>
+                                        <% } else { %>
+                                            <div class="p-8 text-center">
+                                                <i data-lucide="trophy"
+                                                    class="w-12 h-12 text-muted-foreground/30 mx-auto mb-3"></i>
+                                                <p class="text-sm text-muted-foreground">No submissions yet.</p>
+                                            </div>
+                                            <% } %>
+                                                <% } else { %>
+                                                    <div class="p-8 text-center">
+                                                        <i data-lucide="lock"
+                                                            class="w-12 h-12 text-muted-foreground/30 mx-auto mb-3"></i>
+                                                        <p class="text-sm text-muted-foreground">Leaderboard will be
+                                                            revealed after the contest ends.</p>
+                                                    </div>
+                                                    <% } %>
+                            </div>
+                        </div>
+                    </div>
+        </div>
+        </div>
+        </div>
+
+        <script>
+            const contestId = "<%= contest.id %>";
+            const contestStatus = '<%= contest.status %>';
+            const endTime = new Date('<%= contest.endTime %>').getTime();
+            const startTime = new Date('<%= contest.startTime %>').getTime();
+
+            // User Identity for Persistence
+            let userId = localStorage.getItem('userId');
+            if (!userId) {
+                userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('userId', userId);
+            }
+
+            let hasJoined = false;
+
+            // Only check join status if contest is not past
+            <% if (contest.status !== 'past') { %>
+                // Check initial status
+                fetch(`/api/contest/${contestId}/status?userId=${userId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.joined) {
+                            hasJoined = true;
+                            updateJoinButtonUI();
+                            if (contestStatus === 'active') {
+                                document.getElementById('joinFeed').style.maxHeight = '80px';
+                                document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
+                            }
+                        }
+                    })
+                    .catch(console.error);
+            <% } %>
+
+                function updateJoinButtonUI() {
+                    const joinBtn = document.getElementById('joinBtn');
+                    const problemsBtn = document.getElementById('problemsBtn');
+                    const leaveBtn = document.getElementById('leaveBtn');
+                    const text = document.getElementById('joinText');
+                    const icon = document.getElementById('joinIcon');
+
+                    if (hasJoined) {
+                        // Hide join button, show problems button (if active) or leave button (if upcoming)
+                        joinBtn.style.display = 'none';
+
+                        if (contestStatus === 'active') {
+                            problemsBtn.style.display = 'flex';
+                            leaveBtn.style.display = 'none';
+                        } else if (contestStatus === 'upcoming') {
+                            problemsBtn.style.display = 'none';
+                            leaveBtn.style.display = 'flex';
+                        }
+                    } else {
+                        // Show join button, hide others
+                        joinBtn.style.display = 'flex';
+                        problemsBtn.style.display = 'none';
+                        leaveBtn.style.display = 'none';
+
+                        text.textContent = contestStatus === 'active' ? 'Join Contest' : 'Register Now';
+                        icon.setAttribute('data-lucide', contestStatus === 'active' ? 'play' : 'bell');
+
+                        // Reset button styling
+                        joinBtn.disabled = false;
+                        joinBtn.classList.remove('cursor-not-allowed', 'opacity-50', 'bg-secondary');
+                        joinBtn.style.background = '';
+
+                        if (contestStatus === 'active') {
+                            joinBtn.className = 'group relative px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 overflow-hidden bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105';
+                        } else {
+                            joinBtn.className = 'group relative px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 overflow-hidden bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105';
+                        }
+                    }
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+
+            // Toggle join state
+            function toggleJoin() {
+                // Prevent joining if contest is past
+                if (contestStatus === 'past') {
+                    alert('This contest has ended. Registration is closed.');
+                    return;
+                }
+
+                const action = hasJoined ? 'leave' : 'join';
+                const originalState = hasJoined;
+
+                // Optimistic update
+                hasJoined = !hasJoined;
+                updateJoinButtonUI();
+
+                fetch(`/api/contest/${contestId}/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (hasJoined && contestStatus === 'active') {
+                                document.getElementById('joinFeed').style.maxHeight = '80px';
+                                document.getElementById('joinFeedText').textContent = '🎉 You joined the contest! Good luck!';
+                            } else if (!hasJoined) {
+                                document.getElementById('joinFeed').style.maxHeight = '0';
+                            }
+                            if (data.participants !== undefined) {
+                                document.getElementById('participantCount').textContent = data.participants.toLocaleString();
+                            }
+                        } else {
+                            // revert on failure
+                            hasJoined = originalState;
+                            updateJoinButtonUI();
+                            alert(data.error || 'Action failed. Please try again.');
+                        }
+                    })
+                    .catch(err => {
+                        hasJoined = originalState;
+                        updateJoinButtonUI();
+                        console.error(err);
+                    });
+            }
+
+            // Countdown timer
+            function updateTimer() {
+                if (contestStatus === 'past') {
+                    document.getElementById('countdownTimer').textContent = 'Ended';
+                    return;
+                }
+
+                const now = Date.now();
+                let target;
+                let displayText;
+
+                if (contestStatus === 'active') {
+                    target = endTime;
+                    displayText = 'Time Remaining';
+                } else {
+                    target = startTime;
+                    displayText = 'Starts In';
+                }
+
+                const diff = target - now;
+
+                if (diff <= 0) {
+                    // Contest just ended or started - reload to update status
+                    window.location.reload();
+                    return;
+                }
+
+                const hours = Math.floor(diff / 3600000);
+                const mins = Math.floor((diff % 3600000) / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+
+                const h = hours.toString().padStart(2, '0');
+                const m = mins.toString().padStart(2, '0');
+                const s = secs.toString().padStart(2, '0');
+
+                document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
+            }
+
+            // Only run timer if contest is not past
+            <% if (contest.status !== 'past') { %>
+                setInterval(updateTimer, 1000);
+                updateTimer();
+            <% } %>
+
+                function shareContest() {
+                    const url = window.location.href;
+                    if (navigator.share) {
+                        navigator.share({
+                            title: '<%= contest.title %>',
+                            text: 'Check out this contest on CodeWith!',
+                            url: url
+                        }).catch(console.error);
+                    } else {
+                        navigator.clipboard.writeText(url).then(() => {
+                            alert('Link copied to clipboard!');
+                        });
+                    }
+                }
+
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        </script>
+    </body>
+
+    </html>

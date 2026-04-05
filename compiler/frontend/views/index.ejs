@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= isAuthenticated ? user.username + ' - ' : '' %>Online Compiler</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .tier-badge {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .quota-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--light);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+        }
+
+        .quota-bar {
+            width: 100px;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .quota-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            transition: width 0.3s;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            min-width: 200px;
+            display: none;
+            z-index: 1001;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--dark);
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--light);
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 10px 10px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 10px 10px;
+            border-top: 1px solid #e5e7eb;
+            color: var(--danger);
+        }
+
+        .btn {
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .editor-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .editor-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1.5rem 2rem;
+        }
+
+        .editor-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .editor-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .editor-body {
+            padding: 2rem;
+        }
+
+        .language-selector {
+            margin-bottom: 1.5rem;
+        }
+
+        .language-selector label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .language-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            background: white;
+        }
+
+        .language-selector select:focus {
+            border-color: var(--primary);
+        }
+
+        .code-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .code-section label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .code-section textarea {
+            width: 100%;
+            height: 300px;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .code-section textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .input-section textarea {
+            width: 100%;
+            height: 100px;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-section textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .compile-btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .compile-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .compile-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            padding: 1rem 2rem;
+            background: white;
+            color: var(--gray);
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .output-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .output-section label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .output-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .error-section label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--danger);
+        }
+
+        .error-box {
+            background: #fff1f1;
+            border: 2px solid var(--danger);
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--danger);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .info-bar {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .examples {
+            margin-top: 2rem;
+        }
+
+        .examples h3 {
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .example-btn {
+            padding: 1rem;
+            background: var(--light);
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .example-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-code"></i> CodeCompiler
+        </div>
+        
+        <div class="nav-menu">
+            <% if (isAuthenticated) { %>
+                <div class="user-info">
+                    <span class="tier-badge"><%= user.tier %></span>
+                    
+                    <% if (quota) { %>
+                    <div class="quota-indicator">
+                        <i class="fas fa-chart-line"></i>
+                        <div class="quota-bar">
+                            <div class="quota-fill" style="width: <%= (quota.used / quota.limit) * 100 %>%"></div>
+                        </div>
+                        <span><%= quota.used %>/<%= quota.limit %></span>
+                    </div>
+                    <% } %>
+                    
+                    <div class="dropdown">
+                        <div class="avatar" onclick="toggleDropdown()">
+                            <%= user.username.charAt(0).toUpperCase() %>
+                        </div>
+                        <div class="dropdown-menu" id="userDropdown">
+                            <a href="/dashboard" class="dropdown-item">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="/profile" class="dropdown-item">
+                                <i class="fas fa-user"></i> Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                            <a href="/logout" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="user-info">
+                    <a href="/login" class="btn btn-outline">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                    <a href="/register" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </a>
+                </div>
+            <% } %>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="editor-container">
+            <div class="editor-header">
+                <h1><i class="fas fa-terminal"></i> Online Code Compiler</h1>
+                <p>Write, compile, and run code in C, C++, Python, and JavaScript</p>
+            </div>
+            
+            <div class="editor-body">
+                <form action="/compile" method="POST" id="compilerForm">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    
+                    <div class="language-selector">
+                        <label for="language">
+                            <i class="fas fa-code"></i> Select Language:
+                        </label>
+                        <select name="language" id="language" required>
+                            <% if (languages && languages.length) { %>
+                                <% languages.forEach(lang => { %>
+                                    <option value="<%= lang.id %>">
+                                        <%= lang.name %> (v<%= lang.version %>)
+                                    </option>
+                                <% }); %>
+                            <% } else { %>
+                                <option value="c">C (C11)</option>
+                                <option value="cpp">C++ (C++17)</option>
+                                <option value="python">Python (3.9)</option>
+                                <option value="javascript">JavaScript (Node 16)</option>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <div class="code-section">
+                        <label for="code">
+                            <i class="fas fa-pencil-alt"></i> Write your code:
+                        </label>
+                        <textarea name="code" id="code" placeholder="Enter your code here..." required><%= code %></textarea>
+                    </div>
+
+                    <div class="input-section">
+                        <label for="input">
+                            <i class="fas fa-keyboard"></i> Input (optional):
+                        </label>
+                        <textarea name="input" id="input" placeholder="Enter input for your program..."></textarea>
+                    </div>
+
+                    <div class="action-bar">
+                        <button type="submit" class="compile-btn" id="compileBtn">
+                            <i class="fas fa-play"></i>
+                            <span id="btnText">Compile & Run</span>
+                        </button>
+                        <button type="button" class="clear-btn" onclick="clearCode()">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </form>
+
+                <% if (output) { %>
+                <div class="output-section">
+                    <label>
+                        <i class="fas fa-terminal"></i> Output:
+                        <% if (executionTime) { %>
+                            <span class="badge badge-success">
+                                <i class="fas fa-clock"></i> <%= executionTime %>ms
+                            </span>
+                        <% } %>
+                    </label>
+                    <div class="output-box"><%= output %></div>
+                </div>
+                <% } %>
+
+                <% if (error) { %>
+                <div class="error-section">
+                    <label>
+                        <i class="fas fa-exclamation-triangle"></i> Error:
+                    </label>
+                    <div class="error-box"><%= error %></div>
+                </div>
+                <% } %>
+
+                <div class="info-bar">
+                    <div class="info-item">
+                        <i class="fas fa-keyboard"></i>
+                        <span>Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to compile</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Secure execution in Docker</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-database"></i>
+                        <span>Results cached for 5 minutes</span>
+                    </div>
+                </div>
+
+                <div class="examples">
+                    <h3><i class="fas fa-lightbulb"></i> Example Codes</h3>
+                    <div class="example-grid">
+                        <button type="button" class="example-btn" onclick="loadExample('c')">
+                            <i class="fas fa-code"></i> C Example
+                        </button>
+                        <button type="button" class="example-btn" onclick="loadExample('cpp')">
+                            <i class="fas fa-code"></i> C++ Example
+                        </button>
+                        <button type="button" class="example-btn" onclick="loadExample('python')">
+                            <i class="fab fa-python"></i> Python Example
+                        </button>
+                        <button type="button" class="example-btn" onclick="loadExample('javascript')">
+                            <i class="fab fa-js"></i> JavaScript Example
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Example codes
+        const examples = {
+            c: `#include <stdio.h>\n\nint main() {\n    int num;\n    printf("Enter a number: ");\n    scanf("%d", &num);\n    printf("You entered: %d\\n", num);\n    return 0;\n}`,
+            cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    int num;\n    cout << "Enter a number: ";\n    cin >> num;\n    cout << "You entered: " << num << endl;\n    return 0;\n}`,
+            python: `# Python program\nnum = int(input("Enter a number: "))\nprint(f"You entered: {num}")`,
+            javascript: `// JavaScript program\nconst readline = require('readline');\n\nconst rl = readline.createInterface({\n    input: process.stdin,\n    output: process.stdout\n});\n\nrl.question('Enter a number: ', (answer) => {\n    console.log(\`You entered: \${answer}\`);\n    rl.close();\n});`
+        };
+
+        // Toggle dropdown
+        function toggleDropdown() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.avatar')) {
+                const dropdowns = document.getElementsByClassName('dropdown-menu');
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        // Load example code
+        function loadExample(lang) {
+            document.getElementById('language').value = lang;
+            document.getElementById('code').value = examples[lang];
+            document.getElementById('input').value = '';
+            showToast('Example loaded!', 'success');
+        }
+
+        // Clear code
+        function clearCode() {
+            if (confirm('Clear all code?')) {
+                document.getElementById('code').value = '';
+                document.getElementById('input').value = '';
+                showToast('Code cleared', 'success');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Form submission
+        document.getElementById('compilerForm').addEventListener('submit', function(e) {
+            <% if (!isAuthenticated) { %>
+                e.preventDefault();
+                showToast('Please login to compile code', 'warning');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            <% } %>
+            
+            <% if (quota && quota.used >= quota.limit) { %>
+                e.preventDefault();
+                showToast('Daily compilation limit reached! Upgrade to continue.', 'warning');
+                return;
+            <% } %>
+            
+            const btn = document.getElementById('compileBtn');
+            const btnText = document.getElementById('btnText');
+            
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Compiling...';
+        });
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('compilerForm').submit();
+            }
+        });
+
+        // Auto-resize textareas
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        });
+
+        // Check session periodically
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/auth/session', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (!data.authenticated && window.location.pathname === '/') {
+                    // Show login reminder
+                    showToast('Session expired. Please login again.', 'warning');
+                }
+            } catch (err) {
+                console.error('Session check failed:', err);
+            }
+        }, 60000); // Check every minute
+
+        // Initial focus
+        document.getElementById('code').focus();
+    </script>
+</body>
+</html>

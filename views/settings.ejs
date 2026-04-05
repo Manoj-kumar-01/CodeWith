@@ -1,0 +1,336 @@
+<%- include('partials/head') %>
+
+    <body>
+        <div class="min-h-screen bg-background">
+            <div class="fixed inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5"></div>
+            <div class="fixed inset-0 opacity-30">
+                <div
+                    class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent">
+                </div>
+            </div>
+
+            <div class="relative z-10 min-h-screen">
+                <header class="border-b border-border/30 backdrop-blur-sm bg-background/50 sticky top-0 z-20">
+                    <div class="container mx-auto px-4 py-4 flex items-center gap-4">
+                        <a href="/" class="p-2 rounded-lg hover:bg-secondary/50 transition-colors">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-muted-foreground"></i>
+                        </a>
+                        <%- include('partials/logo') %>
+                    </div>
+                </header>
+
+                <div class="container mx-auto px-4 py-8">
+                    <div class="mb-8">
+                        <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+                            <i data-lucide="settings" class="w-7 h-7 md:w-8 md:h-8 text-primary"></i>
+                            Settings
+                        </h1>
+                        <p class="text-muted-foreground">Customize your CodeWith? experience</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <!-- Settings Navigation -->
+                        <div class="lg:col-span-1">
+                            <div
+                                class="glass-card p-2 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible">
+                                <button onclick="showTab('general')"
+                                    class="settings-tab flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all whitespace-nowrap bg-primary/20 text-primary"
+                                    data-tab="general">
+                                    <i data-lucide="settings" class="w-5 h-5 flex-shrink-0"></i>
+                                    <span class="font-medium">General</span>
+                                </button>
+                                <button onclick="showTab('appearance')"
+                                    class="settings-tab flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all whitespace-nowrap text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                    data-tab="appearance">
+                                    <i data-lucide="palette" class="w-5 h-5 flex-shrink-0"></i>
+                                    <span class="font-medium">Appearance</span>
+                                </button>
+                                <button onclick="showTab('notifications')"
+                                    class="settings-tab flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all whitespace-nowrap text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                    data-tab="notifications">
+                                    <i data-lucide="bell" class="w-5 h-5 flex-shrink-0"></i>
+                                    <span class="font-medium">Notifications</span>
+                                </button>
+                                <button onclick="showTab('privacy')"
+                                    class="settings-tab flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all whitespace-nowrap text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                    data-tab="privacy">
+                                    <i data-lucide="shield" class="w-5 h-5 flex-shrink-0"></i>
+                                    <span class="font-medium">Privacy</span>
+                                </button>
+                                <button onclick="showTab('editor')"
+                                    class="settings-tab flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all whitespace-nowrap text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                    data-tab="editor">
+                                    <i data-lucide="code" class="w-5 h-5 flex-shrink-0"></i>
+                                    <span class="font-medium">Code Editor</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Settings Content -->
+                        <div class="lg:col-span-3">
+                            <div class="glass-card p-4 md:p-6">
+                                <!-- General -->
+                                <div id="tab-general" class="tab-content">
+                                    <div class="space-y-4">
+                                        <h2 class="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                                            <i data-lucide="globe" class="w-5 h-5 text-primary"></i> General Settings
+                                        </h2>
+                                        <div
+                                            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all gap-3">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-medium text-foreground">Language</div>
+                                                <div class="text-sm text-muted-foreground">Select your preferred
+                                                    language</div>
+                                            </div>
+                                            <select
+                                                class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
+                                                <option value="en">English</option>
+                                                <option value="es">Spanish</option>
+                                                <option value="fr">French</option>
+                                                <option value="de">German</option>
+                                                <option value="zh">Chinese</option>
+                                            </select>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Auto-save progress</div>
+                                                <div class="text-sm text-muted-foreground">Automatically save your
+                                                    coding progress</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Appearance -->
+                                <div id="tab-appearance" class="tab-content hidden">
+                                    <div class="space-y-4">
+                                        <h2 class="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                                            <i data-lucide="palette" class="w-5 h-5 text-primary"></i> Appearance
+                                            Settings
+                                        </h2>
+                                        <div class="flex items-center justify-between p-4 rounded-lg bg-card/50">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground flex items-center gap-2">Dark
+                                                    Mode</div>
+                                                <div class="text-sm text-muted-foreground">Dark theme is always active
+                                                </div>
+                                            </div>
+                                            <span
+                                                class="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">Always
+                                                On</span>
+                                        </div>
+                                        <div
+                                            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all gap-3">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-medium text-foreground">Font Size</div>
+                                                <div class="text-sm text-muted-foreground">Adjust the interface font
+                                                    size</div>
+                                            </div>
+                                            <select
+                                                class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
+                                                <option value="small">Small</option>
+                                                <option value="medium" selected>Medium</option>
+                                                <option value="large">Large</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Notifications -->
+                                <div id="tab-notifications" class="tab-content hidden">
+                                    <div class="space-y-4">
+                                        <h2 class="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                                            <i data-lucide="bell" class="w-5 h-5 text-primary"></i> Notification
+                                            Settings
+                                        </h2>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Push Notifications</div>
+                                                <div class="text-sm text-muted-foreground">Receive push notifications
+                                                    for contests and updates</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Email Notifications</div>
+                                                <div class="text-sm text-muted-foreground">Receive email updates about
+                                                    your progress</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-secondary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-1">
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Sound Effects</div>
+                                                <div class="text-sm text-muted-foreground">Play sounds for achievements
+                                                    and notifications</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Privacy -->
+                                <div id="tab-privacy" class="tab-content hidden">
+                                    <div class="space-y-4">
+                                        <h2 class="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                                            <i data-lucide="shield" class="w-5 h-5 text-primary"></i> Privacy Settings
+                                        </h2>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Show Online Status</div>
+                                                <div class="text-sm text-muted-foreground">Let others see when you're
+                                                    online</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Private Profile</div>
+                                                <div class="text-sm text-muted-foreground">Hide your profile from other
+                                                    users</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-secondary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-1">
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Editor -->
+                                <div id="tab-editor" class="tab-content hidden">
+                                    <div class="space-y-4">
+                                        <h2 class="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                                            <i data-lucide="code" class="w-5 h-5 text-primary"></i> Code Editor Settings
+                                        </h2>
+                                        <div
+                                            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all gap-3">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-medium text-foreground">Code Font</div>
+                                                <div class="text-sm text-muted-foreground">Choose your preferred coding
+                                                    font</div>
+                                            </div>
+                                            <select
+                                                class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
+                                                <option value="jetbrains">JetBrains Mono</option>
+                                                <option value="fira">Fira Code</option>
+                                                <option value="consolas">Consolas</option>
+                                                <option value="monaco">Monaco</option>
+                                            </select>
+                                        </div>
+                                        <div
+                                            class="flex items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all">
+                                            <div class="flex-1 min-w-0 mr-4">
+                                                <div class="font-medium text-foreground">Show Line Numbers</div>
+                                                <div class="text-sm text-muted-foreground">Display line numbers in the
+                                                    editor</div>
+                                            </div>
+                                            <button onclick="toggleSwitch(this)"
+                                                class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
+                                                <div
+                                                    class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div
+                                            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-card/50 hover:bg-card transition-all gap-3">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-medium text-foreground">Tab Size</div>
+                                                <div class="text-sm text-muted-foreground">Number of spaces per tab
+                                                </div>
+                                            </div>
+                                            <select
+                                                class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
+                                                <option value="2">2 spaces</option>
+                                                <option value="4" selected>4 spaces</option>
+                                                <option value="8">8 spaces</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Save -->
+                                <div class="mt-8 pt-6 border-t border-border/30">
+                                    <button
+                                        class="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                                        <i data-lucide="save" class="w-5 h-5"></i> Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function showTab(id) {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById('tab-' + id).classList.remove('hidden');
+                document.querySelectorAll('.settings-tab').forEach(btn => {
+                    btn.classList.remove('bg-primary/20', 'text-primary');
+                    btn.classList.add('text-muted-foreground', 'hover:bg-secondary/50', 'hover:text-foreground');
+                });
+                const active = document.querySelector('.settings-tab[data-tab="' + id + '"]');
+                if (active) {
+                    active.classList.add('bg-primary/20', 'text-primary');
+                    active.classList.remove('text-muted-foreground', 'hover:bg-secondary/50', 'hover:text-foreground');
+                }
+            }
+
+            function toggleSwitch(btn) {
+                const dot = btn.querySelector('div');
+                const isOn = btn.classList.contains('bg-primary');
+                if (isOn) {
+                    btn.classList.remove('bg-primary');
+                    btn.classList.add('bg-secondary');
+                    dot.classList.remove('translate-x-8');
+                    dot.classList.add('translate-x-1');
+                } else {
+                    btn.classList.remove('bg-secondary');
+                    btn.classList.add('bg-primary');
+                    dot.classList.remove('translate-x-1');
+                    dot.classList.add('translate-x-8');
+                }
+            }
+
+            lucide.createIcons();
+        </script>
+    </body>
+
+    </html>

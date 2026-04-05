@@ -1,0 +1,197 @@
+<%- include('partials/head') %>
+
+    <body class="min-h-screen bg-background text-foreground font-sans antialiased">
+        <div class="fixed inset-0 pointer-events-none z-0">
+            <div class="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5"></div>
+        </div>
+
+        <div class="relative z-10 container mx-auto px-6 py-8 max-w-6xl">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div class="flex items-center gap-4">
+                    <a href="/admin" class="p-2 rounded-lg hover:bg-secondary/50 transition-colors group">
+                        <i data-lucide="arrow-left"
+                            class="w-5 h-5 text-muted-foreground group-hover:text-foreground"></i>
+                    </a>
+                    <div>
+                        <h1
+                            class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                            Problem Repository
+                        </h1>
+                        <p class="text-muted-foreground">Manage and Add Coding Problems</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-4 py-2 rounded-lg bg-secondary/50 border border-border/50 font-mono text-sm">
+                        Total: <span class="text-primary font-bold">
+                            <%= problems.length %>
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <!-- Add Problem Form -->
+                <div class="lg:col-span-1">
+                    <div class="glass-card p-6 sticky top-8">
+                        <h2 class="text-xl font-bold flex items-center gap-2 mb-6">
+                            <div class="p-2 rounded-lg bg-primary/10">
+                                <i data-lucide="plus-square" class="w-5 h-5 text-primary"></i>
+                            </div>
+                            New Problem
+                        </h2>
+
+                        <form action="/admin/problems" method="POST" class="space-y-4">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Title</label>
+                                <input type="text" name="title" required placeholder="e.g. Two Sum"
+                                    class="w-full px-4 py-2 bg-secondary/30 border border-border/50 rounded-lg focus:border-primary/50 outline-none transition-all">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium">Difficulty</label>
+                                    <select name="difficulty" required
+                                        class="w-full px-4 py-2 bg-secondary/30 border border-border/50 rounded-lg focus:border-primary/50 outline-none">
+                                        <option value="easy">Easy</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium">Category</label>
+                                    <input type="text" name="category" required placeholder="Arrays"
+                                        class="w-full px-4 py-2 bg-secondary/30 border border-border/50 rounded-lg focus:border-primary/50 outline-none">
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Tags <span
+                                        class="text-muted-foreground text-xs">(comma separated)</span></label>
+                                <input type="text" name="tags" placeholder="Hash Table, Math"
+                                    class="w-full px-4 py-2 bg-secondary/30 border border-border/50 rounded-lg focus:border-primary/50 outline-none">
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Description</label>
+                                <textarea name="description" required rows="4" placeholder="Problem statement..."
+                                    class="w-full px-4 py-2 bg-secondary/30 border border-border/50 rounded-lg focus:border-primary/50 outline-none resize-y"></textarea>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Constraints <span
+                                        class="text-muted-foreground text-xs">(comma separated)</span></label>
+                                <textarea name="constraints" rows="2" placeholder="1 <= nums.length <= 10^4, ..."
+                                    class="w-full px-4 py-2 bg-secondary/30 border border-border/50 rounded-lg focus:border-primary/50 outline-none resize-y"></textarea>
+                            </div>
+
+                            <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm">
+                                <i data-lucide="info" class="w-4 h-4 inline mr-1 text-emerald-500"></i>
+                                <span class="text-emerald-200">Examples, Test Cases, and Starter Code will be
+                                    automatically initialized with empty templates. You can edit them later directly in
+                                    the DB.</span>
+                            </div>
+
+                            <button type="submit"
+                                class="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg shadow-primary/20">
+                                Add Problem
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Problem List -->
+                <div class="lg:col-span-2">
+                    <div class="glass-card overflow-hidden">
+                        <div class="p-6 border-b border-border/30 flex items-center justify-between">
+                            <h2 class="text-xl font-bold flex items-center gap-2">
+                                <i data-lucide="database" class="w-5 h-5 text-accent"></i>
+                                Existing Problems
+                            </h2>
+                        </div>
+
+                        <% if (problems && problems.length> 0) { %>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-secondary/30 border-b border-border/30">
+                                        <tr>
+                                            <th
+                                                class="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                                Title</th>
+                                            <th
+                                                class="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                                Difficulty</th>
+                                            <th
+                                                class="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                                Category</th>
+                                            <th
+                                                class="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                                Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-border/10">
+                                        <% problems.forEach(problem=> { %>
+                                            <tr class="hover:bg-secondary/10 transition-colors">
+                                                <td class="px-6 py-4">
+                                                    <div class="font-medium text-sm">
+                                                        <%= problem.title %>
+                                                    </div>
+                                                    <div class="text-xs text-muted-foreground mt-1 max-w-xs truncate">
+                                                        <%= problem.tags ? problem.tags.join(', ') : '' %></div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span class="text-[10px] uppercase font-bold px-2 py-1 rounded-sm
+                                                        <%= problem.difficulty === ' easy'
+                                                            ? 'bg-emerald-500/10 text-emerald-500' :
+                                                            problem.difficulty==='medium'
+                                                            ? 'bg-amber-500/10 text-amber-500'
+                                                            : 'bg-rose-500/10 text-rose-500' %>">
+                                                            <%= problem.difficulty %>
+                                                                </span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span
+                                                        class="text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded">
+                                                        <%= problem.category %>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 text-right">
+                                                    <button
+                                                        class="p-2 text-muted-foreground hover:text-primary transition-colors cursor-not-allowed opacity-50"
+                                                        title="Edit coming soon">
+                                                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <% }); %>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <% } else { %>
+                                <div class="p-12 text-center flex flex-col items-center justify-center">
+                                    <div
+                                        class="w-16 h-16 rounded-full bg-secondary/30 flex items-center justify-center mb-4 text-muted-foreground">
+                                        <i data-lucide="inbox" class="w-8 h-8"></i>
+                                    </div>
+                                    <h3 class="font-bold text-lg mb-1">No Problems Found</h3>
+                                    <p class="text-muted-foreground text-sm max-w-sm">
+                                        The database is currently empty. Use the form to construct your first problem.
+                                    </p>
+                                </div>
+                                <% } %>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/lucide@latest"></script>
+        <script>
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        </script>
+    </body>
+
+    </html>

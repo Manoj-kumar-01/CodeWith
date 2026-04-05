@@ -1,0 +1,34 @@
+<aside
+    class="glass-sidebar w-16 md:w-20 flex flex-col items-center py-4 md:py-6 flex-shrink-0 gap-6 md:gap-8 border-r border-transparent">
+    <!-- Logo placeholder area -->
+    <div class="mb-2 md:mb-4"></div>
+
+    <!-- Navigation items -->
+    <nav class="flex flex-col gap-2 md:gap-3 w-full px-1 md:px-2 flex-1 pt-4 md:pt-6">
+        <a href="/" class="nav-item <%= currentPath === '/' ? 'active' : '' %>">
+            <i data-lucide="home" class="w-4 h-4 md:w-5 md:h-5"></i>
+            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">HOME</span>
+        </a>
+        <a href="/contests" class="nav-item <%= currentPath === '/contests' ? 'active' : '' %>">
+            <i data-lucide="trophy" class="w-4 h-4 md:w-5 md:h-5"></i>
+            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">CONTESTS</span>
+        </a>
+        <a href="/practice" class="nav-item <%= currentPath === '/practice' ? 'active' : '' %>">
+            <i data-lucide="book-open" class="w-4 h-4 md:w-5 md:h-5"></i>
+            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">PRACTICE</span>
+        </a>
+        <a href="/settings" class="nav-item <%= currentPath === '/settings' ? 'active' : '' %>">
+            <i data-lucide="settings" class="w-4 h-4 md:w-5 md:h-5"></i>
+            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">SETTINGS</span>
+        </a>
+    </nav>
+
+    <!-- Profile at bottom -->
+    <div class="w-full px-1 md:px-2 pb-2 md:pb-4 border-t border-primary/20 pt-2 md:pt-4">
+        <a href="/profile"
+            class="nav-item w-full transition-all duration-300 <%= currentPath === '/profile' ? 'active' : '' %>">
+            <i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5"></i>
+            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">PROFILE</span>
+        </a>
+    </div>
+</aside>

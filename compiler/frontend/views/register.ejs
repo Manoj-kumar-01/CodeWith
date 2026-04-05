@@ -1,0 +1,675 @@
+<!-- frontend/views/register.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Online Compiler</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-header h1 {
+            color: var(--dark);
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            color: var(--gray);
+        }
+
+        .auth-header i {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .form-group label i {
+            margin-right: 8px;
+            color: var(--primary);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-group input.error {
+            border-color: var(--danger);
+        }
+
+        .password-strength {
+            margin-top: 8px;
+        }
+
+        .strength-bar {
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .strength-fill.weak {
+            width: 33.33%;
+            background: var(--danger);
+        }
+
+        .strength-fill.medium {
+            width: 66.66%;
+            background: var(--warning);
+        }
+
+        .strength-fill.strong {
+            width: 100%;
+            background: var(--success);
+        }
+
+        .strength-text {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .tier-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .tier-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tier-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .tier-card.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05));
+        }
+
+        .tier-card h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .tier-card .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .tier-card .price small {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .tier-card ul {
+            list-style: none;
+            padding: 0;
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .tier-card li {
+            margin: 5px 0;
+        }
+
+        .tier-card .popular-badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .terms {
+            margin: 20px 0;
+        }
+
+        .terms label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--gray);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .terms input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+        }
+
+        .terms a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .terms a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-register:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-register:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--gray);
+        }
+
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #fecaca;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: flex;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-home {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-home a {
+            color: var(--gray);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .back-home a:hover {
+            color: var(--primary);
+        }
+
+        .password-match {
+            font-size: 12px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .password-match i {
+            font-size: 14px;
+        }
+
+        .match-success {
+            color: var(--success);
+        }
+
+        .match-error {
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <i class="fas fa-code"></i>
+            <h1>Create Account 🚀</h1>
+            <p>Start coding in seconds</p>
+        </div>
+
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorText"></span>
+        </div>
+
+        <form id="registerForm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i> Username
+                </label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Choose a username"
+                    required
+                    minlength="3"
+                    maxlength="20"
+                    pattern="[a-zA-Z0-9_]+"
+                    title="Username can only contain letters, numbers, and underscores"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i> Email Address
+                </label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="Enter your email"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Password
+                </label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Create a password"
+                    required
+                    minlength="8"
+                >
+                <div class="password-strength">
+                    <div class="strength-bar">
+                        <div class="strength-fill" id="strengthFill"></div>
+                    </div>
+                    <span class="strength-text" id="strengthText">Enter password</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">
+                    <i class="fas fa-lock"></i> Confirm Password
+                </label>
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    name="confirmPassword" 
+                    placeholder="Confirm your password"
+                    required
+                >
+                <div class="password-match" id="passwordMatch"></div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--dark);">Choose Your Plan</h3>
+            
+            <div class="tier-selector">
+                <div class="tier-card selected" data-tier="free" id="freeTier">
+                    <h3>Free</h3>
+                    <div class="price">$0 <small>/month</small></div>
+                    <ul>
+                        <li>✓ 10 compilations/day</li>
+                        <li>✓ 4 languages</li>
+                        <li>✓ Basic support</li>
+                    </ul>
+                </div>
+                
+                <div class="tier-card" data-tier="premium" id="premiumTier">
+                    <div class="popular-badge">MOST POPULAR</div>
+                    <h3>Premium</h3>
+                    <div class="price">$9.99 <small>/month</small></div>
+                    <ul>
+                        <li>✓ 100 compilations/day</li>
+                        <li>✓ 8 languages</li>
+                        <li>✓ Priority support</li>
+                        <li>✓ Save code snippets</li>
+                        <li>✓ API access</li>
+                    </ul>
+                </div>
+            </div>
+            <input type="hidden" name="tier" id="selectedTier" value="free">
+
+            <div class="terms">
+                <label>
+                    <input type="checkbox" name="agreeTerms" id="agreeTerms" required>
+                    <span>I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a></span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-register" id="registerBtn">
+                <span id="btnText">Create Account</span>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="/login">Sign in</a>
+        </div>
+
+        <div class="back-home">
+            <a href="/"><i class="fas fa-arrow-left"></i> Back to Compiler</a>
+        </div>
+    </div>
+
+    <script>
+        // Password strength checker
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirmPassword');
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+        const passwordMatch = document.getElementById('passwordMatch');
+
+        function checkPasswordStrength(password) {
+            if (password.length === 0) {
+                return { class: '', text: 'Enter password' };
+            }
+            
+            let score = 0;
+            
+            // Length check
+            if (password.length >= 8) score++;
+            if (password.length >= 12) score++;
+            
+            // Character variety
+            if (/[a-z]/.test(password)) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/[0-9]/.test(password)) score++;
+            if (/[^a-zA-Z0-9]/.test(password)) score++;
+            
+            if (score < 3) return { class: 'weak', text: 'Weak password' };
+            if (score < 5) return { class: 'medium', text: 'Medium password' };
+            return { class: 'strong', text: 'Strong password' };
+        }
+
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strength = checkPasswordStrength(password);
+            
+            strengthFill.className = 'strength-fill ' + strength.class;
+            strengthText.textContent = strength.text;
+            
+            // Check password match
+            if (confirmInput.value) {
+                checkPasswordMatch();
+            }
+        });
+
+        function checkPasswordMatch() {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+            
+            if (!confirm) {
+                passwordMatch.innerHTML = '';
+                return;
+            }
+            
+            if (password === confirm) {
+                passwordMatch.innerHTML = '<i class="fas fa-check-circle match-success"></i><span class="match-success">Passwords match</span>';
+                confirmInput.classList.remove('error');
+            } else {
+                passwordMatch.innerHTML = '<i class="fas fa-exclamation-circle match-error"></i><span class="match-error">Passwords do not match</span>';
+                confirmInput.classList.add('error');
+            }
+        }
+
+        confirmInput.addEventListener('input', checkPasswordMatch);
+
+        // Tier selection
+        document.querySelectorAll('.tier-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.tier-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('selectedTier').value = this.dataset.tier;
+            });
+        });
+
+        // Form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('registerBtn');
+            const btnText = document.getElementById('btnText');
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            // Hide previous error
+            errorDiv.classList.remove('show');
+            
+            // Validate passwords match
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                errorText.textContent = 'Passwords do not match';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            // Validate password strength
+            const strength = checkPasswordStrength(password);
+            if (strength.class === 'weak' && password.length > 0) {
+                errorText.textContent = 'Please choose a stronger password';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            // Validate terms
+            if (!document.getElementById('agreeTerms').checked) {
+                errorText.textContent = 'You must agree to the terms';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            // Validate username format
+            const username = document.getElementById('username').value;
+            const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+            if (!usernameRegex.test(username)) {
+                errorText.textContent = 'Username must be 3-20 characters and contain only letters, numbers, and underscores';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            // Show loading
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Creating account...';
+            
+            try {
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data),
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Show success and redirect
+                    errorDiv.style.background = '#d1fae5';
+                    errorDiv.style.color = '#065f46';
+                    errorDiv.style.borderColor = '#a7f3d0';
+                    errorText.textContent = 'Account created! Redirecting to compiler...';
+                    errorDiv.classList.add('show');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    errorText.textContent = result.error || 'Registration failed';
+                    errorDiv.classList.add('show');
+                    
+                    // Reset button
+                    btn.disabled = false;
+                    btnText.textContent = 'Create Account';
+                }
+            } catch (err) {
+                errorText.textContent = 'Network error. Please try again.';
+                errorDiv.classList.add('show');
+                console.error('Registration error:', err);
+                
+                btn.disabled = false;
+                btnText.textContent = 'Create Account';
+            }
+        });
+
+        // Check if already logged in
+        fetch('/api/auth/session', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(err => console.error('Session check failed:', err));
+    </script>
+</body>
+</html>
