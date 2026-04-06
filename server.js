@@ -453,11 +453,11 @@ const formatTimeLeft = (end) => {
     const now = new Date();
     const diff = new Date(end) - now;
     if (diff <= 0) return "Ended";
-    
+
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     const mins = Math.floor((diff % 3600000) / 60000);
-    
+
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
@@ -468,11 +468,11 @@ const formatTimeUntilStart = (start) => {
     const now = new Date();
     const diff = new Date(start) - now;
     if (diff <= 0) return "Starting soon";
-    
+
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     const mins = Math.floor((diff % 3600000) / 60000);
-    
+
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
@@ -536,9 +536,9 @@ app.get('/', async (req, res) => {
             totalParticipants = stats.length > 0 ? stats[0].total : 0;
 
             contests = enriched.filter(c => c.status === 'active').slice(0, 6);
-            
+
             const recentProblems = await Problem.find().sort({ createdAt: -1 }).limit(6);
-            
+
             res.render('index', {
                 currentPath: '/',
                 contests,
@@ -1244,12 +1244,12 @@ app.get('/practice', async (req, res) => {
 });
 
 // ── Compiler Integration ──
-const COMPILER_URL = process.env.COMPILER_URL || 'http://127.0.0.1:3001/api/compile';
+const COMPILER_URL = process.env.COMPILER_URL;
 
 app.post('/api/compiler/run', async (req, res) => {
     try {
         const { code, language, problemId } = req.body;
-        
+
         let problem;
         if (mongoose.connection.readyState === 1) {
             problem = await mongoose.model('Problem').findById(problemId);
@@ -1328,22 +1328,22 @@ app.post('/api/compiler/run', async (req, res) => {
             results,
             message: allPassed ? 'All sample test cases passed!' : 'Some sample test cases failed.'
         });
-        } catch (err) {
-            console.error("Run Error:", err.response?.data || err.message);
-            res.status(err.response?.status || 500).json({ 
-                error: (err.response?.data?.error || err.response?.data?.message) ? 
-                       (err.response?.data?.error || err.response?.data?.message) : 
-                       "Compiler microservice is currently unreachable.",
-                details: err.response?.data || err.message,
-                status: 'error'
-            });
-        }
+    } catch (err) {
+        console.error("Run Error:", err.response?.data || err.message);
+        res.status(err.response?.status || 500).json({
+            error: (err.response?.data?.error || err.response?.data?.message) ?
+                (err.response?.data?.error || err.response?.data?.message) :
+                "Compiler microservice is currently unreachable.",
+            details: err.response?.data || err.message,
+            status: 'error'
+        });
+    }
 });
 
 app.post('/api/compiler/submit', async (req, res) => {
     try {
         const { code, language, problemId } = req.body;
-        
+
         let problem;
         if (mongoose.connection.readyState === 1) {
             problem = await mongoose.model('Problem').findById(problemId);
@@ -1430,8 +1430,8 @@ app.get('/problem/:id', async (req, res) => {
         // Fetch all problems for the sidebar drawer in practice mode
         const allProblems = await Problem.find({}, 'title difficulty _id').limit(50);
 
-        res.render('code', { 
-            currentPath: '/problem', 
+        res.render('code', {
+            currentPath: '/problem',
             problem: problem,
             contest: null,
             contestProblems: allProblems // Now shows all problems in the sidebar

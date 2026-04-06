@@ -259,7 +259,7 @@ class Compiler {
         waitResult = await Promise.race([waitPromise, timeoutPromise]);
       } catch (timeoutErr) {
         // Kill the container on timeout
-        try { await container.kill(); } catch (_) {}
+        try { await container.kill(); } catch (_) { }
         throw new Error(`Execution timed out after ${config.timeout || 15} seconds`);
       }
 
@@ -281,7 +281,7 @@ class Compiler {
       if (output.stderr) console.log(`[Compiler] STDERR: ${output.stderr.slice(0, 200)}`);
 
       // Remove container
-      try { await container.remove({ force: true }); } catch (_) {}
+      try { await container.remove({ force: true }); } catch (_) { }
       container = null;
 
       // Log to MongoDB
@@ -316,7 +316,7 @@ class Compiler {
 
       // Clean up container if it exists
       if (container) {
-        try { await container.remove({ force: true }); } catch (_) {}
+        try { await container.remove({ force: true }); } catch (_) { }
       }
 
       // Log error to MongoDB
