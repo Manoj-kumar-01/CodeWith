@@ -1,9 +1,22 @@
 const redis = require('redis');
 require('dotenv').config();
 
+// Redis connection URL construction with support for REDIS_URL and robust fallbacks
+const getRedisUrl = () => {
+  if (process.env.REDIS_URL) return process.env.REDIS_URL;
+  
+  const host = process.env.REDIS_HOST || 'localhost';
+  const port = process.env.REDIS_PORT || 6379;
+  const password = process.env.REDIS_PASSWORD ? `:${process.env.REDIS_PASSWORD}@` : '';
+  
+  return `redis://${password}${host}:${port}`;
+};
+
+const redisUrl = getRedisUrl();
+
 // Redis client for caching and rate limiting
 const redisClient = redis.createClient({
-  url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+  url: redisUrl,
   socket: {
     reconnectStrategy: (retries) => {
       if (retries > 10) {
