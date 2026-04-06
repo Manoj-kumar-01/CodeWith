@@ -58,6 +58,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Global optional authentication (provides Guest context if not logged in)
+app.use(auth.optionalAuth);
+
 // Session configuration - using MongoDB for session storage
 const sessionStore = MongoStore.create({
   mongoUrl: process.env.MONGODB_URI,
@@ -238,8 +241,8 @@ app.get('/api/auth/session', async (req, res) => {
 
 // ============= COMPILER ROUTES =============
 
-// Compile code (protected)
-app.post('/api/compile', auth.requireAuth, auth.checkQuota, async (req, res) => {
+// Compile code (Publicly accessible)
+app.post('/api/compile', async (req, res) => {
   try {
     const { code, language, input } = req.body;
     
@@ -318,8 +321,8 @@ app.get('/api/languages', (req, res) => {
 
 // ============= USER DASHBOARD ROUTES =============
 
-// Get user stats (with MongoDB analytics)
-app.get('/api/user/stats', auth.requireAuth, async (req, res) => {
+// Get user stats (Publicly accessible)
+app.get('/api/user/stats', async (req, res) => {
   try {
     // Get PostgreSQL user data
     const user = await User.findById(req.user.id);
@@ -375,8 +378,8 @@ async function calculateSuccessRate(userId) {
   return (result[0].success / result[0].total) * 100;
 }
 
-// Get user compilation history
-app.get('/api/user/history', auth.requireAuth, async (req, res) => {
+// Get user compilation history (Publicly accessible)
+app.get('/api/user/history', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     const skip = (page - 1) * limit;
@@ -408,8 +411,8 @@ app.get('/api/user/history', auth.requireAuth, async (req, res) => {
   }
 });
 
-// Update user preferences
-app.patch('/api/user/preferences', auth.requireAuth, async (req, res) => {
+// Update user preferences (Publicly accessible)
+app.post('/api/user/preferences', async (req, res) => {
   try {
     const preferences = await User.updatePreferences(req.user.id, req.body);
     res.json({ preferences });

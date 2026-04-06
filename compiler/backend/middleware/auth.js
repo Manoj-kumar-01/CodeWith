@@ -38,16 +38,27 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
-// Optional authentication (don't error if not logged in)
+// Optional authentication (provides default System user context if not logged in)
 const optionalAuth = async (req, res, next) => {
-  if (req.session.userId) {
+  if (req.session && req.session.userId) {
     try {
       const user = await User.findById(req.session.userId);
-      req.user = user;
+      if (user) {
+        req.user = user;
+        return next();
+      }
     } catch (err) {
       console.error('Optional auth error:', err);
     }
   }
+  
+  // Default to system context if not authenticated
+  req.user = { 
+    id: 0, 
+    username: 'Guest', 
+    tier: 'enterprise', 
+    email_verified: true 
+  };
   next();
 };
 
