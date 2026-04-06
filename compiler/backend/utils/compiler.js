@@ -6,7 +6,7 @@ const path = require('path');
 const { CompilationLog } = require('../config/mongodb');
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
-const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
+const PISTON_API_URL = process.env.PISTON_API_URL || 'https://emkc.org/api/v2/piston/execute';
 const TEMP_DIR = '/tmp/compiler';
 
 // Ensure temp directory exists
