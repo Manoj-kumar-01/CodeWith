@@ -1244,7 +1244,8 @@ app.get('/practice', async (req, res) => {
 });
 
 // ── Compiler Integration ──
-const COMPILER_URL = process.env.COMPILER_URL;
+const COMPILER_URL = process.env.COMPILER_URL ||
+    'http://40.192.110.192:3001/api/compiler/run';
 
 app.post('/api/compiler/run', async (req, res) => {
     try {
