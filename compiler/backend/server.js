@@ -22,9 +22,18 @@ const Compiler = require('./utils/compiler');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Connect to databases
-connectMongoDB();
-connectRedis();
+// Helper for masking sensitive URIs in logs
+const maskURI = (uri) => {
+  if (!uri) return 'undefined';
+  try {
+    const url = new URL(uri);
+    if (url.password) url.password = '****';
+    return url.toString();
+  } catch (e) {
+    // Fallback for non-standard URIs or if URL parsing fails
+    return uri.replace(/:([^@]+)@/, ':****@');
+  }
+};
 
 // Security middleware
 app.use(helmet({
@@ -520,9 +529,23 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`✅ Backend server running on port ${PORT}`);
-  console.log(`📈 MongoDB: ${process.env.MONGODB_URI}`);
-  console.log(`⚡ Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
-});
+// Start server with database synchronization
+const startServer = async () => {
+  try {
+    console.log('⏳ Connecting to databases...');
+    await connectMongoDB();
+    await connectRedis();
+    
+    app.listen(PORT, () => {
+      console.log(`✅ Backend server running on port ${PORT}`);
+      console.log(`📈 MongoDB: ${maskURI(process.env.MONGODB_URI)}`);
+      console.log(`⚡ Redis: ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
+      console.log('🚀 Final health check: All systems operational');
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err);
+    process.exit(1);
+  }
+};
+
+startServer();
