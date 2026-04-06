@@ -1,10 +1,12 @@
 const Docker = require('dockerode');
+const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs').promises;
 const path = require('path');
 const { CompilationLog } = require('../config/mongodb');
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+const PISTON_API_URL = 'https://emkc.org/api/v2/piston/execute';
 const TEMP_DIR = '/tmp/compiler';
 
 // Ensure temp directory exists
@@ -176,9 +178,106 @@ const languageConfigs = {
   }
 };
 
+// Piston language mappings
+const pistonMappings = {
+  c: { language: 'c', version: '10.2.1' },
+  cpp: { language: 'cpp', version: '10.2.1' },
+  java: { language: 'java', version: '15.0.2' },
+  python: { language: 'python', version: '3.10.0' },
+  javascript: { language: 'javascript', version: '18.15.0' },
+  typescript: { language: 'typescript', version: '5.0.3' },
+  go: { language: 'go', version: '1.16.2' },
+  rust: { language: 'rust', version: '1.68.2' },
+  ruby: { language: 'ruby', version: '3.0.1' },
+  php: { language: 'php', version: '8.2.3' },
+  perl: { language: 'perl', version: '5.32.1' },
+  r: { language: 'r', version: '4.1.1' },
+  swift: { language: 'swift', version: '5.3.3' },
+  scala: { language: 'scala', version: '3.2.2' }
+};
+
 class Compiler {
-  // Compile and run code
+  static dockerAvailable = null;
+
+  // Check if Docker is available
+  static async checkDocker() {
+    if (this.dockerAvailable !== null) return this.dockerAvailable;
+    try {
+      await docker.ping();
+      this.dockerAvailable = true;
+      console.log('✅ Docker daemon reachable. Local mode available.');
+    } catch (err) {
+      this.dockerAvailable = false;
+      console.warn('⚠️  Docker daemon unreachable. Using Remote Mode (Piston) by default.');
+    }
+    return this.dockerAvailable;
+  }
+
+  // Main entry point - Defaults to Remote if Docker fails or if USE_REMOTE_COMPILER=true
   static async compile(code, language, input = '', userId = null) {
+    // If USE_REMOTE_COMPILER is explicitly false, force local mode
+    if (process.env.USE_REMOTE_COMPILER === 'false') {
+      return this.localCompile(code, language, input, userId);
+    }
+    
+    // Default to Remote mode for "freely" use, unless user confirms they want auto-fallback
+    const useRemote = process.env.USE_REMOTE_COMPILER === 'true' || 
+                     process.env.USE_REMOTE_COMPILER === undefined || // Default to true if not set
+                     (process.env.USE_REMOTE_COMPILER === 'auto' && !(await this.checkDocker()));
+
+    if (useRemote) {
+      return this.remoteCompile(code, language, input, userId);
+    }
+    return this.localCompile(code, language, input, userId);
+  }
+
+  // Remote compilation using Piston API
+  static async remoteCompile(code, language, input = '', userId = null) {
+    const startTime = Date.now();
+    const mapping = pistonMappings[language];
+    
+    if (!mapping) throw new Error(`Language ${language} is not supported in remote mode`);
+
+    try {
+      console.log(`[Compiler] Using Remote Mode (Piston) for ${language}`);
+      const response = await axios.post(PISTON_API_URL, {
+        language: mapping.language,
+        version: mapping.version,
+        files: [{ content: code }],
+        stdin: input
+      });
+
+      const { run } = response.data;
+      const executionTime = Date.now() - startTime;
+      const status = run.code === 0 ? 'success' : 'error';
+
+      // Log to MongoDB
+      if (userId) {
+        await CompilationLog.create({
+          userId,
+          language,
+          status,
+          executionTime,
+          codeLength: code.length,
+          timestamp: new Date(),
+          metadata: { exitCode: run.code, mode: 'remote' }
+        }).catch(err => console.error('[Compiler] Log error:', err.message));
+      }
+
+      return {
+        output: run.stdout,
+        error: run.stderr || (run.code !== 0 ? run.output : ''),
+        exitCode: run.code,
+        executionTime
+      };
+    } catch (err) {
+      console.error('[Compiler] Remote Compilation failed:', err.message);
+      throw new Error(`Remote execution failed: ${err.message}`);
+    }
+  }
+
+  // Local compilation logic
+  static async localCompile(code, language, input = '', userId = null) {
     const startTime = Date.now();
     const sessionId = uuidv4();
     const config = languageConfigs[language];
