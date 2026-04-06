@@ -5,11 +5,15 @@ require('dotenv').config();
 const getRedisUrl = () => {
   if (process.env.REDIS_URL) return process.env.REDIS_URL;
   
+  const username = process.env.REDIS_USERNAME || '';
+  const password = process.env.REDIS_PASSWORD || '';
   const host = process.env.REDIS_HOST || 'localhost';
   const port = process.env.REDIS_PORT || 6379;
-  const password = process.env.REDIS_PASSWORD ? `:${process.env.REDIS_PASSWORD}@` : '';
   
-  return `redis://${password}${host}:${port}`;
+  // URL format: redis://[user]:[password]@[host]:[port]
+  const auth = (username || password) ? `${username}:${password}@` : '';
+  
+  return `redis://${auth}${host}:${port}`;
 };
 
 const redisUrl = getRedisUrl();
