@@ -255,7 +255,8 @@ app.post('/api/compile', async (req, res) => {
     }
     
     // Check cache
-    const cacheKey = `${req.user.id}:${language}:${Buffer.from(code).toString('base64').slice(0, 50)}`;
+    const userId = req.user?.id || req.body.userId || 'anonymous';
+    const cacheKey = `${userId}:${language}:${Buffer.from(code).toString('base64').slice(0, 50)}`;
     const cached = await cache.getCompilation(cacheKey);
     
     if (cached) {
@@ -266,7 +267,7 @@ app.post('/api/compile', async (req, res) => {
     }
     
     // Compile
-    const result = await Compiler.compile(code, language, input, req.user.id);
+    const result = await Compiler.compile(code, language, input, userId);
     
     // Update user quota (skip for system user)
     let quota = null;
