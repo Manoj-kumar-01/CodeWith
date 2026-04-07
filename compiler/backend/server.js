@@ -18,6 +18,10 @@ const { redisClient, connectRedis, rateLimiter, cache } = require('./config/redi
 const User = require('./models/User');
 const auth = require('./middleware/auth');
 const Compiler = require('./utils/compiler');
+const pLimit = require('p-limit');
+
+// Concurrency limiter for Docker containers
+const limit = pLimit(parseInt(process.env.MAX_CONCURRENT_COMPILATIONS || 3));
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -266,8 +270,8 @@ app.post('/api/compile', async (req, res) => {
       });
     }
     
-    // Compile
-    const result = await Compiler.compile(code, language, input, userId);
+    // Compile (queued through concurrency limiter to prevent RAM exhaustion)
+    const result = await limit(() => Compiler.compile(code, language, input, userId));
     
     // Update user quota (skip for anonymous/unauthenticated users)
     let quota = null;
