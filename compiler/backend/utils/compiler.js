@@ -320,10 +320,11 @@ class Compiler {
         });
       }
 
-      // Get the volume name — the temp dir is bound to compiler_compiler-temp
-      // We need to find the actual volume name used by docker compose
-      const volumeName = process.platform === 'win32' && !process.env.IN_DOCKER ? TEMP_DIR : await this.findVolumeName();
-      const bindPath = volumeName.includes('/') || volumeName.includes('\\') ? volumeName.replace(/\\/g, '/') : volumeName;
+      // Use TEMP_DIR directly when running on bare metal (Windows or Linux without Docker Compose)
+      // Only use Docker volume names when running inside a Docker Compose environment
+      const isInsideDocker = process.env.IN_DOCKER === 'true';
+      const volumeName = isInsideDocker ? await this.findVolumeName() : TEMP_DIR;
+      const bindPath = volumeName.replace(/\\/g, '/');
       console.log(`[Compiler] Using volume bind: ${bindPath}`);
 
       // Create container
