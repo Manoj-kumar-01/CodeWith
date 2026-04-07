@@ -255,7 +255,7 @@ app.post('/api/compile', async (req, res) => {
     }
     
     // Check cache
-    const userId = req.user?.id || req.body.userId || 'anonymous';
+    const userId = req.user?.id || req.body.userId || 0;
     const cacheKey = `${userId}:${language}:${Buffer.from(code).toString('base64').slice(0, 50)}`;
     const cached = await cache.getCompilation(cacheKey);
     
@@ -271,7 +271,7 @@ app.post('/api/compile', async (req, res) => {
     
     // Update user quota (skip for anonymous/unauthenticated users)
     let quota = null;
-    if (userId !== 'anonymous' && userId !== 0) {
+    if (userId !== 0) {
       try {
         await User.incrementCompilation(userId);
         quota = await User.canCompile(userId);
