@@ -5,9 +5,10 @@ const fs = require('fs').promises;
 const path = require('path');
 const { CompilationLog } = require('../config/mongodb');
 
-const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+const dockerOptions = process.platform === 'win32' ? { socketPath: '//./pipe/docker_engine' } : { socketPath: '/var/run/docker.sock' };
+const docker = new Docker(dockerOptions);
 const PISTON_API_URL = process.env.PISTON_API_URL || 'https://emkc.org/api/v2/piston/execute';
-const TEMP_DIR = '/tmp/compiler';
+const TEMP_DIR = process.platform === 'win32' ? 'C:/tmp/compiler' : '/tmp/compiler';
 
 // Ensure temp directory exists
 fs.mkdir(TEMP_DIR, { recursive: true }).catch(console.error);
@@ -321,8 +322,9 @@ class Compiler {
 
       // Get the volume name — the temp dir is bound to compiler_compiler-temp
       // We need to find the actual volume name used by docker compose
-      const volumeName = await this.findVolumeName();
-      console.log(`[Compiler] Using volume: ${volumeName}`);
+      const volumeName = process.platform === 'win32' && !process.env.IN_DOCKER ? TEMP_DIR : await this.findVolumeName();
+      const bindPath = volumeName.includes('/') || volumeName.includes('\\') ? volumeName.replace(/\\/g, '/') : volumeName;
+      console.log(`[Compiler] Using volume bind: ${bindPath}`);
 
       // Create container
       container = await docker.createContainer({
@@ -330,7 +332,7 @@ class Compiler {
         Cmd: ['/bin/sh', '-c', fullCmd],
         WorkingDir: '/code',
         HostConfig: {
-          Binds: [`${volumeName}:/code`],
+          Binds: [`${bindPath}:/code`],
           Memory: this.parseMemory(config.memory),
           MemorySwap: this.parseMemory(config.memory),
           CpuPeriod: 100000,

@@ -481,13 +481,17 @@ const formatTimeUntilStart = (start) => {
 // ── Helper to handle IST to UTC conversion ──
 const parseIST = (dateStr) => {
     if (!dateStr) return new Date();
-    // If it already has a timezone, let Date parse it normally
-    if (dateStr.includes('Z') || dateStr.includes('+') || (dateStr.includes('-') && dateStr.length > 10)) {
+    // If it already ends with Z or has timezone offset like +05:30 or -05:00
+    if (dateStr.endsWith('Z') || dateStr.match(/[+-]\d{2}:\d{2}$/)) {
         return new Date(dateStr);
     }
     // Otherwise assume it's IST (UTC+5:30)
     // datetime-local gives YYYY-MM-DDTHH:mm
-    const date = new Date(dateStr + ":00.000+05:30");
+    let formatted = dateStr;
+    if (formatted.length === 16) {
+        formatted += ":00.000";
+    }
+    const date = new Date(formatted + "+05:30");
     return date;
 };
 
@@ -1244,9 +1248,9 @@ app.get('/practice', async (req, res) => {
 });
 
 // ── Compiler Integration ──
+// In your main server.js (outside compiler folder)
 const COMPILER_URL = process.env.COMPILER_URL ||
-    'http://40.192.110.192:3001/api/compiler/run';
-
+    'http://localhost:3001/api/compile';
 app.post('/api/compiler/run', async (req, res) => {
     try {
         const { code, language, problemId } = req.body;
