@@ -1449,6 +1449,7 @@ app.get('/problem/:id', async (req, res) => {
 
 app.get('/settings', (req, res) => res.render('settings', { currentPath: '/settings' }));
 app.get('/profile', (req, res) => res.render('profile', { currentPath: '/profile' }));
+app.get('/friends', (req, res) => res.render('friends', { currentPath: '/friends' }));
 
 app.get('/api/user/profile', (req, res) => {
     res.json({

@@ -158,89 +158,60 @@
 
         <div class="h-screen flex flex-col overflow-hidden">
             <!-- Top Bar -->
-            <header
-                class="glass-panel flex items-center justify-between py-2 border-b border-gray-800/50 z-20 flex-shrink-0">
-                <div class="flex items-center gap-2">
-                     <button onclick="toggleDrawer()"
-                         class="p-2 ml-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
-                         title="All Problems">
-                         <i data-lucide="menu" class="w-5 h-5"></i>
-                     </button>
-                     <a href="<%= (typeof contest !== 'undefined' && contest) ? '/contest/' + (contest._id || contest.id) + '/problems' : '/practice' %>"
-                         class="p-2 rounded-lg hover:bg-white/5 transition-colors group">
-                         <i data-lucide="chevron-left" class="w-5 h-5 text-gray-400 group-hover:text-white"></i>
-                     </a>
-                     <div class="flex items-center gap-3">
-                         <div class="scale-75 origin-left -ml-2">
-                             <%- include('partials/logo') %>
-                         </div>
-                         <div class="-ml-4">
-                             <h1 class="text-sm font-semibold">
-                                 <%= problem.title %>
-                             </h1>
-                             <p class="text-xs text-gray-400">
-                                 <%= (typeof contest !== 'undefined' && contest) ? contest.title : 'Practice Mode' %>
-                             </p>
-                         </div>
-                     </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <!-- Language Select with Custom Styling -->
-                    <div class="relative">
-                        <select id="lang-select"
-                            class="appearance-none bg-[#1e1e2e] text-gray-200 text-sm px-4 py-2 pr-8 rounded-lg border border-gray-700 outline-none cursor-pointer hover:border-purple-500/50 transition-colors"
-                            onchange="changeLang()">
-                            <option value="javascript">JavaScript (Node.js 18)</option>
-                            <option value="python">Python 3.11</option>
-                            <option value="cpp">C++ 17 (GCC)</option>
-                            <option value="c">C (GCC)</option>
-                            <option value="java">Java (OpenJDK 17)</option>
-                            <option value="typescript">TypeScript (tsx)</option>
-                            <option value="go">Go 1.21</option>
-                            <option value="rust">Rust 1.73</option>
-                            <option value="ruby">Ruby 3.2</option>
-                            <option value="php">PHP 8.2</option>
-                            <option value="perl">Perl 5.38</option>
-                            <option value="r">R</option>
-                            <option value="swift">Swift 5.9</option>
-                            <option value="scala">Scala 3.2</option>
-                        </select>
-                        <i data-lucide="chevron-down"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
-                    </div>
-
-                    <div class="w-px h-6 bg-gray-800 mx-2"></div>
-
-                    <button onclick="copyCode()" class="p-2 rounded-lg hover:bg-white/5 transition-colors group"
-                        title="Copy code">
-                        <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
-                    </button>
-
-                    <button onclick="resetCode()" class="p-2 rounded-lg hover:bg-white/5 transition-colors group"
-                        title="Reset code">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
-                    </button>
-
-                    <button onclick="toggleFullscreen()"
-                        class="p-2 rounded-lg hover:bg-white/5 transition-colors group hidden md:flex"
-                        title="Toggle fullscreen">
-                        <i data-lucide="maximize-2" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
-                    </button>
-
-                    <div class="w-px h-6 bg-gray-800 mx-2"></div>
-
-                    <!-- Run & Submit with Minimalist Premium Styling -->
-                    <button id="run-btn" onclick="runCode()"
-                        class="btn-premium px-4 py-1.5 rounded-md bg-transparent border border-[#3b82f6] hover:bg-[#3b82f6]/20 text-[#3b82f6] hover:text-white text-[10px] font-bold tracking-widest uppercase shadow-[0_0_15px_rgba(59,130,246,0.15)] transition-colors">
-                        RUN
-                    </button>
-
-                    <button id="submit-btn" onclick="submitCode()"
-                        class="btn-premium px-4 py-1.5 rounded-md bg-transparent border border-[#10b981] hover:bg-[#10b981]/20 text-[#10b981] hover:text-white text-[10px] font-bold tracking-widest uppercase shadow-[0_0_15px_rgba(16,185,129,0.15)] transition-colors">
-                        SUBMIT
-                    </button>
-                </div>
+            <header class="border-b border-border/30 backdrop-blur-xl bg-background/50 z-20 flex-shrink-0">
+                <% 
+                   const leftActions = `
+                        <button onclick="toggleDrawer()" class="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white" title="All Problems">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
+                        </button>
+                        <a href="${(typeof contest !== 'undefined' && contest) ? '/contest/' + (contest._id || contest.id) + '/problems' : '/practice'}" class="p-2 rounded-lg hover:bg-white/5 transition-colors group">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-gray-400 group-hover:text-white"></i>
+                        </a>
+                   `;
+                   const extraActions = `
+                        <div class="hidden lg:flex flex-col items-start -mt-1 mr-4">
+                             <h1 class="text-sm font-semibold truncate max-w-[200px]">${problem.title}</h1>
+                             <p class="text-[10px] text-gray-400 uppercase tracking-wider">${(typeof contest !== 'undefined' && contest) ? contest.title : 'Practice Mode'}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <select id="lang-select" class="appearance-none bg-[#1e1e2e] text-gray-200 text-sm px-4 py-1.5 pr-8 rounded-lg border border-gray-700 outline-none cursor-pointer hover:border-primary/50 transition-colors" onchange="changeLang()">
+                                    <option value="javascript">JavaScript (Node.js 18)</option>
+                                    <option value="python">Python 3.11</option>
+                                    <option value="cpp">C++ 17 (GCC)</option>
+                                    <option value="c">C (GCC)</option>
+                                    <option value="java">Java (OpenJDK 17)</option>
+                                    <option value="typescript">TypeScript (tsx)</option>
+                                    <option value="go">Go 1.21</option>
+                                    <option value="rust">Rust 1.73</option>
+                                    <option value="ruby">Ruby 3.2</option>
+                                    <option value="php">PHP 8.2</option>
+                                    <option value="perl">Perl 5.38</option>
+                                    <option value="r">R</option>
+                                    <option value="swift">Swift 5.9</option>
+                                    <option value="scala">Scala 3.2</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
+                            </div>
+                            <div class="w-px h-6 bg-border/20 mx-1"></div>
+                            <button onclick="copyCode()" class="p-2 rounded-lg hover:bg-white/5 transition-colors group" title="Copy code">
+                                <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
+                            </button>
+                            <button onclick="resetCode()" class="p-2 rounded-lg hover:bg-white/5 transition-colors group" title="Reset code">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
+                            </button>
+                            <div class="w-px h-6 bg-border/20 mx-1"></div>
+                            <button id="run-btn" onclick="runCode()" class="btn-premium px-4 py-1.5 rounded-md bg-transparent border border-[#3b82f6] hover:bg-[#3b82f6]/20 text-[#3b82f6] hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">RUN</button>
+                            <button id="submit-btn" onclick="submitCode()" class="btn-premium px-4 py-1.5 rounded-md bg-transparent border border-[#10b981] hover:bg-[#10b981]/20 text-[#10b981] hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">SUBMIT</button>
+                        </div>
+                   `;
+                %>
+                <%- include('partials/top-bar', { 
+                    showShinyLine: false, 
+                    showAddFriend: false,
+                    leftActions: leftActions,
+                    extraActions: extraActions
+                }) %>
             </header>
 
             <!-- Main Content -->

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends Hub - CodeWith?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        card: "hsl(var(--card))",
+                        "card-foreground": "hsl(var(--card-foreground))",
+                        primary: "hsl(152 58% 52%)",
+                        "primary-foreground": "hsl(152 58% 10%)",
+                        secondary: "hsl(217 45% 15%)",
+                        "secondary-foreground": "hsl(210 40% 98%)",
+                        muted: "hsl(217 45% 15%)",
+                        "muted-foreground": "hsl(215 20.2% 65.1%)",
+                        accent: "hsl(38 92% 55%)",
+                        "accent-foreground": "hsl(38 92% 10%)",
+                        border: "hsl(var(--border))",
+                        ring: "hsl(var(--ring))",
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        :root {
+            --background: 150 15% 4%;
+            --foreground: 210 40% 98%;
+            --card: 150 10% 8%;
+            --card-foreground: 210 40% 98%;
+            --border: 150 15% 20%;
+            --ring: 152 58% 52%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="fixed inset-0 w-screen h-screen overflow-hidden">
+        <!-- Ultra-Elegant Minimalist Background -->
+        <div class="absolute inset-0 z-0 bg-[#050907]" id="bg-container">
+            <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(152_58%_52%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(38_92%_55%_/_0.03)_0%,_transparent_60%)] pointer-events-none"></div>
+            <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+        </div>
+
+        <div class="relative z-10 w-screen h-screen">
+            <div class="monitor-frame">
+                <div class="monitor-bezel">
+                    <div class="monitor-screen animate-fade-in">
+                        <div class="flex h-full relative">
+                            <!-- Main App Sidebar -->
+                            <%- include('partials/sidebar') %>
+
+                            <!-- Main Content (Friends Hub Layout) -->
+                            <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                                <%- include('partials/top-bar', { showShinyLine: false, title: 'Friends Hub' }) %>
+
+                                <!-- Internal 2-Column Layout (Scrollable) -->
+                                <div class="flex-1 flex overflow-hidden">
+                                    <!-- Friends Left Menu -->
+                                    <div class="w-64 border-r border-border/20 flex flex-col bg-card/20 overflow-y-auto">
+                                        <div class="p-4 space-y-1">
+                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 text-primary font-medium border border-primary/20 shadow-sm transition-colors">
+                                                <i data-lucide="globe" class="w-4 h-4"></i>
+                                                Online
+                                            </button>
+                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/40 hover:text-foreground transition-colors group">
+                                                <i data-lucide="users" class="w-4 h-4 group-hover:text-primary transition-colors"></i>
+                                                All Friends
+                                            </button>
+                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/40 hover:text-foreground transition-colors group">
+                                                <i data-lucide="clock" class="w-4 h-4 group-hover:text-primary transition-colors"></i>
+                                                Pending <span class="ml-auto bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full">2</span>
+                                            </button>
+                                        </div>
+                                        <div class="mt-4 px-4">
+                                            <div class="h-[1px] w-full bg-border/40 mb-4"></div>
+                                            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Connect</p>
+                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-medium transition-colors border border-emerald-500/20 shadow-sm border-dashed group">
+                                                <i data-lucide="user-plus" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                                                Add Friend
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Friends Main View -->
+                                    <div class="flex-1 overflow-y-auto scrollbar-thin p-8">
+                                        <!-- Search Header -->
+                                        <div class="max-w-3xl mx-auto mb-10">
+                                            <div class="relative group">
+                                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors"></i>
+                                                <input type="text" placeholder="Search your friends..." class="w-full bg-card/40 border border-border/40 rounded-xl py-3.5 pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-lg backdrop-blur-sm">
+                                            </div>
+                                        </div>
+
+                                        <!-- Content Label -->
+                                        <div class="max-w-5xl mx-auto">
+                                            <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6 border-b border-border/20 pb-2">Online — 3</h2>
+
+                                            <!-- Friends Grid -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                                
+                                                <!-- Mock Friend Card 1 -->
+                                                <div class="glass-card p-5 hover:border-primary/40 transition-all duration-300 group flex items-start gap-4 shadow-xl hover:shadow-2xl hover:shadow-primary/5 cursor-pointer">
+                                                    <div class="relative flex-shrink-0">
+                                                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary/80 to-primary/40 flex items-center justify-center font-bold text-primary-foreground shadow-lg group-hover:scale-105 transition-transform">AC</div>
+                                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-card shadow-sm pulse-dot flex items-center justify-center">
+                                                           <div class="w-4 h-4 absolute inset-0 rounded-full bg-emerald-500 opacity-50 animate-ping"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <h3 class="font-semibold text-foreground text-lg truncate group-hover:text-primary transition-colors">Alex Chen</h3>
+                                                        <p class="text-xs text-muted-foreground mt-0.5">Available to chat</p>
+                                                        <div class="flex items-center gap-2 mt-4">
+                                                            <button class="flex-1 py-1.5 rounded-lg bg-primary/10 hover:bg-primary hover:text-primary-foreground text-xs font-medium transition-colors text-primary border border-primary/20">Message</button>
+                                                            <button class="p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors text-muted-foreground"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Mock Friend Card 2 -->
+                                                <div class="glass-card p-5 hover:border-primary/40 transition-all duration-300 group flex items-start gap-4 shadow-xl hover:shadow-2xl hover:shadow-primary/5 cursor-pointer">
+                                                    <div class="relative flex-shrink-0">
+                                                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/80 to-amber-500/40 flex items-center justify-center font-bold text-white shadow-lg group-hover:scale-105 transition-transform">SM</div>
+                                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 ring-2 ring-card shadow-sm"></div>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <h3 class="font-semibold text-foreground text-lg truncate group-hover:text-amber-500 transition-colors">Sarah Miller</h3>
+                                                        <p class="text-xs text-amber-500/80 flex items-center gap-1 mt-0.5"><i data-lucide="gamepad-2" class="w-3 h-3"></i> Competing now</p>
+                                                        <div class="flex items-center gap-2 mt-4">
+                                                            <button class="flex-1 py-1.5 rounded-lg bg-secondary/50 hover:bg-secondary border border-transparent text-xs font-medium transition-colors text-muted-foreground">Message</button>
+                                                            <button class="p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors text-muted-foreground"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Mock Friend Card 3 -->
+                                                <div class="glass-card p-5 hover:border-primary/40 transition-all duration-300 group flex items-start gap-4 shadow-xl hover:shadow-2xl hover:shadow-primary/5 cursor-pointer">
+                                                    <div class="relative flex-shrink-0">
+                                                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary/50 to-primary/20 flex items-center justify-center font-bold text-foreground shadow-lg group-hover:scale-105 transition-transform">JL</div>
+                                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary ring-2 ring-card shadow-sm"></div>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <h3 class="font-semibold text-foreground text-lg truncate group-hover:text-primary transition-colors">Jordan Lee</h3>
+                                                        <p class="text-xs text-primary/80 flex items-center gap-1 mt-0.5"><i data-lucide="code" class="w-3 h-3"></i> Solving problems</p>
+                                                        <div class="flex items-center gap-2 mt-4">
+                                                            <button class="flex-1 py-1.5 rounded-lg bg-secondary/50 hover:bg-secondary border border-transparent text-xs font-medium transition-colors text-muted-foreground">Message</button>
+                                                            <button class="p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors text-muted-foreground"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                            </main>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/card-effects.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

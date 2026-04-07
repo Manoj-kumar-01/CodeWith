@@ -3,107 +3,25 @@
     <!-- Font for Thin Neon theme -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* ÔöÇÔöÇ Monitor Frame (index only) ÔöÇÔöÇ */
-        .monitor-frame {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-        }
-
-        .monitor-bezel {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            background: hsl(var(--background) / 0.1);
-            border: 1px solid hsl(207 90% 67% / 0.4);
-            box-shadow: inset 0 0 0 1px hsl(207 90% 67% / 0.2);
-        }
-
-        .monitor-screen {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: hsl(var(--background) / 0.15);
-            /* Allow clicks to pass through to background */
-            pointer-events: none;
-        }
-
-        /* Make interactive children clickable again */
-        .monitor-screen>div {
-            pointer-events: none;
-            /* Flex container */
-        }
-
-        .monitor-screen aside,
-        /* Sidebar */
-        .monitor-screen .logo-container,
-        .monitor-screen .timer-display-container,
-        .monitor-screen .contest-card,
-        .monitor-screen button,
-        .monitor-screen a,
-        .monitor-screen .scrollable-content {
-            pointer-events: auto;
-        }
-
-        /* Allow scrolling in main content */
-        .monitor-screen main {
-            pointer-events: none;
-        }
-
-        .monitor-screen .overflow-y-auto {
-            pointer-events: auto;
-        }
-
-        /* ÔöÇÔöÇ Timer (index only) ÔöÇÔöÇ */
+        /* ── Timer (index only) ── */
         .timer-display {
             font-family: 'JetBrains Mono', monospace;
             font-size: 2.25rem;
             font-weight: 600;
             letter-spacing: 0.1em;
-            color: hsl(210 40% 93%);
+            color: hsl(220 14% 90%);
             text-shadow:
-                0 0 10px hsl(207 90% 67% / 0.4),
-                0 0 20px hsl(207 90% 67% / 0.2);
+                0 0 10px hsl(152 58% 52% / 0.3),
+                0 0 20px hsl(152 58% 52% / 0.15);
         }
 
-        /* ÔöÇÔöÇ Slide-in animation (index only) ÔöÇÔöÇ */
+        /* ── Slide-in animation (index only) ── */
         @keyframes slide-in-right {
-            from {
-                transform: translateX(100%);
-            }
-
-            to {
-                transform: translateX(0);
-            }
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
         }
-
         .animate-slide-in-right {
             animation: slide-in-right 0.3s ease-out;
-        }
-
-        /* Thin Neon Theme Overlays */
-        .vintage-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 50%, transparent 50%, rgba(0, 0, 0, 0.3) 100%);
-            pointer-events: none;
-            z-index: 10;
-            opacity: 0.4;
-        }
-
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0px, rgba(0, 255, 255, 0.03) 1px, transparent 2px);
-            pointer-events: none;
-            z-index: 11;
-            mix-blend-mode: overlay;
         }
 
         .nostalgic-text {
@@ -127,53 +45,29 @@
         }
 
         @keyframes blink {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0;
-            }
-        }
-
-        @keyframes flicker {
-            0% {
-                opacity: 0.98;
-            }
-
-            50% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0.98;
-            }
-        }
-
-        /* Apply flicker to body content except background canvas (canvas is absolute positioned anyway) */
-        .flicker-effect {
-            animation: flicker 0.5s infinite;
-            pointer-events: none;
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: transparent;
-            /* Using a pseudo-element or separate div might be safer to avoid shaking layout */
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
     </style>
 
     <body>
         <div class="fixed inset-0 w-screen h-screen overflow-hidden">
             <!-- Thin Neon / Edge Flow overlays -->
+            <!-- Thin Neon / Edge Flow overlays -->
             <div class="vintage-overlay"></div>
             <div class="scanlines"></div>
-            <div class="nostalgic-text">THIN NEON // EDGE FLOW</div>
             <div class="flicker-effect"></div>
 
-            <!-- 3D Animated Background -->
-            <div class="absolute inset-0 z-0" id="bg-container"></div>
+            <!-- Ultra-Elegant Minimalist Background -->
+            <div class="absolute inset-0 z-0 bg-[#050907]" id="bg-container">
+                <!-- Vast, extremely subtle ambient glow for depth -->
+                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(152_58%_52%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>
+                <!-- Faint secondary glow to balance the scene -->
+                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(38_92%_55%_/_0.03)_0%,_transparent_60%)] pointer-events-none"></div>
+                
+                <!-- Premium matte glass noise (prevents banding, adds a luxurious physical texture) -->
+                <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+            </div>
 
             <!-- Monitor Container -->
             <div class="relative z-10 w-screen h-screen">
@@ -187,13 +81,10 @@
                                     <!-- Main Content -->
                                     <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                                         <div class="relative z-10 flex flex-col h-full overflow-hidden">
-                                            <!-- Logo -->
-                                            <div class="flex items-center py-4 px-4 md:px-6 relative">
-                                                <div
-                                                    class="absolute bottom-0 left-6 w-24 h-0.5 bg-gradient-to-r from-white/20 via-white/40 to-transparent">
-                                                </div>
-                                                <%- include('partials/logo') %>
-                                            </div>
+                                            <!-- Header (Global Glassy) -->
+                                            <header class="border-b border-border/30 backdrop-blur-xl bg-background/50 z-20">
+                                                <%- include('partials/top-bar', { showShinyLine: true }) %>
+                                            </header>
 
                                             <!-- Scrollable Content -->
                                             <div class="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-6 pb-6">
@@ -212,175 +103,177 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Spacer to push content down and show keyboard -->
-                                                <!-- Spacer removed -->
+                                                <!-- Quick Stats Row -->
+                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 mb-8">
+                                                    <div class="glass-card p-3 md:p-4 text-center">
+                                                        <div class="text-2xl font-bold text-foreground">
+                                                            <%= typeof contests !== 'undefined' ? contests.length : 0 %>
+                                                        </div>
+                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Active Contests</div>
+                                                    </div>
+                                                    <div class="glass-card p-3 md:p-4 text-center">
+                                                        <div class="text-2xl font-bold text-foreground">12</div>
+                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Problems</div>
+                                                    </div>
+                                                    <div class="glass-card p-3 md:p-4 text-center">
+                                                        <div class="text-2xl font-bold text-primary">6</div>
+                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Solved</div>
+                                                    </div>
+                                                    <div class="glass-card p-3 md:p-4 text-center">
+                                                        <div class="text-2xl font-bold text-foreground">15</div>
+                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Day Streak</div>
+                                                    </div>
+                                                </div>
 
-                                                <div class="h-6 md:h-12"></div>
-
-                                                <div class="h-6 md:h-12"></div>
-
-                                                <!-- Spacer to push contests down a bit (reduced height) -->
-                                                <div class="h-8 md:h-12"></div>
-
-                                                <!-- Active Contests Restored -->
-                                                <section class="mb-8">
-                                                    <h2 class="section-title mb-4">ACTIVE CONTESTS</h2>
-                                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                        <% if (typeof contests !=='undefined' && contests.length> 0) {
-                                                            %>
-                                                            <% contests.forEach(function(c) { const dc={
-                                                                easy: "status-easy" , medium: "status-medium" ,
-                                                                hard: "status-hard" }[c.difficulty] || "status-easy" ;
-                                                                const dl=c.difficulty.toUpperCase(); const rl=c.timeLeft
-                                                                || "TIME LEFT" ; %>
-                                                                <div class="contest-card cursor-pointer"
-                                                                    onclick="window.location.href='/contest/<%= c.id %>'">
-                                                                    <div class="flex items-start justify-between mb-2">
-                                                                        <h3
-                                                                            class="font-semibold text-foreground text-sm">
-                                                                            <%= c.title %>
-                                                                        </h3>
-                                                                        <span
-                                                                            class="<%= dc %> text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                                            <%= dl %>
-                                                                        </span>
+                                                <!-- Two Column Layout -->
+                                                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                                                    <!-- Left Column: Contests + Activity (3 cols) -->
+                                                    <div class="lg:col-span-3">
+                                                        <!-- Active Contests -->
+                                                        <section class="mb-6">
+                                                            <div class="flex items-center justify-between mb-4">
+                                                                <h2 class="section-title">ACTIVE CONTESTS</h2>
+                                                                <a href="/contests" class="text-[11px] text-muted-foreground hover:text-primary transition-colors" style="text-decoration:none">View all →</a>
+                                                            </div>
+                                                            <div class="flex flex-col sm:flex-row pb-3 gap-4">
+                                                                <% if (typeof contests !=='undefined' && contests.length> 0) { %>
+                                                                    <% contests.forEach(function(c) { const dc={
+                                                                        easy: "status-easy" , medium: "status-medium" ,
+                                                                        hard: "status-hard" }[c.difficulty] || "status-easy" ;
+                                                                        const dl=c.difficulty.toUpperCase(); const rl=c.timeLeft || "TIME LEFT"; %>
+                                                                        <div class="glass-card flex-1 cursor-pointer p-4 hover:border-primary/30 transition-all group" onclick="window.location.href='/contest/<%= c.id %>'">
+                                                                            <div class="flex items-center gap-3">
+                                                                                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                                                                                    <i data-lucide="trophy" class="w-5 h-5 text-primary"></i>
+                                                                                </div>
+                                                                                <div class="flex-1 min-w-0">
+                                                                                    <div class="flex items-center gap-2 mb-1">
+                                                                                        <h3 class="font-semibold text-foreground text-sm truncate"><%= c.title %></h3>
+                                                                                        <span class="<%= dc %> text-[9px] font-semibold px-2 py-0.5 rounded flex-shrink-0"><%= dl %></span>
+                                                                                    </div>
+                                                                                    <div class="flex items-center gap-3">
+                                                                                        <span class="text-muted-foreground text-[11px]"><%= c.problems %> Problems</span>
+                                                                                        <span class="text-[10px] font-medium text-primary tabular-nums"><%= rl %></span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors flex-shrink-0"></i>
+                                                                            </div>
+                                                                        </div>
+                                                                    <% }); %>
+                                                                <% } else { %>
+                                                                    <div class="glass-card p-6 text-center w-full">
+                                                                        <i data-lucide="trophy" class="w-8 h-8 text-muted-foreground/30 mx-auto mb-2"></i>
+                                                                        <p class="text-muted-foreground text-sm">No active contests at the moment.</p>
+                                                                        <a href="/contests" class="text-xs text-primary hover:underline mt-2 inline-block">Browse past contests →</a>
                                                                     </div>
-                                                                    <p
-                                                                        class="text-muted-foreground text-xs mb-3 truncate">
-                                                                        <%= c.subtitle || 'Join the challenge!' %>
-                                                                    </p>
-                                                                    <div class="flex items-center justify-between">
-                                                                        <span class="text-muted-foreground text-xs">
-                                                                            <%= c.problems %> Problems
-                                                                        </span>
-                                                                        <span
-                                                                            class="text-[10px] font-medium text-primary px-2 py-1 rounded tabular-nums"
-                                                                            style="background:hsl(207 90% 67% / 0.1)">
-                                                                            <%= rl %>
-                                                                        </span>
+                                                                <% } %>
+                                                            </div>
+                                                        </section>
+
+                                                        <!-- Recent Activity Feed -->
+                                                        <section>
+                                                            <h2 class="section-title mb-4">RECENT ACTIVITY</h2>
+                                                            <div class="glass-card overflow-hidden">
+                                                                <% const solvers=[
+                                                                    { name: "Raj", problem: "Innovation Challenge", time: "2 min ago", difficulty: "easy" },
+                                                                    { name: "Manoj", problem: "Algorithm Challenge", time: "5 min ago", difficulty: "medium" },
+                                                                    { name: "Priya", problem: "Graph Theory", time: "8 min ago", difficulty: "easy" },
+                                                                    { name: "Alex", problem: "Dynamic Programming", time: "12 min ago", difficulty: "hard" },
+                                                                    { name: "Ravi", problem: "Arrays & Strings", time: "15 min ago", difficulty: "easy" },
+                                                                ]; solvers.forEach(function(s) {
+                                                                    const dc={ easy: "text-success", medium: "text-warning", hard: "text-destructive" }[s.difficulty]; %>
+                                                                    <div class="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border/15 last:border-b-0">
+                                                                        <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary border border-primary/20">
+                                                                            <%= s.name.charAt(0) %>
+                                                                        </div>
+                                                                        <div class="flex-1 min-w-0">
+                                                                            <span class="text-[13px] text-foreground font-medium"><%= s.name %></span>
+                                                                            <span class="text-[11px] text-muted-foreground"> solved </span>
+                                                                            <span class="text-[11px] <%= dc %> truncate inline-block align-bottom max-w-[120px] sm:max-w-none"><%= s.problem %></span>
+                                                                        </div>
+                                                                        <span class="text-[10px] text-muted-foreground flex-shrink-0"><%= s.time %></span>
                                                                     </div>
-                                                                </div>
                                                                 <% }); %>
-                                                                    <% } else { %>
-                                                                        <div
-                                                                            class="col-span-full text-center py-8 text-muted-foreground text-sm">
-                                                                            No active contests at the moment.</div>
-                                                                        <% } %>
-                                                    </div>
-                                                </section>
-
-                                                <div class="h-6 md:h-12"></div><!-- Spacer -->
-
-                                                <!-- Recent Problem Solvers -->
-                                                <section class="mb-6">
-                                                    <h2 class="section-title mb-4">RECENT PROBLEM SOLVERS</h2>
-                                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                        <% const solvers=[ { name: "Raj" ,
-                                                            subtitle: "For Innovabon Challenges" , stat: "Sored 00:1th"
-                                                            , difficulty: "easy" , rightLabel: "INVALID" }, {
-                                                            name: "Algorithm Challenge" , subtitle: "Foe:Bonus" ,
-                                                            stat: "58 Mano:cowhoses" , difficulty: "medium" ,
-                                                            rightLabel: "NULL ONL" }, { name: "Algro Arenad" ,
-                                                            subtitle: "100 oiherioiebe cooers" ,
-                                                            stat: "551 iltxmeodored" , difficulty: "hard" ,
-                                                            rightLabel: "TIME LEFT" }, ]; solvers.forEach(function(s) {
-                                                            const dc={ easy: "status-easy" , medium: "status-medium" ,
-                                                            hard: "status-hard" }[s.difficulty]; const
-                                                            dl=s.difficulty.toUpperCase(); %>
-                                                            <div class="contest-card">
-                                                                <div class="flex items-start justify-between mb-2">
-                                                                    <h3 class="font-semibold text-foreground text-sm">
-                                                                        <%= s.name %>
-                                                                    </h3>
-                                                                    <span
-                                                                        class="<%= dc %> text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                                        <%= dl %>
-                                                                    </span>
-                                                                </div>
-                                                                <p class="text-muted-foreground text-xs mb-3">
-                                                                    <%= s.subtitle %>
-                                                                </p>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-muted-foreground text-xs">
-                                                                        <%= s.stat %>
-                                                                    </span>
-                                                                    <span
-                                                                        class="text-[10px] font-medium text-primary/80 bg-primary/10 px-2 py-1 rounded">
-                                                                        <%= s.rightLabel %>
-                                                                    </span>
-                                                                </div>
                                                             </div>
-                                                            <% }); %>
+                                                        </section>
                                                     </div>
-                                                </section>
 
-                                                <!-- Recent Problems -->
-                                                <section class="mb-6">
-                                                        <% const recentProbs=[ { title: "Arrays & Strings" ,
-                                                            subtitle: "Fer.Bitbseet1Moneh" , time: "5.50 Meoad:ago" ,
-                                                            difficulty: "easy" , rightLabel: "7 MIN" }, {
-                                                            title: "Graph Theory" , subtitle: "Toooi:" ,
-                                                            time: "13 min ort ago" , difficulty: "easy" ,
-                                                            rightLabel: "7 MIN" }, { title: "Hard" , subtitle: "Toorer:"
-                                                            , time: "11 min om ago" , difficulty: "hard" ,
-                                                            rightLabel: "7 MIN" }, ]; recentProbs.forEach(function(p) {
-                                                            const dc={ easy: "status-easy" , medium: "status-medium" ,
-                                                            hard: "status-hard" }[p.difficulty]; const
-                                                            dl=p.difficulty.toUpperCase(); %>
-                                                            <div class="contest-card">
-                                                                <div class="flex items-start justify-between mb-2">
-                                                                    <h3 class="font-semibold text-foreground text-sm">
-                                                                        <%= p.title %>
-                                                                    </h3>
-                                                                    <span
-                                                                        class="<%= dc %> text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                                        <%= dl %>
-                                                                    </span>
-                                                                </div>
-                                                                <p class="text-muted-foreground text-xs mb-3">
-                                                                    <%= p.subtitle %>
-                                                                </p>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-muted-foreground text-xs">
-                                                                        <%= p.time %>
-                                                                    </span>
-                                                                    <span
-                                                                        class="text-[10px] font-medium text-primary/80 bg-primary/10 px-2 py-1 rounded">
-                                                                        <%= p.rightLabel %>
-                                                                    </span>
-                                                                </div>
+                                                    <!-- Right Column: Quick Links & Topics (2 cols) -->
+                                                    <div class="lg:col-span-2">
+                                                        <!-- Quick Actions -->
+                                                        <section class="mb-6">
+                                                            <h2 class="section-title mb-4">QUICK START</h2>
+                                                            <div class="flex flex-col gap-2">
+                                                                <a href="/practice" class="glass-card p-3 flex items-center gap-3 hover:border-primary/30 transition-all group duration-300" style="text-decoration:none;color:inherit">
+                                                                    <div class="w-9 h-9 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors flex items-center justify-center flex-shrink-0">
+                                                                        <i data-lucide="code-2" class="w-4 h-4 text-primary"></i>
+                                                                    </div>
+                                                                    <div class="flex-1">
+                                                                        <div class="text-sm font-medium text-foreground group-hover:text-primary transition-colors">Practice Problems</div>
+                                                                        <div class="text-[10px] text-muted-foreground">12 problems across 4 categories</div>
+                                                                    </div>
+                                                                    <i data-lucide="arrow-right" class="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors"></i>
+                                                                </a>
+                                                                <a href="/contests" class="glass-card p-3 flex items-center gap-3 hover:border-warning/30 transition-all group duration-300" style="text-decoration:none;color:inherit">
+                                                                    <div class="w-9 h-9 rounded-lg bg-warning/10 group-hover:bg-warning/20 transition-colors flex items-center justify-center flex-shrink-0">
+                                                                        <i data-lucide="trophy" class="w-4 h-4 text-warning"></i>
+                                                                    </div>
+                                                                    <div class="flex-1">
+                                                                        <div class="text-sm font-medium text-foreground group-hover:text-warning transition-colors">Join a Contest</div>
+                                                                        <div class="text-[10px] text-muted-foreground">Compete with other developers</div>
+                                                                    </div>
+                                                                    <i data-lucide="arrow-right" class="w-4 h-4 text-muted-foreground/30 group-hover:text-warning transition-colors"></i>
+                                                                </a>
                                                             </div>
-                                                            <% }); %>
+                                                        </section>
+
+                                                        <!-- Popular Topics -->
+                                                        <section>
+                                                            <h2 class="section-title mb-4">POPULAR TOPICS</h2>
+                                                            <div class="flex flex-col gap-2">
+                                                                <% const topics=[
+                                                                    { name: "Arrays & Strings", count: 4, icon: "layers" },
+                                                                    { name: "Graph Theory", count: 3, icon: "share-2" },
+                                                                    { name: "Dynamic Programming", count: 3, icon: "git-branch" },
+                                                                    { name: "Trees", count: 2, icon: "git-merge" },
+                                                                ]; topics.forEach(function(t) { %>
+                                                                    <div class="glass-card p-3 flex items-center gap-3 hover:bg-white/[0.02] cursor-pointer transition-colors group">
+                                                                        <div class="w-8 h-8 rounded-lg bg-card flex items-center justify-center flex-shrink-0 border border-border/30 group-hover:border-primary/30 transition-colors">
+                                                                            <i data-lucide="<%= t.icon %>" class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"></i>
+                                                                        </div>
+                                                                        <div class="flex-1">
+                                                                            <div class="text-sm font-medium text-foreground group-hover:text-primary transition-colors"><%= t.name %></div>
+                                                                        </div>
+                                                                        <span class="text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full"><%= t.count %> problems</span>
+                                                                    </div>
+                                                                <% }); %>
+                                                            </div>
+                                                        </section>
                                                     </div>
-                                                </section>
-                                            </div>
+                                                </div>
                                         </div>
-                                    </main>
-
-                                    <!-- Friends Toggle Button -->
-                                    <button data-friends-toggle onclick="toggleFriends()"
-                                        class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 p-3 rounded-full bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
-                                        title="Toggle Friends">
-                                        <i data-lucide="users"
-                                            class="w-5 h-5 md:w-6 md:h-6 text-primary-foreground"></i>
-                                    </button>
-
-                                    <!-- Friends Panel Overlay -->
-                                    <aside id="friends-aside"
-                                        class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-2xl hidden">
-                                        <%- include('partials/friends-panel') %>
-                                    </aside>
                             </div>
+                            </main>
+
+                            <!-- Friends Toggle Button -->
+                            <button data-friends-toggle onclick="toggleFriends()"
+                                class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] p-3 rounded-full bg-transparent hover:bg-primary/10 border border-primary/20 backdrop-blur-md transition-all duration-300 shadow-lg hover:shadow-xl shadow-primary/5 hover:scale-110 active:scale-95"
+                                title="Toggle Friends">
+                                <i data-lucide="users" class="w-5 h-5 md:w-6 md:h-6 text-primary"></i>
+                            </button>
+
+                            <!-- Friends Panel Overlay -->
+                            <aside id="friends-aside"
+                                class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-2xl hidden">
+                                <%- include('partials/friends-panel') %>
+                            </aside>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        </div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-        <!-- Load OrbitControls (global script version compatible with r128) -->
-        <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-        <script src="/js/background.js?v=8"></script>
         <script>
             // Daily Challenge Timer - Fixed to start at 09:59:45 every time
             document.addEventListener('DOMContentLoaded', function () {
@@ -408,12 +301,11 @@
                         timerElement.textContent = formatTime(totalSeconds);
                     } else {
                         clearInterval(timerInterval);
-                        // Optionally, you could reset to 09:59:45 when it reaches 0
-                        // totalSeconds = (9 * 60 * 60) + (59 * 60) + 45;
                     }
                 }, 1000);
             });
         </script>
+
         <script src="/js/friends-panel.js"></script>
         <script src="/js/card-effects.js"></script>
         <script>lucide.createIcons();</script>

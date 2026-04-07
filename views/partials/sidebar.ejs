@@ -1,34 +1,52 @@
 <aside
-    class="glass-sidebar w-16 md:w-20 flex flex-col items-center py-4 md:py-6 flex-shrink-0 gap-6 md:gap-8 border-r border-transparent">
-    <!-- Logo placeholder area -->
-    <div class="mb-2 md:mb-4"></div>
+    class="glass-sidebar w-16 md:w-[72px] flex flex-col items-center py-4 md:py-5 flex-shrink-0 gap-1 border-r border-white/[0.06] relative">
+
+    <!-- Subtle top glow accent -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
+
+    <!-- Profile at top -->
+    <a href="/profile"
+        class="nav-item group <%= currentPath === '/profile' ? 'active' : '' %>" title="My Profile">
+        <div class="nav-icon-wrap">
+            <div class="relative">
+                <i data-lucide="user-circle" class="w-[18px] h-[18px]"></i>
+                <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-[#0a0f0d] shadow-[0_0_6px_hsl(152_58%_52%_/_0.5)]"></div>
+            </div>
+        </div>
+        <span class="nav-label">Profile</span>
+    </a>
+
+    <!-- Divider -->
+    <div class="w-6 h-[1px] bg-white/[0.06] my-1"></div>
 
     <!-- Navigation items -->
-    <nav class="flex flex-col gap-2 md:gap-3 w-full px-1 md:px-2 flex-1 pt-4 md:pt-6">
-        <a href="/" class="nav-item <%= currentPath === '/' ? 'active' : '' %>">
-            <i data-lucide="home" class="w-4 h-4 md:w-5 md:h-5"></i>
-            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">HOME</span>
+    <nav class="flex flex-col gap-0.5 w-full px-1.5 flex-1">
+        <a href="/" class="nav-item group <%= currentPath === '/' ? 'active' : '' %>" title="Home Dashboard">
+            <div class="nav-icon-wrap">
+                <i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i>
+            </div>
+            <span class="nav-label">Home</span>
         </a>
-        <a href="/contests" class="nav-item <%= currentPath === '/contests' ? 'active' : '' %>">
-            <i data-lucide="trophy" class="w-4 h-4 md:w-5 md:h-5"></i>
-            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">CONTESTS</span>
+        <a href="/contests" class="nav-item group <%= currentPath === '/contests' ? 'active' : '' %>" title="Contests">
+            <div class="nav-icon-wrap">
+                <i data-lucide="trophy" class="w-[18px] h-[18px]"></i>
+            </div>
+            <span class="nav-label">Contests</span>
         </a>
-        <a href="/practice" class="nav-item <%= currentPath === '/practice' ? 'active' : '' %>">
-            <i data-lucide="book-open" class="w-4 h-4 md:w-5 md:h-5"></i>
-            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">PRACTICE</span>
-        </a>
-        <a href="/settings" class="nav-item <%= currentPath === '/settings' ? 'active' : '' %>">
-            <i data-lucide="settings" class="w-4 h-4 md:w-5 md:h-5"></i>
-            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">SETTINGS</span>
+        <a href="/practice" class="nav-item group <%= currentPath === '/practice' ? 'active' : '' %>" title="Practice">
+            <div class="nav-icon-wrap">
+                <i data-lucide="code-2" class="w-[18px] h-[18px]"></i>
+            </div>
+            <span class="nav-label">Practice</span>
         </a>
     </nav>
 
-    <!-- Profile at bottom -->
-    <div class="w-full px-1 md:px-2 pb-2 md:pb-4 border-t border-primary/20 pt-2 md:pt-4">
-        <a href="/profile"
-            class="nav-item w-full transition-all duration-300 <%= currentPath === '/profile' ? 'active' : '' %>">
-            <i data-lucide="user" class="w-4 h-4 md:w-5 md:h-5"></i>
-            <span class="text-[8px] md:text-[10px] font-medium tracking-wide">PROFILE</span>
-        </a>
-    </div>
+    <!-- Bottom section — Settings pushed to bottom -->
+    <div class="w-6 h-[1px] bg-white/[0.06] mb-1"></div>
+    <a href="/settings" class="nav-item group <%= currentPath === '/settings' ? 'active' : '' %>" title="Settings">
+        <div class="nav-icon-wrap">
+            <i data-lucide="settings" class="w-[18px] h-[18px]"></i>
+        </div>
+        <span class="nav-label">Settings</span>
+    </a>
 </aside>
