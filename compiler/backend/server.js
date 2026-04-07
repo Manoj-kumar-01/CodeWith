@@ -269,11 +269,13 @@ app.post('/api/compile', async (req, res) => {
     // Compile
     const result = await Compiler.compile(code, language, input, userId);
     
-    // Update user quota (skip for system user)
+    // Update user quota (skip for anonymous/unauthenticated users)
     let quota = null;
-    if (req.user.id !== 0) {
-      await User.incrementCompilation(req.user.id);
-      quota = await User.canCompile(req.user.id);
+    if (userId !== 'anonymous' && userId !== 0) {
+      try {
+        await User.incrementCompilation(userId);
+        quota = await User.canCompile(userId);
+      } catch (e) { /* skip quota for unauthenticated */ }
     }
     
     // Cache result
