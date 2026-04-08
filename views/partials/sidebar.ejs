@@ -1,8 +1,8 @@
 <aside
-    class="glass-sidebar w-16 md:w-[72px] flex flex-col items-center py-4 md:py-5 flex-shrink-0 gap-1 border-r border-white/[0.06] relative">
+    class="glass-sidebar w-16 md:w-[72px] flex flex-col items-center py-4 md:py-5 flex-shrink-0 gap-1 relative">
 
     <!-- Subtle top glow accent -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[1px] bg-gradient-to-r from-transparent via-[#515f74]/30 to-transparent"></div>
 
     <!-- Profile at top -->
     <a href="/profile"
@@ -10,14 +10,14 @@
         <div class="nav-icon-wrap">
             <div class="relative">
                 <i data-lucide="user-circle" class="w-[18px] h-[18px]"></i>
-                <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-[#0a0f0d] shadow-[0_0_6px_hsl(152_58%_52%_/_0.5)]"></div>
+                <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#515f74] rounded-full border-[1.5px] border-[hsl(210,20%,98%)] shadow-[0_0_6px_rgba(81,95,116,0.4)]"></div>
             </div>
         </div>
         <span class="nav-label">Profile</span>
     </a>
 
     <!-- Divider -->
-    <div class="w-6 h-[1px] bg-white/[0.06] my-1"></div>
+    <div class="w-6 h-[1px] bg-[#c6c6c6]/20 my-1"></div>
 
     <!-- Navigation items -->
     <nav class="flex flex-col gap-0.5 w-full px-1.5 flex-1">
@@ -39,10 +39,16 @@
             </div>
             <span class="nav-label">Practice</span>
         </a>
+        <a href="/friends" class="nav-item group <%= currentPath === '/friends' ? 'active' : '' %>" title="Friends">
+            <div class="nav-icon-wrap">
+                <i data-lucide="users" class="w-[18px] h-[18px]"></i>
+            </div>
+            <span class="nav-label">Friends</span>
+        </a>
     </nav>
 
     <!-- Bottom section — Settings pushed to bottom -->
-    <div class="w-6 h-[1px] bg-white/[0.06] mb-1"></div>
+    <div class="w-6 h-[1px] bg-[#c6c6c6]/20 mb-1"></div>
     <a href="/settings" class="nav-item group <%= currentPath === '/settings' ? 'active' : '' %>" title="Settings">
         <div class="nav-icon-wrap">
             <i data-lucide="settings" class="w-[18px] h-[18px]"></i>

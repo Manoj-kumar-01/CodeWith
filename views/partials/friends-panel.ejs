@@ -4,11 +4,11 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        background: transparent;
+        background: hsl(210 20% 97% / 0.95);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        border-left: 1px solid hsl(var(--border) / 0.2);
-        box-shadow: -8px 0 32px hsl(0 0% 0% / 0.5);
+        border-left: 1px solid hsl(var(--border) / 0.3);
+        box-shadow: -8px 0 32px hsl(0 0% 0% / 0.08);
     }
 
     .friend-item {
@@ -27,19 +27,19 @@
 
     .friend-item:hover {
         background: hsl(var(--card) / 0.5);
-        border-color: hsl(152 58% 52% / 0.4);
-        box-shadow: 0 4px 16px hsl(152 58% 52% / 0.15), inset 0 0 0 1px hsl(152 58% 52% / 0.2);
+        border-color: hsl(213 28% 38% / 0.3);
+        box-shadow: 0 4px 16px hsl(213 28% 38% / 0.08), inset 0 0 0 1px hsl(213 28% 38% / 0.1);
         transform: translateX(4px);
     }
 
     .world-map-overlay {
-        background: radial-gradient(ellipse 1400px 900px at center 40%, hsl(152 58% 52% / 0.2), transparent 45%);
+        background: radial-gradient(ellipse 1400px 900px at center 40%, hsl(213 28% 38% / 0.12), transparent 45%);
     }
 
     .invite-btn-glow {
         position: relative;
         overflow: hidden;
-        box-shadow: 0 0 40px hsl(152 58% 52% / 0.2);
+        box-shadow: 0 0 40px hsl(213 28% 38% / 0.12);
     }
 
     .invite-btn-glow::before {
@@ -47,7 +47,7 @@
         position: absolute;
         inset: 0;
         border-radius: 9999px;
-        background: conic-gradient(from 0deg, hsl(152 58% 52%), hsl(152 58% 30%), hsl(152 58% 52%));
+        background: conic-gradient(from 0deg, hsl(213 28% 38%), hsl(213 28% 25%), hsl(213 28% 38%));
         animation: rotate-glow 3s linear infinite;
     }
 
@@ -89,9 +89,9 @@
     <!-- Header -->
     <div class="flex items-center justify-between p-4 border-b border-border/30">
         <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <div class="w-2 h-2 rounded-full bg-[#515f74] animate-pulse"></div>
             <h2 class="text-lg font-semibold text-foreground">Friends</h2>
-            <span class="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full">9 online</span>
+            <span class="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full"><%= (typeof friends !== 'undefined' ? friends.length : 0) %> online</span>
         </div>
         <button onclick="toggleFriends()" class="p-2 rounded-lg hover:bg-secondary/50 transition-colors group"
             aria-label="Close friends panel">
@@ -103,24 +103,20 @@
     <div class="flex-1 overflow-y-auto scrollbar-thin">
         <!-- Online Friends -->
         <div class="p-3">
-            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-2">Active — 9</p>
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-2">Active — <%= (typeof friends !== 'undefined' ? friends.length : 0) %></p>
             <div class="space-y-1">
                 <!-- Dynamic Friends Container -->
-                <div id="dynamic-friends-list" class="space-y-1">
-                <% const onlineFriends=[ { name: "Alex Chen" , avatar: "AC" , mode: "online" , desc: "Available to chat"
-                    , color: "bg-emerald-500" }, { name: "Sarah Miller" , avatar: "SM" , mode: "in-contest" ,
-                    desc: "Competing now" , color: "bg-primary" }, { name: "Chris Park" , avatar: "CP" ,
-                    mode: "practicing" , desc: "Solving problems" , color: "bg-primary" }, { name: "Jordan Lee" ,
-                    avatar: "JL" , mode: "online" , desc: "Available to chat" , color: "bg-emerald-500" } ]; onlineFriends.forEach(function(friend) { %>
+                <% if (typeof friends !== 'undefined' && friends && friends.length > 0) { 
+                    friends.forEach(function(friend) { %>
                     <div
                         class="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/40 transition-all cursor-pointer group">
                         <div class="relative shrink-0">
                             <div
-                                class="w-11 h-11 rounded-full bg-gradient-to-br from-primary/80 to-primary/40 flex items-center justify-center text-sm font-semibold text-primary-foreground shadow-lg group-hover:shadow-primary/20 transition-shadow">
+                                class="w-11 h-11 rounded-full bg-gradient-to-br from-[#2e3c50] to-[#515f74] flex items-center justify-center text-sm font-semibold text-[#d5e3fd] shadow-lg group-hover:shadow-[#2e3c50]/20 transition-shadow">
                                 <%= friend.avatar %>
                             </div>
                             <div
-                                class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full <%= friend.color %> ring-2 ring-card shadow-sm pulse-dot">
+                                class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full <%= friend.color || 'bg-[#515f74]' %> ring-2 ring-card shadow-sm pulse-dot">
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
@@ -141,18 +137,21 @@
                             <i data-lucide="message-circle" class="w-4 h-4 text-primary"></i>
                         </button>
                     </div>
-                    <% }); %>
+                    <% }); } else { %>
+                        <div class="py-12 text-center opacity-40">
+                            <i data-lucide="users" class="w-8 h-8 mx-auto mb-2"></i>
+                            <p class="text-xs italic">Connect with friends to see them here.</p>
+                        </div>
+                    <% } %>
                 </div>
             </div>
         </div>
 
-        <!-- Offline Friends -->
+        <% if (typeof offlineFriends !== 'undefined' && offlineFriends && offlineFriends.length > 0) { %>
         <div class="p-3 pt-0">
-            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-2">Offline — 2</p>
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-2">Offline — <%= offlineFriends.length %></p>
             <div class="space-y-1">
-                <% const offlineFriends=[ { name: "Taylor Swift" , avatar: "TS" , lastSeen: "2h ago" }, {
-                    name: "Jamie Garcia" , avatar: "JG" , lastSeen: "5h ago" }, ];
-                    offlineFriends.forEach(function(friend) { %>
+                <% offlineFriends.forEach(function(friend) { %>
                     <div
                         class="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-all cursor-pointer group opacity-60 hover:opacity-100">
                         <div class="relative shrink-0">
@@ -168,19 +167,20 @@
                             <p class="text-sm font-medium text-muted-foreground truncate">
                                 <%= friend.name %>
                             </p>
-                            <p class="text-xs text-muted-foreground/70 mt-0.5">Last seen <%= friend.lastSeen %>
+                            <p class="text-xs text-muted-foreground/70 mt-0.5">Last seen <%= friend.lastSeen || 'recently' %>
                             </p>
                         </div>
                     </div>
                     <% }); %>
             </div>
         </div>
+        <% } %>
     </div>
 
     <!-- Footer -->
     <div class="p-4 border-t border-border/30 space-y-2">
         <button
-            class="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/30">
+            class="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:shadow-primary/20">
             <i data-lucide="plus" class="w-5 h-5"></i>
             Invite Friends
         </button>

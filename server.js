@@ -6,6 +6,8 @@ const mongoose = require('mongoose');
 const User = require('./models/User');
 const Contest = require('./models/Contest');
 const Problem = require('./models/Problem');
+const Friendship = require('./models/Friendship');
+const Activity = require('./models/Activity');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +20,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
 
 // Global variable to track DB status
 let dbConnected = false;
@@ -428,13 +432,27 @@ const seedData = async () => {
     try {
         if (!dbConnected) return;
 
+        const userCount = await User.countDocuments();
+        if (userCount === 0) {
+            console.log('Seeding initial users...');
+            const mainUser = await User.create({ username: 'alexchen', name: 'Alex Chen', email: 'alex@codewith.dev', stats: { rating: 1847, solved: 247 } });
+            const dummy1 = await User.create({ username: 'sarahm', name: 'Sarah Miller', email: 'sarah@example.com', stats: { rating: 1650, solved: 189 } });
+            const dummy2 = await User.create({ username: 'jordanl', name: 'Jordan Lee', email: 'jordan@example.com', stats: { rating: 1920, solved: 312 } });
+            const dummy3 = await User.create({ username: 'priyas', name: 'Priya Sharma', email: 'priya@example.com', stats: { rating: 1780, solved: 256 } });
+            const dummy4 = await User.create({ username: 'marcusj', name: 'Marcus Johnson', email: 'marcus@example.com', stats: { rating: 1540, solved: 143 } });
+            
+            // Seed a friendship and pending request
+            await Friendship.create({ requester: dummy1._id, recipient: mainUser._id, status: 'accepted' });
+            await Friendship.create({ requester: dummy2._id, recipient: mainUser._id, status: 'pending' });
+        }
+
         const contestCount = await Contest.countDocuments();
         if (contestCount === 0) {
             console.log('Seeding initial contests...');
             await Contest.insertMany(mockContests.map(c => ({
                 ...c,
                 participants: [],
-                problemsList: c.problemsList
+                problemsList: c.problemsList || []
             })));
         }
 
@@ -481,12 +499,9 @@ const formatTimeUntilStart = (start) => {
 // ── Helper to handle IST to UTC conversion ──
 const parseIST = (dateStr) => {
     if (!dateStr) return new Date();
-    // If it already ends with Z or has timezone offset like +05:30 or -05:00
     if (dateStr.endsWith('Z') || dateStr.match(/[+-]\d{2}:\d{2}$/)) {
         return new Date(dateStr);
     }
-    // Otherwise assume it's IST (UTC+5:30)
-    // datetime-local gives YYYY-MM-DDTHH:mm
     let formatted = dateStr;
     if (formatted.length === 16) {
         formatted += ":00.000";
@@ -506,7 +521,178 @@ const getContestStatus = (startTime, endTime) => {
     return 'upcoming';
 };
 
-// ── Routes ──
+// ── API Routes ──
+
+// Expanded Profile API
+app.get('/api/user/profile', async (req, res) => {
+    try {
+        let user;
+        if (dbConnected) {
+            user = await User.findOne({ username: 'alexchen' });
+        }
+        
+        // Fallback or Mock data
+        if (!user) {
+            return res.json({
+                user: { username: 'guest', name: 'Guest Coder', email: 'guest@codewith.dev', stats: { rating: 1200, solved: 0 } },
+                activity: [],
+                achievements: [],
+                heatmap: []
+            });
+        }
+
+        const heatmap = [];
+        const today = new Date();
+        for (let i = 364; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const dayOfWeek = d.getDay();
+            let count = (dayOfWeek === 0 || dayOfWeek === 6) ? Math.floor(Math.random() * 2) : Math.floor(Math.random() * 4);
+            heatmap.push({ date: d.toISOString().split('T')[0], count });
+        }
+        res.json({
+            user: { ...user.toObject(), joinedAt: user.createdAt || new Date() },
+            activity: user.activity || [],
+            achievements: [],
+            heatmap
+        });
+    } catch(err) {
+        console.error('Profile API error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.get('/api/friends', async (req, res) => {
+    try {
+        let currentUser;
+        if (dbConnected) {
+            currentUser = await User.findOne({ username: 'alexchen' });
+        }
+
+        if (!currentUser) {
+            // Return mock friends if DB/User not found
+            return res.json({
+                friends: [
+                    { id: '1', name: 'Sarah Miller', username: 'sarahm', status: 'online', rating: 1650, solved: 189 },
+                    { id: '2', name: 'Jordan Lee', username: 'jordanl', status: 'offline', rating: 1920, solved: 312 }
+                ],
+                onlineFriends: [{ id: '1', name: 'Sarah Miller', username: 'sarahm', status: 'online', rating: 1650, solved: 189 }],
+                pendingReceived: [],
+                pendingSent: [],
+                suggestions: [{ id: '3', name: 'Priya Sharma', username: 'priyas', rating: 1780, solved: 256 }],
+                counts: { all: 2, online: 1, pending: 0, suggestions: 1 }
+            });
+        }
+
+        const friendships = await Friendship.find({
+            $or: [{ requester: currentUser._id }, { recipient: currentUser._id }]
+        }).populate('requester recipient');
+
+        const allUsers = await User.find({ _id: { $ne: currentUser._id } });
+        
+        let friends = [];
+        let pendingReceived = [];
+        let pendingSent = [];
+        const relatedUserIds = new Set();
+        // ... same logic as before for population ...
+        friendships.forEach(f => {
+            if (f.status === 'accepted') {
+                const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                if (friend) {
+                    friends.push({ id: friend._id, name: friend.name, username: friend.username, status: 'online', rating: friend.stats?.rating || 1200, solved: friend.stats?.solved || 0 });
+                    relatedUserIds.add(friend._id.toString());
+                }
+            } else if (f.status === 'pending') {
+                if (f.requester._id.equals(currentUser._id)) {
+                    if (f.recipient) {
+                        pendingSent.push({ id: f.recipient._id, name: f.recipient.name, username: f.recipient.username, rating: f.recipient.stats?.rating || 1200 });
+                        relatedUserIds.add(f.recipient._id.toString());
+                    }
+                } else {
+                    if (f.requester) {
+                        pendingReceived.push({ id: f.requester._id, name: f.requester.name, username: f.requester.username, rating: f.requester.stats?.rating || 1200 });
+                        relatedUserIds.add(f.requester._id.toString());
+                    }
+                }
+            }
+        });
+
+        let suggestions = allUsers.filter(u => !relatedUserIds.has(u._id.toString())).map(u => ({
+            id: u._id, name: u.name, username: u.username, rating: u.stats?.rating || 1200, solved: u.stats?.solved || 0
+        }));
+
+        res.json({
+            friends, onlineFriends: friends.filter(f => f.status === 'online'), pendingReceived, pendingSent, suggestions,
+            counts: { all: friends.length, online: friends.filter(f => f.status === 'online').length, pending: pendingReceived.length + pendingSent.length, suggestions: suggestions.length }
+        });
+    } catch(err) {
+        console.error('Friends API error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/friends/request', async (req, res) => {
+    try {
+        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        const { userId } = req.body;
+        const currentUser = await User.findOne({ username: 'alexchen' });
+        await Friendship.create({ requester: currentUser._id, recipient: userId, status: 'pending' });
+        res.json({ success: true, message: 'Friend request sent' });
+    } catch(err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/friends/accept', async (req, res) => {
+    try {
+        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        const { userId } = req.body;
+        const currentUser = await User.findOne({ username: 'alexchen' });
+        await Friendship.findOneAndUpdate(
+            { requester: userId, recipient: currentUser._id },
+            { status: 'accepted' }
+        );
+        res.json({ success: true, message: 'Friend request accepted' });
+    } catch(err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/friends/reject', async (req, res) => {
+    try {
+        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        const { userId } = req.body;
+        const currentUser = await User.findOne({ username: 'alexchen' });
+        await Friendship.findOneAndDelete({
+            $or: [
+                { requester: currentUser._id, recipient: userId },
+                { requester: userId, recipient: currentUser._id }
+            ]
+        });
+        res.json({ success: true, message: 'Request cancelled' });
+    } catch(err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/friends/remove', async (req, res) => {
+    try {
+        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        const { userId } = req.body;
+        const currentUser = await User.findOne({ username: 'alexchen' });
+        await Friendship.findOneAndDelete({
+            $or: [
+                { requester: currentUser._id, recipient: userId, status: 'accepted' },
+                { requester: userId, recipient: currentUser._id, status: 'accepted' }
+            ]
+        });
+        res.json({ success: true, message: 'Friend removed' });
+    } catch(err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ── Page Routes ──
 
 app.get('/', async (req, res) => {
     try {
@@ -516,7 +702,6 @@ app.get('/', async (req, res) => {
 
         if (dbConnected) {
             const allDocs = await Contest.find().sort({ startTime: -1 });
-
             const enriched = allDocs.map(c => {
                 const status = getContestStatus(c.startTime, c.endTime);
                 return {
@@ -530,25 +715,69 @@ app.get('/', async (req, res) => {
                     rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."]
                 };
             });
-
             activeContestsCount = enriched.filter(c => c.status === 'active').length;
-
             const stats = await Contest.aggregate([
                 { $project: { count: { $size: { $ifNull: ['$participants', []] } } } },
                 { $group: { _id: null, total: { $sum: '$count' } } }
             ]);
             totalParticipants = stats.length > 0 ? stats[0].total : 0;
-
             contests = enriched.filter(c => c.status === 'active').slice(0, 6);
-
             const recentProblems = await Problem.find().sort({ createdAt: -1 }).limit(6);
 
-            res.render('index', {
-                currentPath: '/',
-                contests,
-                recentProblems,
-                activeContestsCount,
-                totalParticipants
+            // Fetch Recent Activity (Global)
+            const globalActivity = await Activity.find()
+                .sort({ timestamp: -1 })
+                .limit(10)
+                .populate('userId');
+            
+            const solvers = globalActivity.map(a => ({
+                name: a.username,
+                problem: a.problemTitle,
+                time: formatTimeUntilStart(a.timestamp).replace('Starting soon', 'Just now'), // basic hack for "2m ago" style
+                difficulty: a.difficulty
+            }));
+
+            // Fetch Popular Topics (By Problem Categories)
+            const topicAgg = await Problem.aggregate([
+                { $group: { _id: "$category", count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 6 }
+            ]);
+            const topics = topicAgg.map(t => ({
+                name: t._id || "General",
+                count: t.count
+            }));
+
+            // Fetch Friends for Sidebar/Dashboard
+            const currentUser = await User.findOne({ username: 'alexchen' });
+            let friends = [];
+            if (currentUser) {
+                const friendships = await Friendship.find({
+                    $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
+                    status: 'accepted'
+                }).populate('requester recipient');
+                
+                friends = friendships.map(f => {
+                    const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                    return {
+                        name: friend.name,
+                        avatar: friend.name.split(' ').map(n => n[0]).join(''),
+                        mode: 'online', // Mocked as online for now
+                        desc: 'Available',
+                        color: 'bg-[#515f74]'
+                    };
+                });
+            }
+
+            res.render('index', { 
+                currentPath: '/', 
+                contests, 
+                recentProblems, 
+                activeContestsCount, 
+                totalParticipants,
+                solvers: solvers.length > 0 ? solvers : null,
+                topics: topics.length > 0 ? topics : null,
+                friends: friends.length > 0 ? friends : null
             });
         } else {
             const enriched = mockContests.map(c => ({
@@ -560,28 +789,14 @@ app.get('/', async (req, res) => {
                 problems: c.problemsList ? c.problemsList.length : 0,
                 rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."]
             }));
-
             activeContestsCount = enriched.filter(c => c.status === 'active').length;
             totalParticipants = mockContests.reduce((acc, c) => acc + c.participants.length, 0);
             contests = enriched.filter(c => c.status === 'active').slice(0, 6);
-
-            res.render('index', {
-                currentPath: '/',
-                contests,
-                recentProblems: mockProblems.slice(0, 6),
-                activeContestsCount,
-                totalParticipants
-            });
+            res.render('index', { currentPath: '/', contests, recentProblems: mockProblems.slice(0, 6), activeContestsCount, totalParticipants });
         }
     } catch (err) {
         console.error(err);
-        res.render('index', {
-            currentPath: '/',
-            contests: [],
-            recentProblems: [],
-            activeContestsCount: 0,
-            totalParticipants: 0
-        });
+        res.render('index', { currentPath: '/', contests: [], recentProblems: [], activeContestsCount: 0, totalParticipants: 0 });
     }
 });
 
@@ -590,66 +805,40 @@ app.get('/contests', async (req, res) => {
         let contests = [];
         let activeContestsCount = 0;
         let totalParticipants = 0;
-
         if (dbConnected) {
             const allContestsDocs = await Contest.find().sort({ startTime: -1 });
-
-            // Calculate global stats with dynamic status
-            activeContestsCount = allContestsDocs.filter(c => {
-                const status = getContestStatus(c.startTime, c.endTime);
-                return status === 'active';
-            }).length;
-
+            activeContestsCount = allContestsDocs.filter(c => getContestStatus(c.startTime, c.endTime) === 'active').length;
             const stats = await Contest.aggregate([
                 { $project: { count: { $size: { $ifNull: ['$participants', []] } } } },
                 { $group: { _id: null, total: { $sum: '$count' } } }
             ]);
             totalParticipants = stats.length > 0 ? stats[0].total : 0;
-
-            contests = allContestsDocs.map(c => {
-                const status = getContestStatus(c.startTime, c.endTime);
-                return {
-                    ...c.toObject(),
-                    id: c._id,
-                    status: status,
-                    timeLeft: formatTimeLeft(c.endTime),
-                    timeUntilStart: formatTimeUntilStart(c.startTime),
-                    participants: c.participants,
-                    problems: c.problemsList.length,
-                    rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."],
-                    tags: c.tags || []
-                };
-            });
+            contests = allContestsDocs.map(c => ({
+                ...c.toObject(),
+                id: c._id,
+                status: getContestStatus(c.startTime, c.endTime),
+                timeLeft: formatTimeLeft(c.endTime),
+                timeUntilStart: formatTimeUntilStart(c.startTime),
+                participants: c.participants,
+                problems: c.problemsList.length,
+                rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."],
+                tags: c.tags || []
+            }));
         } else {
-            // Mock data stats with dynamic status
-            activeContestsCount = mockContests.filter(c => {
-                const status = getContestStatus(c.startTime, c.endTime);
-                return status === 'active';
-            }).length;
-
+            activeContestsCount = mockContests.filter(c => getContestStatus(c.startTime, c.endTime) === 'active').length;
             totalParticipants = mockContests.reduce((acc, c) => acc + c.participants.length, 0);
-
-            contests = mockContests.map(c => {
-                const status = getContestStatus(c.startTime, c.endTime);
-                return {
-                    ...c,
-                    status: status,
-                    timeLeft: formatTimeLeft(c.endTime),
-                    timeUntilStart: formatTimeUntilStart(c.startTime),
-                    participants: c.participants,
-                    problems: c.problemsList ? c.problemsList.length : 0,
-                    rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."],
-                    tags: c.tags || []
-                };
-            });
+            contests = mockContests.map(c => ({
+                ...c,
+                status: getContestStatus(c.startTime, c.endTime),
+                timeLeft: formatTimeLeft(c.endTime),
+                timeUntilStart: formatTimeUntilStart(c.startTime),
+                participants: c.participants,
+                problems: c.problemsList ? c.problemsList.length : 0,
+                rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."],
+                tags: c.tags || []
+            }));
         }
-
-        res.render('contests', {
-            currentPath: '/contests',
-            contests,
-            activeContestsCount,
-            totalParticipants
-        });
+        res.render('contests', { currentPath: '/contests', contests, activeContestsCount, totalParticipants });
     } catch (err) {
         console.error(err);
         res.status(500).send('Error loading contests');
@@ -659,7 +848,6 @@ app.get('/contests', async (req, res) => {
 app.get('/contest/:id', async (req, res) => {
     try {
         let contest;
-
         if (dbConnected) {
             if (mongoose.Types.ObjectId.isValid(req.params.id)) {
                 const contestDoc = await Contest.findById(req.params.id);
@@ -687,13 +875,8 @@ app.get('/contest/:id', async (req, res) => {
                 };
             }
         }
-
         if (!contest) return res.status(404).render('404', { currentPath: '' });
-
-        res.render('contest', {
-            currentPath: '/contests',
-            contest
-        });
+        res.render('contest', { currentPath: '/contests', contest });
     } catch (err) {
         console.error(err);
         res.status(404).render('404', { currentPath: '' });
@@ -704,154 +887,34 @@ app.get('/contest/:id/problems', async (req, res) => {
     try {
         let contest;
         let problems = [];
-
         if (dbConnected) {
             if (mongoose.Types.ObjectId.isValid(req.params.id)) {
                 const contestDoc = await Contest.findById(req.params.id);
                 if (contestDoc) {
                     const status = getContestStatus(contestDoc.startTime, contestDoc.endTime);
-
-                    // Only allow access to problems if contest is active
-                    if (status !== 'active') {
-                        return res.redirect(`/contest/${req.params.id}`);
-                    }
-
-                    contest = {
-                        ...contestDoc.toObject(),
-                        id: contestDoc._id,
-                        status: status,
-                        timeLeft: formatTimeLeft(contestDoc.endTime)
-                    };
-
-                    // Get full problem details for each problem in the contest
+                    if (status !== 'active') return res.redirect(`/contest/${req.params.id}`);
+                    contest = { ...contestDoc.toObject(), id: contestDoc._id, status, timeLeft: formatTimeLeft(contestDoc.endTime) };
                     for (const p of contestDoc.problemsList) {
-                        if (mongoose.Types.ObjectId.isValid(p.id)) {
-                            const problem = await Problem.findById(p.id);
-                            if (problem) {
-                                problems.push({
-                                    ...problem.toObject(),
-                                    points: p.points,
-                                    solved: p.solved,
-                                    acceptance: p.acceptance
-                                });
-                            }
-                        }
+                        const problem = await Problem.findById(p.id);
+                        if (problem) problems.push({ ...problem.toObject(), points: p.points, solved: p.solved, acceptance: p.acceptance });
                     }
                 }
             }
         }
-
-        // Fallback or no DB scenario
         if (!contest) {
             contest = mockContests.find(c => c.id == req.params.id);
             if (contest) {
                 contest.status = getContestStatus(contest.startTime, contest.endTime);
                 contest.timeLeft = formatTimeLeft(contest.endTime);
-                if (contest.status === 'active') {
-                    problems = mockProblems;
-                }
+                if (contest.status === 'active') problems = mockProblems;
             }
         }
-
-
         if (!contest) return res.status(404).render('404', { currentPath: '' });
-
-        // Redirect if contest is not active
-        if (contest.status !== 'active') {
-            return res.redirect(`/contest/${req.params.id}`);
-        }
-
-        res.render('problems-list', {
-            currentPath: '/contests',
-            contest,
-            problems
-        });
+        if (contest.status !== 'active') return res.redirect(`/contest/${req.params.id}`);
+        res.render('problems-list', { currentPath: '/contests', contest, problems });
     } catch (err) {
         console.error('Error loading problems-list:', err);
         res.status(500).send('Error loading problems');
-    }
-});
-
-// Redirect for /problem/ to the first problem if available
-app.get('/contest/:contestId/problem/', async (req, res) => {
-    try {
-        if (dbConnected && mongoose.Types.ObjectId.isValid(req.params.contestId)) {
-            const contest = await Contest.findById(req.params.contestId);
-            if (contest && contest.problemsList && contest.problemsList.length > 0) {
-                return res.redirect(`/contest/${req.params.contestId}/problem/${contest.problemsList[0].id}`);
-            }
-        }
-        res.redirect(`/contest/${req.params.contestId}/problems`);
-    } catch (err) {
-        res.redirect('/contests');
-    }
-});
-
-app.get('/contest/:contestId/problem/:problemId', async (req, res) => {
-    try {
-        let contest;
-        let problem;
-
-        if (dbConnected) {
-            if (mongoose.Types.ObjectId.isValid(req.params.contestId) && mongoose.Types.ObjectId.isValid(req.params.problemId)) {
-                const contestDoc = await Contest.findById(req.params.contestId);
-                if (contestDoc) {
-                    const status = getContestStatus(contestDoc.startTime, contestDoc.endTime);
-
-                    // Only allow access if contest is active
-                    if (status !== 'active') {
-                        return res.redirect(`/contest/${req.params.contestId}`);
-                    }
-
-                    contest = {
-                        ...contestDoc.toObject(),
-                        id: contestDoc._id,
-                        status: status,
-                        timeLeft: formatTimeLeft(contestDoc.endTime)
-                    };
-
-                    problem = await Problem.findById(req.params.problemId);
-                }
-            }
-
-            // Fallback for mock IDs even if DB is connected
-            if (!contest || !problem) {
-                contest = mockContests.find(c => c.id == req.params.contestId);
-                problem = mockProblems.find(p => p.id == req.params.problemId);
-                if (contest) {
-                    contest.status = getContestStatus(contest.startTime, contest.endTime);
-                    contest.timeLeft = formatTimeLeft(contest.endTime);
-                }
-            }
-
-            if (!contest || !problem) return res.status(404).render('404', { currentPath: '' });
-
-            // Redirect if contest is not active
-            if (contest.status !== 'active') {
-                return res.redirect(`/contest/${req.params.contestId}`);
-            }
-
-            // Fetch all problems in this contest for the switcher
-            let contestProblems = [];
-            if (dbConnected) {
-                for (const p of contest.problemsList) {
-                    const prob = await Problem.findById(p.id);
-                    if (prob) contestProblems.push(prob);
-                }
-            } else {
-                contestProblems = mockProblems;
-            }
-
-            res.render('code', {
-                currentPath: '/contests',
-                contest,
-                problem,
-                contestProblems
-            });
-        }
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error loading problem');
     }
 });
 
@@ -867,11 +930,7 @@ app.get('/api/contest/:id/members', async (req, res) => {
             const contest = mockContests.find(c => c.id == req.params.id);
             if (contest) count = contest.participants.length;
         }
-
-        res.json({
-            participants: count,
-            recentJoins: []
-        });
+        res.json({ participants: count, recentJoins: [] });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
@@ -882,7 +941,6 @@ app.get('/api/contest/:id/status', async (req, res) => {
         const { userId } = req.query;
         let joined = false;
         let contestStatus = 'unknown';
-
         if (dbConnected) {
             if (mongoose.Types.ObjectId.isValid(req.params.id)) {
                 const contest = await Contest.findById(req.params.id);
@@ -908,48 +966,23 @@ app.post('/api/contest/:id/join', async (req, res) => {
     try {
         const { userId } = req.body;
         if (!userId) return res.status(400).json({ error: 'User ID required' });
-
-        // Check if contest is ended before allowing join
         if (dbConnected) {
             if (mongoose.Types.ObjectId.isValid(req.params.id)) {
                 const contest = await Contest.findById(req.params.id);
-                if (!contest) {
-                    return res.status(404).json({ error: 'Contest not found' });
-                }
-
-                const status = getContestStatus(contest.startTime, contest.endTime);
-                if (status === 'past') {
-                    return res.json({ success: false, error: 'This contest has ended. Registration is closed.' });
-                }
-
-                const updatedContest = await Contest.findByIdAndUpdate(req.params.id, {
-                    $addToSet: { participants: userId }
-                }, { new: true });
-
-                return res.json({
-                    success: true,
-                    participants: updatedContest.participants.length,
-                    message: 'Successfully joined the contest!'
-                });
+                if (!contest) return res.status(404).json({ error: 'Contest not found' });
+                if (getContestStatus(contest.startTime, contest.endTime) === 'past') return res.json({ success: false, error: 'Contest has ended' });
+                const updated = await Contest.findByIdAndUpdate(req.params.id, { $addToSet: { participants: userId } }, { new: true });
+                return res.json({ success: true, participants: updated.participants.length });
             }
         } else {
             const contest = mockContests.find(c => c.id == req.params.id);
             if (contest) {
-                const status = getContestStatus(contest.startTime, contest.endTime);
-                if (status === 'past') {
-                    return res.json({ success: false, error: 'This contest has ended. Registration is closed.' });
-                }
+                if (getContestStatus(contest.startTime, contest.endTime) === 'past') return res.json({ success: false, error: 'Contest has ended' });
                 if (!contest.participants.includes(userId)) contest.participants.push(userId);
-                return res.json({
-                    success: true,
-                    participants: contest.participants.length,
-                    message: 'Successfully joined the contest!'
-                });
+                return res.json({ success: true, participants: contest.participants.length });
             }
         }
-        res.json({ success: true });
     } catch (err) {
-        console.error('Join error:', err);
         res.status(500).json({ error: 'Join failed' });
     }
 });
@@ -957,48 +990,178 @@ app.post('/api/contest/:id/join', async (req, res) => {
 app.post('/api/contest/:id/leave', async (req, res) => {
     try {
         const { userId } = req.body;
-        if (!userId) return res.status(400).json({ error: 'User ID required' });
-
         if (dbConnected) {
             if (mongoose.Types.ObjectId.isValid(req.params.id)) {
                 const contest = await Contest.findById(req.params.id);
-                if (!contest) {
-                    return res.status(404).json({ error: 'Contest not found' });
-                }
-
-                const status = getContestStatus(contest.startTime, contest.endTime);
-                if (status !== 'upcoming') {
-                    return res.json({
-                        success: false,
-                        error: 'Cannot leave an active or ended contest'
-                    });
-                }
-
-                const updatedContest = await Contest.findByIdAndUpdate(req.params.id, {
-                    $pull: { participants: userId }
-                }, { new: true });
-                return res.json({ success: true, participants: updatedContest.participants.length });
+                if (getContestStatus(contest.startTime, contest.endTime) !== 'upcoming') return res.json({ success: false, error: 'Cannot leave' });
+                const updated = await Contest.findByIdAndUpdate(req.params.id, { $pull: { participants: userId } }, { new: true });
+                return res.json({ success: true, participants: updated.participants.length });
             }
         } else {
             const contest = mockContests.find(c => c.id == req.params.id);
             if (contest) {
-                const status = getContestStatus(contest.startTime, contest.endTime);
-                if (status !== 'upcoming') {
-                    return res.json({
-                        success: false,
-                        error: 'Cannot leave an active or ended contest'
-                    });
-                }
+                if (getContestStatus(contest.startTime, contest.endTime) !== 'upcoming') return res.json({ success: false, error: 'Cannot leave' });
                 contest.participants = contest.participants.filter(p => p !== userId);
                 return res.json({ success: true, participants: contest.participants.length });
             }
         }
-        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Leave failed' });
     }
 });
 
+app.get('/practice', async (req, res) => {
+    try {
+        let categories = [
+            { name: "Arrays", count: 0, icon: "📊", solved: 0 },
+            { name: "Strings", count: 0, icon: "📝", solved: 0 },
+            { name: "Math", count: 0, icon: "🔢", solved: 0 },
+            { name: "DP", count: 0, icon: "⚡", solved: 0 },
+        ];
+        let problems = mockProblems;
+        let stats = { solved: 0, streak: 0, submissions: 0, time: '0h' };
+
+        if (dbConnected) {
+            const user = await User.findOne({ username: 'alexchen' });
+            if (user) {
+                stats.solved = user.stats.solved || 0;
+                stats.streak = user.stats.streak || 0;
+                stats.submissions = user.activity ? user.activity.length : 0;
+            }
+
+            // Aggregate dynamic categories from DB
+            const agg = await Problem.aggregate([
+                { $group: { _id: "$category", count: { $sum: 1 } } }
+            ]);
+            
+            const icons = {
+                "Arrays": "📊", "Strings": "📝", "Linked Lists": "🔗", "Trees": "🌳", 
+                "DP": "⚡", "Dynamic Programming": "⚡", "Math": "🔢", "Stacks": "📚", "Queues": "⏳"
+            };
+
+            if (agg.length > 0) {
+                categories = agg.map(a => ({
+                    name: a._id || "General",
+                    count: a.count,
+                    icon: icons[a._id] || "🧩",
+                    solved: 0 // In a full implementation, we'd join with user submissions
+                }));
+            }
+            problems = await Problem.find().sort({ createdAt: -1 });
+        }
+        
+        const totalProblems = problems.length;
+        
+        res.render('practice', { 
+            currentPath: '/practice', 
+            categories, 
+            problems, 
+            totalProblems, 
+            totalSolved: stats.solved,
+            userStats: stats
+        });
+    } catch (err) {
+        console.error(err);
+        res.render('practice', { currentPath: '/practice', categories: [], problems: [], totalProblems: 0, totalSolved: 0, userStats: { solved: 0, streak: 0, submissions: 0, time: '0h' } });
+    }
+});
+
+const COMPILER_URL = process.env.COMPILER_URL || 'http://localhost:3001/api/compile';
+
+app.post('/api/compiler/run', async (req, res) => {
+    try {
+        const { code, language, problemId } = req.body;
+        let problem = dbConnected ? await Problem.findById(problemId) : mockProblems.find(p => p.id == problemId);
+        if (!problem) return res.status(404).json({ error: 'Problem not found' });
+        const visibleCases = problem.testCases.filter(tc => !tc.isHidden);
+        const results = [];
+        let allPassed = true;
+        for (const tc of visibleCases) {
+            const resp = await axios.post(COMPILER_URL, { code, language, input: tc.input }, { headers: { 'compiler-internal-key': 'secret' } });
+            const passed = (resp.data.output || '').trim() === (tc.expected || '').trim();
+            if (!passed) allPassed = false;
+            results.push({ input: tc.input, expected: tc.expected, output: resp.data.output, status: passed ? 'pass' : 'fail', time: resp.data.executionTime + 'ms' });
+        }
+        res.json({ success: allPassed, results });
+    } catch (err) {
+        res.status(500).json({ error: 'Compiler error' });
+    }
+});
+
+app.post('/api/compiler/submit', async (req, res) => {
+    try {
+        const { code, language, problemId } = req.body;
+        let problem = dbConnected ? await Problem.findById(problemId) : mockProblems.find(p => p.id == problemId);
+        if (!problem) return res.status(404).json({ error: 'Problem not found' });
+        
+        // In real submit, we check ALL test cases including hidden ones
+        const allCases = problem.testCases;
+        const results = [];
+        let allPassed = true;
+        
+        for (const tc of allCases) {
+            try {
+                const resp = await axios.post(COMPILER_URL, { code, language, input: tc.input }, { headers: { 'compiler-internal-key': 'secret' } });
+                const actualOutput = (resp.data.output || '').trim();
+                const expectedOutput = (tc.expected || '').trim();
+                const passed = actualOutput === expectedOutput;
+                
+                if (!passed) allPassed = false;
+                
+                results.push({ 
+                    input: tc.isHidden ? 'Hidden' : tc.input, 
+                    expected: tc.isHidden ? 'Hidden' : tc.expected, 
+                    output: tc.isHidden ? (passed ? 'Correct' : 'Incorrect') : resp.data.output, 
+                    status: passed ? 'pass' : 'fail', 
+                    time: resp.data.executionTime + 'ms',
+                    isHidden: tc.isHidden
+                });
+            } catch (compilerErr) {
+                allPassed = false;
+                results.push({ status: 'error', error: 'Execution failed' });
+            }
+        }
+
+        if (allPassed && dbConnected) {
+            const user = await User.findOne({ username: 'alexchen' });
+            if (user) {
+                // Prevent duplicate activity for same problem if you want, but here we just record
+                await Activity.create({
+                    userId: user._id,
+                    username: user.username,
+                    type: 'solved',
+                    problemId: problem._id,
+                    problemTitle: problem.title,
+                    difficulty: problem.difficulty
+                });
+                
+                // Update user stats
+                await User.findByIdAndUpdate(user._id, { 
+                    $inc: { 'stats.solved': 1 }, 
+                    $push: { activity: { title: `Solved ${problem.title}` } } 
+                });
+            }
+        }
+
+        res.json({ success: allPassed, results });
+    } catch (err) {
+        console.error('Submit API error:', err);
+        res.status(500).json({ error: 'Global submission error' });
+    }
+});
+
+app.get('/problem/:id', async (req, res) => {
+    try {
+        let problem = dbConnected ? await Problem.findById(req.params.id) : mockProblems.find(p => p.id == req.params.id);
+        if (!problem) return res.status(404).render('404', { currentPath: '' });
+        const allProblems = dbConnected ? await Problem.find().limit(50) : mockProblems;
+        res.render('code', { currentPath: '/problem', problem, contest: null, contestProblems: allProblems });
+    } catch (err) {
+        res.status(500).render('404', { currentPath: '' });
+    }
+});
+
+// Admin routes
 app.get('/admin', async (req, res) => {
     try {
         let contests = [];
@@ -1016,7 +1179,15 @@ app.get('/admin', async (req, res) => {
                 _id: c.id
             }));
         }
-        res.render('admin', { currentPath: '/admin', contests });
+
+        // Final Registry Assembly (Strict Order: Active > Upcoming > Past)
+        const activeList = contests.filter(c => c.status === 'active').sort((a,b) => new Date(b.startTime) - new Date(a.startTime));
+        const upcomingList = contests.filter(c => c.status === 'upcoming').sort((a,b) => new Date(a.startTime) - new Date(b.startTime));
+        const pastList = contests.filter(c => c.status === 'past').sort((a,b) => new Date(b.startTime) - new Date(a.startTime));
+        
+        const finalizedContests = [...activeList, ...upcomingList, ...pastList];
+
+        res.render('admin', { currentPath: '/admin', contests: finalizedContests });
     } catch (err) {
         console.error(err);
         res.status(500).send('Error loading admin panel');
@@ -1026,47 +1197,29 @@ app.get('/admin', async (req, res) => {
 app.post('/admin/contest', async (req, res) => {
     try {
         if (!dbConnected) return res.status(503).send('Database not connected');
-
-        const { title, subtitle, description, difficulty, prize, organizer, startTime, endTime, tags, rules, problemCount } = req.body;
-
-        // Parse rules (one per line) - ensure we only take first 2 for display but store all
-        const rulesArray = rules ? rules.split('\n').filter(rule => rule.trim() !== '') : [
-            "Solve problems to earn points",
-            "Follow the contest guidelines"
-        ];
-
-        // Parse tags
+        const { title, subtitle, description, prize, organizer, startTime, endTime, tags, rules, problemCount } = req.body;
+        
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
-
+        const rulesArray = rules ? rules.split('\n').filter(rule => rule.trim() !== '') : ["Solve all problems", "No plagiarism"];
+        
         const start = parseIST(startTime);
         const end = parseIST(endTime);
-
-        // Randomly select problems
         const pCount = parseInt(problemCount) || 3;
+        const difficulty = req.body.difficulty || 'medium'; // Default if missing
         const allProblems = await Problem.find();
-
-        // Fisher-Yates shuffle
-        const shuffledProblems = [...allProblems];
-        for (let i = shuffledProblems.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledProblems[i], shuffledProblems[j]] = [shuffledProblems[j], shuffledProblems[i]];
-        }
-
-        // Pick the requested number (max 20)
+        
+        const shuffledProblems = [...allProblems].sort(() => 0.5 - Math.random());
         const selectedProblems = shuffledProblems.slice(0, Math.min(pCount, 20)).map(p => ({
             id: p._id.toString(),
             title: p.title,
             difficulty: p.difficulty,
-            points: 100, // Default points
+            points: 100,
             solved: 0,
             acceptance: '0%'
         }));
 
         await Contest.create({
-            title,
-            subtitle,
-            description,
-            difficulty,
+            title, subtitle, description, difficulty,
             prize: prize || "No prize",
             organizer: organizer || "CodeWith? Team",
             startTime: start,
@@ -1084,42 +1237,26 @@ app.post('/admin/contest', async (req, res) => {
     }
 });
 
-// Admin Contest Detail & Problem Management
 app.get('/admin/contest/:id', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database for admin required');
-
+        if (!dbConnected) return res.status(503).send('Database required');
         const contest = await Contest.findById(req.params.id);
         if (!contest) return res.status(404).send('Contest not found');
-
-        // Add dynamic status
-        const contestWithStatus = {
-            ...contest.toObject(),
-            status: getContestStatus(contest.startTime, contest.endTime)
-        };
-
-        // Fetch all available problems
         const availableProblems = await Problem.find();
-
         res.render('admin-contest', {
             currentPath: '/admin',
-            contest: contestWithStatus,
+            contest: { ...contest.toObject(), status: getContestStatus(contest.startTime, contest.endTime) },
             availableProblems
         });
     } catch (err) {
-        console.error(err);
         res.status(500).send('Error loading contest details');
     }
 });
 
 app.post('/admin/contest/:id/problem', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database required');
-
         const { problemId, points } = req.body;
         const problem = await Problem.findById(problemId);
-        if (!problem) return res.status(404).send('Problem not found');
-
         await Contest.findByIdAndUpdate(req.params.id, {
             $push: {
                 problemsList: {
@@ -1132,63 +1269,37 @@ app.post('/admin/contest/:id/problem', async (req, res) => {
                 }
             }
         });
-
         res.redirect(`/admin/contest/${req.params.id}`);
     } catch (err) {
-        console.error(err);
         res.status(500).send('Error adding problem');
     }
 });
 
 app.post('/admin/contest/:id/remove-problem', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database required');
-
         const { problemId } = req.body;
-
-        await Contest.findByIdAndUpdate(req.params.id, {
-            $pull: { problemsList: { id: problemId } }
-        });
-
+        await Contest.findByIdAndUpdate(req.params.id, { $pull: { problemsList: { id: problemId } } });
         res.redirect(`/admin/contest/${req.params.id}`);
     } catch (err) {
-        console.error(err);
         res.status(500).send('Error removing problem');
     }
 });
 
-app.post('/admin/contest/:id/update-rules', async (req, res) => {
+app.post('/admin/contest/:id/delete', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database required');
-
-        const { rules } = req.body;
-        const rulesArray = rules.split('\n').filter(rule => rule.trim() !== '');
-
-        await Contest.findByIdAndUpdate(req.params.id, {
-            rules: rulesArray
-        });
-
-        res.redirect(`/admin/contest/${req.params.id}`);
+        if (!dbConnected) return res.status(503).json({ error: 'DB disconnected' });
+        await Contest.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error updating rules');
+        res.status(500).json({ error: 'Deletion failed' });
     }
 });
 
-// --- Admin Problems Management ---
 app.get('/admin/problems', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database for admin required');
-
-        // Fetch all available problems
-        const problems = await Problem.find().sort({ createdAt: -1 });
-
-        res.render('admin-problems', {
-            currentPath: '/admin/problems',
-            problems
-        });
+        const problems = dbConnected ? await Problem.find().sort({ createdAt: -1 }) : mockProblems;
+        res.render('admin-problems', { currentPath: '/admin/problems', problems });
     } catch (err) {
-        console.error(err);
         res.status(500).send('Error loading problems');
     }
 });
@@ -1196,254 +1307,23 @@ app.get('/admin/problems', async (req, res) => {
 app.post('/admin/problems', async (req, res) => {
     try {
         if (!dbConnected) return res.status(503).send('Database required');
-
         const { title, difficulty, category, tags, description, constraints } = req.body;
-
-        const maxIdProblem = await Problem.findOne().sort({ id: -1 });
-        const nextId = maxIdProblem ? maxIdProblem.id + 1 : 1;
-
         const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
         const constraintsArray = constraints ? constraints.split(',').map(c => c.trim()).filter(Boolean) : [];
-
-        await Problem.create({
-            id: nextId,
-            title,
-            difficulty,
-            category,
-            tags: tagsArray,
-            description,
-            constraints: constraintsArray,
-            examples: [],
-            testCases: [],
-            starterCode: {
-                javascript: "function solution() {\n\n}",
-                python: "def solution():\n    pass",
-                cpp: "class Solution {\npublic:\n    void solution() {\n\n    }\n};",
-                java: "class Solution {\n    public void solution() {\n\n    }\n}"
-            }
-        });
-
+        await Problem.create({ title, difficulty, category, tags: tagsArray, description, constraints: constraintsArray });
         res.redirect('/admin/problems');
     } catch (err) {
-        console.error(err);
         res.status(500).send('Error creating problem');
     }
 });
 
-app.get('/practice', async (req, res) => {
-    const categories = [
-        { name: "Arrays", count: 156, icon: "📊", solved: 45 },
-        { name: "Strings", count: 98, icon: "📝", solved: 23 },
-        { name: "Linked Lists", count: 67, icon: "🔗", solved: 12 },
-        { name: "Trees", count: 89, icon: "🌳", solved: 8 },
-        { name: "Dynamic Programming", count: 124, icon: "⚡", solved: 3 },
-    ];
-    let problems = [];
-    if (dbConnected) {
-        problems = await Problem.find();
-    } else {
-        problems = mockProblems;
-    }
-    res.render('practice', { currentPath: '/practice', categories, problems });
-});
-
-// ── Compiler Integration ──
-// In your main server.js (outside compiler folder)
-const COMPILER_URL = process.env.COMPILER_URL ||
-    'http://localhost:3001/api/compile';
-app.post('/api/compiler/run', async (req, res) => {
+app.post('/admin/problem/:id/delete', async (req, res) => {
     try {
-        const { code, language, problemId } = req.body;
-
-        let problem;
-        if (mongoose.connection.readyState === 1) {
-            problem = await mongoose.model('Problem').findById(problemId);
-        } else {
-            problem = mockProblems.find(p => p.id == problemId);
-        }
-
-        if (!problem || !problem.testCases) {
-            return res.status(404).json({ error: 'Problem or test cases not found' });
-        }
-
-        const visibleCases = problem.testCases.filter(tc => !tc.isHidden);
-        if (visibleCases.length === 0) {
-            const response = await axios.post(COMPILER_URL, {
-                code,
-                language,
-                input: ""
-            }, {
-                headers: { 'compiler-internal-key': 'secret' }
-            });
-            return res.json({
-                success: response.data.exitCode === 0,
-                results: [{
-                    input: 'Standard Input',
-                    expected: 'N/A',
-                    output: response.data.output || 'No output',
-                    status: response.data.exitCode === 0 ? 'success' : 'error',
-                    error: response.data.error,
-                    time: response.data.executionTime + 'ms',
-                    cached: response.data.cached
-                }]
-            });
-        }
-
-        const results = [];
-        let allPassed = true;
-
-        for (const tc of visibleCases) {
-            try {
-                const response = await axios.post(COMPILER_URL, {
-                    code,
-                    language,
-                    input: tc.input
-                }, {
-                    headers: { 'compiler-internal-key': 'secret' }
-                });
-
-                const actualOutput = (response.data.output || '').trim();
-                const expectedOutput = (tc.expected || '').trim();
-                const passed = actualOutput === expectedOutput;
-
-                if (!passed) allPassed = false;
-
-                results.push({
-                    input: tc.input,
-                    expected: tc.expected,
-                    output: actualOutput,
-                    status: passed ? 'pass' : 'fail',
-                    error: response.data.error,
-                    time: response.data.executionTime + 'ms',
-                    cached: response.data.cached
-                });
-            } catch (tcErr) {
-                allPassed = false;
-                results.push({
-                    input: tc.input,
-                    expected: tc.expected,
-                    status: 'error',
-                    error: tcErr.message
-                });
-            }
-        }
-
-        res.json({
-            success: allPassed,
-            results,
-            message: allPassed ? 'All sample test cases passed!' : 'Some sample test cases failed.'
-        });
+        if (!dbConnected) return res.status(503).json({ error: 'DB disconnected' });
+        await Problem.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
     } catch (err) {
-        console.error("Run Error:", err.response?.data || err.message);
-        res.status(err.response?.status || 500).json({
-            error: (err.response?.data?.error || err.response?.data?.message) ?
-                (err.response?.data?.error || err.response?.data?.message) :
-                "Compiler microservice is currently unreachable.",
-            details: err.response?.data || err.message,
-            status: 'error'
-        });
-    }
-});
-
-app.post('/api/compiler/submit', async (req, res) => {
-    try {
-        const { code, language, problemId } = req.body;
-
-        let problem;
-        if (mongoose.connection.readyState === 1) {
-            problem = await mongoose.model('Problem').findById(problemId);
-        } else {
-            problem = mockProblems.find(p => p.id == problemId);
-        }
-
-        if (!problem || !problem.testCases) {
-            return res.status(404).json({ error: 'Problem or test cases not found' });
-        }
-
-        const results = [];
-        let allPassed = true;
-
-        for (const tc of problem.testCases) {
-            try {
-                const response = await axios.post(COMPILER_URL, {
-                    code,
-                    language,
-                    input: tc.input
-                }, {
-                    headers: { 'compiler-internal-key': 'secret' }
-                });
-
-                const actualOutput = (response.data.output || '').trim();
-                const expectedOutput = (tc.expected || '').trim();
-                const passed = actualOutput === expectedOutput;
-
-                if (!passed) allPassed = false;
-
-                results.push({
-                    input: tc.isHidden ? 'Hidden test case' : tc.input,
-                    expected: tc.isHidden ? 'Hidden expected output' : tc.expected,
-                    output: tc.isHidden ? (passed ? 'Execution matched hidden expected output.' : 'Execution failed against hidden parameters.') : actualOutput,
-                    status: passed ? 'pass' : 'fail',
-                    error: tc.isHidden ? (response.data.error ? 'Hidden error traceback.' : '') : response.data.error,
-                    time: response.data.executionTime + 'ms',
-                    cached: response.data.cached
-                });
-            } catch (tcErr) {
-                allPassed = false;
-                results.push({
-                    input: tc.isHidden ? 'Hidden test case' : tc.input,
-                    expected: tc.isHidden ? 'Hidden expected output' : tc.expected,
-                    status: 'error',
-                    error: tc.isHidden ? 'Hidden system error.' : tcErr.message
-                });
-            }
-        }
-
-        res.json({
-            success: allPassed,
-            results,
-            message: allPassed ? 'All test cases passed!' : 'Some test cases failed.'
-        });
-    } catch (err) {
-        console.error('Submission proxy error:', err);
-        res.status(500).json({ error: 'Submission failed' });
-    }
-});
-
-app.get('/problem/:id', async (req, res) => {
-    try {
-        let problem;
-        if (dbConnected) {
-            if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-                problem = await Problem.findById(req.params.id);
-            }
-        } else {
-            problem = mockProblems.find(p => p.id == req.params.id);
-        }
-
-        if (!problem) {
-            // Check if it's a contest ID instead
-            if (dbConnected && mongoose.Types.ObjectId.isValid(req.params.id)) {
-                const contest = await Contest.findById(req.params.id);
-                if (contest && contest.problems && contest.problems.length > 0) {
-                    return res.redirect(`/contest/${contest._id}/problem/${contest.problems[0]}`);
-                }
-            }
-            return res.status(404).render('404', { currentPath: '' });
-        }
-
-        // Fetch all problems for the sidebar drawer in practice mode
-        const allProblems = await Problem.find({}, 'title difficulty _id').limit(50);
-
-        res.render('code', {
-            currentPath: '/problem',
-            problem: problem,
-            contest: null,
-            contestProblems: allProblems // Now shows all problems in the sidebar
-        });
-    } catch (err) {
-        console.error("Error in /problem/:id:", err);
-        res.status(500).render('404', { currentPath: '' });
+        res.status(500).json({ error: 'Deletion failed' });
     }
 });
 
@@ -1451,15 +1331,6 @@ app.get('/settings', (req, res) => res.render('settings', { currentPath: '/setti
 app.get('/profile', (req, res) => res.render('profile', { currentPath: '/profile' }));
 app.get('/friends', (req, res) => res.render('friends', { currentPath: '/friends' }));
 
-app.get('/api/user/profile', (req, res) => {
-    res.json({
-        user: { name: "Alex Chen", username: "alexchen", stats: { solved: 247 } }
-    });
-});
-
 app.use((req, res) => res.status(404).render('404', { currentPath: '' }));
 
-app.listen(PORT, (err) => {
-    if (err) console.error("Error starting server:", err);
-    console.log(`CodeWith? server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

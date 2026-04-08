@@ -1,583 +1,724 @@
 <%- include('partials/head') %>
 
-    <body class="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground overflow-hidden">
+    <body
+        class="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground overflow-hidden">
         <div class="fixed inset-0 w-screen h-screen overflow-hidden">
-            <!-- Thin Neon / Edge Flow overlays -->
-            <div class="vintage-overlay"></div>
-            <div class="scanlines"></div>
-            <div class="flicker-effect"></div>
 
-            <!-- Ultra-Elegant Minimalist Background -->
-            <div class="absolute inset-0 z-0 bg-[#050907]" id="bg-container">
-                <!-- Vast, extremely subtle ambient glow for depth -->
-                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(152_58%_52%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>
-                <!-- Faint secondary glow to balance the scene -->
-                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(38_92%_55%_/_0.03)_0%,_transparent_60%)] pointer-events-none"></div>
-                
-                <!-- Premium matte glass noise (prevents banding, adds a luxurious physical texture) -->
-                <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+
+            <!-- Light Theme Background -->
+            <div class="absolute inset-0 z-0 bg-background" id="bg-container">
+                <!-- Subtle ambient depth -->
+                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(var(--primary)_/_0.03)_0%,_transparent_70%)] pointer-events-none"></div>
+                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(var(--warning)_/_0.02)_0%,_transparent_60%)] pointer-events-none"></div>
             </div>
 
             <!-- Monitor Container -->
             <div class="relative z-10 w-screen h-screen">
-                <div class="monitor-frame">
-                    <div class="monitor-bezel">
-                        <div class="monitor-screen">
-                            <div class="flex h-full relative">
+                <div class="flex h-full relative">
                                 <!-- Sidebar -->
                                 <%- include('partials/sidebar') %>
 
-                                <!-- Main Content (Standard Page Scroll) -->
-                                <main class="flex-1 flex flex-col min-w-0 overflow-y-auto scrollbar-thin relative" style="scroll-behavior: smooth;">
-                                    
-                                    <!-- Header (Static) -->
-                                    <header class="border-b border-border/30 backdrop-blur-xl bg-[#050907]/80 z-50 sticky top-0">
-                                        <% 
-                                           const leftActions = `
-                                                <a href="/contests" class="p-2 rounded-lg hover:bg-white/5 transition-colors group">
-                                                    <i data-lucide="chevron-left" class="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"></i>
+                                    <!-- Main Content (Standard Page Scroll) -->
+                                    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto scrollbar-thin relative"
+                                        style="scroll-behavior: smooth;">
+
+                                        <!-- Header (Static) -->
+                                        <header class="border-b border-white/10 backdrop-blur-2xl bg-secondary/80 z-50 sticky top-0 transition-all duration-300">
+                                            <% const leftActions=` <a href="/contests"
+                                                class="p-2 rounded-lg hover:bg-white/5 transition-colors group">
+                                                <i data-lucide="chevron-left"
+                                                    class="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors"></i>
                                                 </a>
-                                           `;
-                                           let statusHtml = '';
-                                           if (contest.status === 'active') {
-                                               statusHtml = `
-                                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                                                        <div class="relative">
-                                                            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                                            <div class="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+                                                `;
+                                                let statusHtml = '';
+                                                if (contest.status === 'active') {
+                                                statusHtml = `
+                                                <div
+                                                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+                                                    <div class="relative">
+                                                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                                        <div
+                                                            class="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping">
                                                         </div>
-                                                        <span class="text-xs font-semibold text-emerald-400">LIVE</span>
                                                     </div>
-                                               `;
-                                           } else if (contest.status === 'upcoming') {
-                                               statusHtml = `
-                                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
-                                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
-                                                        <span class="text-xs font-semibold text-amber-400">UPCOMING</span>
-                                                    </div>
-                                               `;
-                                           } else {
-                                               statusHtml = `
-                                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30">
-                                                        <i data-lucide="lock" class="w-3.5 h-3.5 text-rose-400"></i>
-                                                        <span class="text-xs font-semibold text-rose-400">ENDED</span>
-                                                    </div>
-                                               `;
-                                           }
-                                        %>
-                                        <%- include('partials/top-bar', { 
-                                            showShinyLine: false, 
-                                            showAddFriend: false,
-                                            leftActions: leftActions,
-                                            extraActions: statusHtml
-                                        }) %>
-                                    </header>
-
-                                    <!-- Content Area — matches practice/problems-list px-4 md:px-6 -->
-                                    <div class="px-4 md:px-6 pb-6 mt-6">
-
-                                        <!-- ═══ Page Header (Practice-style) ═══ -->
-                                        <div class="mb-6">
-                                            <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                                                <%= contest.title %>
-                                            </h1>
-                                            <p class="text-muted-foreground text-sm"><%= contest.description %></p>
-                                        </div>
-
-                                        <!-- ═══ Bento Stat Cards (4-col, mirrors practice page) ═══ -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-
-                                            <!-- Card 1 — Status -->
-                                            <div class="glass-card p-5 bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/20 relative overflow-hidden group">
-                                                <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/20 transition-colors"></div>
-                                                <div class="relative z-10">
-                                                    <div class="flex items-center justify-between mb-3">
-                                                        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Status</span>
-                                                        <i data-lucide="<%= contest.status === 'active' ? 'radio' : (contest.status === 'upcoming' ? 'clock' : 'lock') %>" class="w-4 h-4 text-emerald-400"></i>
-                                                    </div>
-                                                    <div class="flex items-center gap-3 mb-1">
-                                                        <% if (contest.status === 'active') { %>
-                                                            <div class="relative">
-                                                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                                                                <div class="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
-                                                            </div>
-                                                            <span class="text-2xl font-bold text-foreground">LIVE</span>
-                                                        <% } else if (contest.status === 'upcoming') { %>
-                                                            <span class="text-2xl font-bold text-foreground">Upcoming</span>
-                                                        <% } else { %>
-                                                            <span class="text-2xl font-bold text-foreground">Ended</span>
-                                                        <% } %>
-                                                    </div>
-                                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wider">Contest is <%= contest.status %></p>
+                                                    <span class="text-xs font-semibold text-emerald-400">LIVE</span>
                                                 </div>
+                                                `;
+                                                } else if (contest.status === 'upcoming') {
+                                                statusHtml = `
+                                                <div
+                                                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+                                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+                                                    <span class="text-xs font-semibold text-amber-400">UPCOMING</span>
+                                                </div>
+                                                `;
+                                                } else {
+                                                statusHtml = `
+                                                <div
+                                                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30">
+                                                    <i data-lucide="lock" class="w-3.5 h-3.5 text-rose-400"></i>
+                                                    <span class="text-xs font-semibold text-rose-400">ENDED</span>
+                                                </div>
+                                                `;
+                                                }
+                                                %>
+                                                <%- include('partials/top-bar', { showShinyLine: false, showAddFriend:
+                                                    false, leftActions: leftActions, extraActions: statusHtml }) %>
+                                        </header>
+
+                                        <!-- Content Area — matches practice/problems-list px-4 md:px-6 -->
+                                        <div class="px-4 md:px-6 pb-6 mt-6">
+
+                                            <!-- ═══ Page Header (Practice-style) ═══ -->
+                                            <div class="mb-6">
+                                                <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                                                    <%= contest.title %>
+                                                </h1>
+                                                <p class="text-muted-foreground text-sm">
+                                                    <%= contest.description %>
+                                                </p>
                                             </div>
 
-                                            <!-- Card 2 — Timer -->
-                                            <div class="glass-card p-5 bg-gradient-to-br from-primary/10 to-transparent border-primary/20 relative overflow-hidden group">
-                                                <div class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-colors"></div>
-                                                <div class="relative z-10">
-                                                    <div class="flex items-center justify-between mb-3">
-                                                        <span class="text-[10px] font-bold text-primary uppercase tracking-widest">
-                                                            <%= contest.status === 'active' ? 'Time Left' : (contest.status === 'upcoming' ? 'Starts In' : 'Duration') %>
-                                                        </span>
-                                                        <i data-lucide="timer" class="w-4 h-4 text-primary"></i>
-                                                    </div>
-                                                    <div class="text-2xl font-mono font-bold text-foreground tabular-nums tracking-tight leading-none mb-1" id="countdownTimer">
-                                                        <%= contest.status==='past' ? '00:00:00' : (contest.status==='active' ? contest.timeLeft : contest.timeUntilStart) %>
-                                                    </div>
-                                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wider">
-                                                        <%= contest.status === 'past' ? 'Contest has ended' : 'Remaining time' %>
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            <!-- ═══ Bento Stat Cards (4-col, mirrors practice page) ═══ -->
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
-                                            <!-- Card 3 — Participants -->
-                                            <div class="glass-card p-5 bg-gradient-to-br from-violet-500/10 to-transparent border-violet-500/20 relative overflow-hidden group">
-                                                <div class="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-violet-500/20 transition-colors"></div>
-                                                <div class="relative z-10">
-                                                    <div class="flex items-center justify-between mb-3">
-                                                        <span class="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Participants</span>
-                                                        <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
+                                                <!-- Card 1 — Status -->
+                                                <div
+                                                    class="glass-card p-5 bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/20 relative overflow-hidden group">
+                                                    <div
+                                                        class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/20 transition-colors">
                                                     </div>
-                                                    <div class="flex items-baseline gap-2 mb-1">
-                                                        <span class="text-2xl font-bold text-foreground tabular-nums" id="participantCount"><%= contest.participants || 0 %></span>
-                                                        <span class="text-sm text-muted-foreground">enrolled</span>
-                                                    </div>
-                                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wider">Competing worldwide</p>
-                                                </div>
-                                            </div>
-
-                                            <!-- Card 4 — Organizer -->
-                                            <div class="glass-card p-5 bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20 relative overflow-hidden group">
-                                                <div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-amber-500/20 transition-colors"></div>
-                                                <div class="relative z-10">
-                                                    <div class="flex items-center justify-between mb-3">
-                                                        <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Hosted By</span>
-                                                        <i data-lucide="building-2" class="w-4 h-4 text-amber-400"></i>
-                                                    </div>
-                                                    <div class="flex items-center gap-3 mb-1">
-                                                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400/30 to-amber-600/20 flex items-center justify-center text-sm font-bold text-amber-200 border border-amber-500/30">
-                                                            <%= (contest.organizer || 'CW').charAt(0) %>
+                                                    <div class="relative z-10">
+                                                        <div class="flex items-center justify-between mb-3">
+                                                            <span
+                                                                class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Status</span>
+                                                            <i data-lucide="<%= contest.status === 'active' ? 'radio' : (contest.status === 'upcoming' ? 'clock' : 'lock') %>"
+                                                                class="w-4 h-4 text-emerald-400"></i>
                                                         </div>
-                                                        <span class="text-lg font-bold text-foreground truncate"><%= contest.organizer || 'CodeWith?' %></span>
-                                                    </div>
-                                                    <p class="text-[10px] text-muted-foreground uppercase tracking-wider">Official organizer</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- ═══ Action Bar ═══ -->
-                                        <div class="glass-card p-3 md:p-4 mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 md:gap-4">
-                                            <div class="flex items-center gap-3">
-                                                <i data-lucide="info" class="w-5 h-5 text-primary flex-shrink-0"></i>
-                                                <span class="text-sm text-muted-foreground">
-                                                    <% if (contest.status === 'active') { %>
-                                                        Contest is live — join now and start solving problems!
-                                                    <% } else if (contest.status === 'upcoming') { %>
-                                                        Contest hasn't started yet — register to get notified.
-                                                    <% } else { %>
-                                                        This contest has ended. View the results below.
-                                                    <% } %>
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center gap-3 flex-shrink-0" id="actionContainer">
-                                                <% if (contest.status === 'past') { %>
-                                                    <button disabled class="px-6 py-2.5 rounded-lg font-semibold text-sm bg-white/5 text-muted-foreground/50 border border-white/10 cursor-not-allowed">
-                                                        Contest Ended
-                                                    </button>
-                                                <% } else { %>
-                                                    <button id="joinBtn" onclick="toggleJoin()"
-                                                        class="px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center gap-2 group
-                                                        <%= contest.status === 'active' ? 'bg-primary text-primary-foreground hover:-translate-y-0.5 shadow-lg shadow-primary/20' : 'bg-amber-500 text-white hover:-translate-y-0.5 shadow-lg shadow-amber-500/20' %>">
-                                                        <i data-lucide="<%= contest.status === 'active' ? 'play' : 'bell' %>" class="w-4 h-4 group-hover:scale-110 transition-transform" id="joinIcon"></i>
-                                                        <span id="joinText"><%= contest.status==='active' ? 'Join Contest' : 'Register Now' %></span>
-                                                    </button>
-
-                                                    <div id="problemsArea" style="display: none;">
-                                                        <a href="/contest/<%= contest.id %>/problems" 
-                                                            class="px-6 py-2.5 rounded-lg font-semibold text-sm bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 group">
-                                                            <i data-lucide="terminal" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
-                                                            <span>Go to Problems</span>
-                                                        </a>
-                                                    </div>
-
-                                                    <button onclick="shareContest()" class="p-2.5 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all" title="Share contest">
-                                                        <i data-lucide="share-2" class="w-4 h-4"></i>
-                                                    </button>
-                                                <% } %>
-                                            </div>
-                                        </div>
-
-                                        <!-- Live Join Feed -->
-                                        <% if (contest.status !== 'past') { %>
-                                            <div id="joinFeed" class="overflow-hidden mb-6" style="max-height: 0; transition: max-height 0.4s ease;">
-                                                <div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-fit">
-                                                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                                                    <span class="text-xs text-emerald-400 font-medium" id="joinFeedText">Live updates...</span>
-                                                </div>
-                                            </div>
-                                        <% } %>
-
-                                        <!-- ═══ Dashboard: 8-col main + 4-col sidebar (mirrors problems-list) ═══ -->
-                                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-                                            <!-- Main Content (Col-span 8) — Description & Rules -->
-                                            <div class="lg:col-span-8 space-y-6">
-
-                                                <!-- Section Label -->
-                                                <div class="flex items-center justify-between px-1">
-                                                    <h3 class="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                                                        <div class="w-5 h-[2px] bg-primary rounded-full"></div>
-                                                        About This Contest
-                                                    </h3>
-                                                </div>
-
-                                                <!-- Description Card -->
-                                                <div class="glass-card p-6 relative overflow-hidden group">
-                                                    <div class="absolute top-0 right-0 p-4 opacity-5">
-                                                        <i data-lucide="file-text" class="w-16 h-16"></i>
-                                                    </div>
-                                                    <h4 class="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                                                        <i data-lucide="scroll-text" class="w-4 h-4 text-primary"></i>
-                                                        Mission Briefing
-                                                    </h4>
-                                                    <div class="prose prose-sm prose-invert prose-emerald max-w-none text-muted-foreground leading-relaxed">
-                                                        <%= contest.description %>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Rules Card -->
-                                                <div class="glass-card p-6">
-                                                    <h4 class="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                                                        <i data-lucide="shield-check" class="w-4 h-4 text-accent"></i>
-                                                        Rules & Guidelines
-                                                    </h4>
-                                                    <div class="space-y-3">
-                                                        <% if (contest.rules && contest.rules.length > 0) { %>
-                                                            <% contest.rules.forEach(function(rule, i) { %>
-                                                                <div class="flex items-start gap-4 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/10 transition-all group/rule">
-                                                                    <div class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-muted-foreground flex items-center justify-center shrink-0 group-hover/rule:bg-primary/20 group-hover/rule:text-primary group-hover/rule:border-primary/30 transition-colors">
-                                                                        <%= (i + 1).toString().padStart(2, '0') %>
+                                                        <div class="flex items-center gap-3 mb-1">
+                                                            <% if (contest.status==='active' ) { %>
+                                                                <div class="relative">
+                                                                    <div
+                                                                        class="w-2.5 h-2.5 rounded-full bg-emerald-500">
                                                                     </div>
-                                                                    <p class="text-sm text-muted-foreground group-hover/rule:text-foreground leading-relaxed pt-0.5 transition-colors">
-                                                                        <%= rule %>
-                                                                    </p>
+                                                                    <div
+                                                                        class="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping">
+                                                                    </div>
                                                                 </div>
-                                                            <% }); %>
-                                                        <% } else { %>
-                                                            <p class="text-sm text-muted-foreground italic">No specific rules have been set for this contest.</p>
-                                                        <% } %>
+                                                                <span
+                                                                    class="text-2xl font-bold text-foreground">LIVE</span>
+                                                                <% } else if (contest.status==='upcoming' ) { %>
+                                                                    <span
+                                                                        class="text-2xl font-bold text-foreground">Upcoming</span>
+                                                                    <% } else { %>
+                                                                        <span
+                                                                            class="text-2xl font-bold text-foreground">Ended</span>
+                                                                        <% } %>
+                                                        </div>
+                                                        <p
+                                                            class="text-[10px] text-muted-foreground uppercase tracking-wider">
+                                                            Contest is <%= contest.status %>
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Card 2 — Timer -->
+                                                <div
+                                                    class="glass-card p-5 bg-gradient-to-br from-primary/10 to-transparent border-primary/20 relative overflow-hidden group">
+                                                    <div
+                                                        class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-colors">
+                                                    </div>
+                                                    <div class="relative z-10">
+                                                        <div class="flex items-center justify-between mb-3">
+                                                            <span
+                                                                class="text-[10px] font-bold text-primary uppercase tracking-widest">
+                                                                <%= contest.status==='active' ? 'Time Left' :
+                                                                    (contest.status==='upcoming' ? 'Starts In'
+                                                                    : 'Duration' ) %>
+                                                            </span>
+                                                            <i data-lucide="timer" class="w-4 h-4 text-primary"></i>
+                                                        </div>
+                                                        <div class="text-2xl font-mono font-bold text-foreground tabular-nums tracking-tight leading-none mb-1"
+                                                            id="countdownTimer">
+                                                            <%= contest.status==='past' ? '00:00:00' :
+                                                                (contest.status==='active' ? contest.timeLeft :
+                                                                contest.timeUntilStart) %>
+                                                        </div>
+                                                        <p
+                                                            class="text-[10px] text-muted-foreground uppercase tracking-wider">
+                                                            <%= contest.status==='past' ? 'Contest has ended'
+                                                                : 'Remaining time' %>
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Card 3 — Participants -->
+                                                <div
+                                                    class="glass-card p-5 bg-gradient-to-br from-violet-500/10 to-transparent border-violet-500/20 relative overflow-hidden group">
+                                                    <div
+                                                        class="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-violet-500/20 transition-colors">
+                                                    </div>
+                                                    <div class="relative z-10">
+                                                        <div class="flex items-center justify-between mb-3">
+                                                            <span
+                                                                class="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Participants</span>
+                                                            <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
+                                                        </div>
+                                                        <div class="flex items-baseline gap-2 mb-1">
+                                                            <span
+                                                                class="text-2xl font-bold text-foreground tabular-nums"
+                                                                id="participantCount">
+                                                                <%= contest.participants || 0 %>
+                                                            </span>
+                                                            <span class="text-sm text-muted-foreground">enrolled</span>
+                                                        </div>
+                                                        <p
+                                                            class="text-[10px] text-muted-foreground uppercase tracking-wider">
+                                                            Competing worldwide</p>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Card 4 — Organizer -->
+                                                <div
+                                                    class="glass-card p-5 bg-gradient-to-br from-amber-500/10 to-transparent border-amber-500/20 relative overflow-hidden group">
+                                                    <div
+                                                        class="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-amber-500/20 transition-colors">
+                                                    </div>
+                                                    <div class="relative z-10">
+                                                        <div class="flex items-center justify-between mb-3">
+                                                            <span
+                                                                class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Hosted
+                                                                By</span>
+                                                            <i data-lucide="building-2"
+                                                                class="w-4 h-4 text-amber-400"></i>
+                                                        </div>
+                                                        <div class="flex items-center gap-3 mb-1">
+                                                            <div
+                                                                class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400/30 to-amber-600/20 flex items-center justify-center text-sm font-bold text-amber-200 border border-amber-500/30">
+                                                                <%= (contest.organizer || 'CW' ).charAt(0) %>
+                                                            </div>
+                                                            <span class="text-lg font-bold text-foreground truncate">
+                                                                <%= contest.organizer || 'CodeWith?' %>
+                                                            </span>
+                                                        </div>
+                                                        <p
+                                                            class="text-[10px] text-muted-foreground uppercase tracking-wider">
+                                                            Official organizer</p>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Sidebar (Col-span 4) — Leaderboard & Info -->
-                                            <div class="lg:col-span-4 space-y-6">
+                                            <!-- ═══ Action Bar ═══ -->
+                                            <div
+                                                class="glass-card p-3 md:p-4 mb-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 md:gap-4">
+                                                <div class="flex items-center gap-3">
+                                                    <i data-lucide="info"
+                                                        class="w-5 h-5 text-primary flex-shrink-0"></i>
+                                                    <span class="text-sm text-muted-foreground">
+                                                        <% if (contest.status==='active' ) { %>
+                                                            Contest is live — join now and start solving problems!
+                                                            <% } else if (contest.status==='upcoming' ) { %>
+                                                                Contest hasn't started yet — register to get notified.
+                                                                <% } else { %>
+                                                                    This contest has ended. View the results below.
+                                                                    <% } %>
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-3 flex-shrink-0" id="actionContainer">
+                                                    <% if (contest.status === 'past') { %>
+                                                        <button disabled
+                                                            class="px-6 py-2.5 rounded-lg font-semibold text-sm bg-secondary text-muted-foreground border border-border cursor-not-allowed">
+                                                            Contest Ended
+                                                        </button>
+                                                    <% } else { %>
+                                                        <!-- Main Action Button -->
+                                                        <button id="mainActionBtn" onclick="handleMainAction()"
+                                                            class="w-[180px] justify-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center gap-2 group shadow-lg">
+                                                            <i id="mainActionIcon" data-lucide="play" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                                                            <span id="mainActionText">Loading...</span>
+                                                        </button>
 
-                                                <!-- Leaderboard Card -->
-                                                <div class="glass-card border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
-                                                    <div class="absolute top-0 right-0 p-4 opacity-5">
-                                                        <i data-lucide="trophy" class="w-16 h-16"></i>
+                                                        <!-- Share Button -->
+                                                        <button onclick="shareContest()"
+                                                            class="p-2.5 rounded-lg bg-secondary/50 border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                                                            title="Share contest">
+                                                            <i data-lucide="share-2" class="w-4 h-4"></i>
+                                                        </button>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+
+                                            <!-- Live Join Feed -->
+                                            <% if (contest.status !=='past' ) { %>
+                                                <div id="joinFeed" class="overflow-hidden mb-6"
+                                                    style="max-height: 0; transition: max-height 0.4s ease;">
+                                                    <div
+                                                        class="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 w-fit">
+                                                        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse">
+                                                        </div>
+                                                        <span class="text-xs text-emerald-400 font-medium"
+                                                            id="joinFeedText">Live updates...</span>
                                                     </div>
+                                                </div>
+                                                <% } %>
 
-                                                    <!-- Header -->
-                                                    <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-                                                        <h3 class="text-sm font-bold text-foreground flex items-center gap-2">
-                                                            <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i>
-                                                            Leaderboard
-                                                        </h3>
-                                                        <% if (contest.status === 'active') { %>
-                                                            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                                                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                                                                <span class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">Live</span>
+                                                    <!-- ═══ Dashboard: 8-col main + 4-col sidebar (mirrors problems-list) ═══ -->
+                                                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                                                        <!-- Main Content (Col-span 8) — Description & Rules -->
+                                                        <div class="lg:col-span-8 space-y-6">
+
+                                                            <!-- Section Label -->
+                                                            <div class="flex items-center justify-between px-1">
+                                                                <h3
+                                                                    class="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-2">
+                                                                    <div class="w-5 h-[2px] bg-primary rounded-full">
+                                                                    </div>
+                                                                    About This Contest
+                                                                </h3>
                                                             </div>
-                                                        <% } %>
-                                                    </div>
 
-                                                    <!-- Entries -->
-                                                    <div class="p-4 space-y-2">
-                                                        <% if (contest.status === 'past' || contest.status === 'active') { %>
-                                                            <% if (contest.leaderboard && contest.leaderboard.length > 0) { %>
-                                                                <% contest.leaderboard.forEach(function(entry) { %>
-                                                                    <div class="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] transition-colors group/entry">
-                                                                        <div class="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 border
+                                                            <!-- Description Card -->
+                                                            <div class="glass-card p-6 relative overflow-hidden group">
+                                                                <div class="absolute top-0 right-0 p-4 opacity-5">
+                                                                    <i data-lucide="file-text" class="w-16 h-16"></i>
+                                                                </div>
+                                                                <h4
+                                                                    class="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                    <i data-lucide="scroll-text"
+                                                                        class="w-4 h-4 text-primary"></i>
+                                                                    Mission Briefing
+                                                                </h4>
+                                                                <div
+                                                                    class="prose prose-sm prose-invert prose-emerald max-w-none text-muted-foreground leading-relaxed">
+                                                                    <%= contest.description %>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Rules Card -->
+                                                            <div class="glass-card p-6">
+                                                                <h4
+                                                                    class="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                    <i data-lucide="shield-check"
+                                                                        class="w-4 h-4 text-accent"></i>
+                                                                    Rules & Guidelines
+                                                                </h4>
+                                                                <div class="space-y-3">
+                                                                    <% if (contest.rules && contest.rules.length> 0) {
+                                                                        %>
+                                                                        <% contest.rules.forEach(function(rule, i) { %>
+                                                                            <div
+                                                                                class="flex items-start gap-4 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/10 transition-all group/rule">
+                                                                                <div
+                                                                                    class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-muted-foreground flex items-center justify-center shrink-0 group-hover/rule:bg-primary/20 group-hover/rule:text-primary group-hover/rule:border-primary/30 transition-colors">
+                                                                                    <%= (i +
+                                                                                        1).toString().padStart(2, '0' )
+                                                                                        %>
+                                                                                </div>
+                                                                                <p
+                                                                                    class="text-sm text-muted-foreground group-hover/rule:text-foreground leading-relaxed pt-0.5 transition-colors">
+                                                                                    <%= rule %>
+                                                                                </p>
+                                                                            </div>
+                                                                            <% }); %>
+                                                                                <% } else { %>
+                                                                                    <p
+                                                                                        class="text-sm text-muted-foreground italic">
+                                                                                        No specific rules have been set
+                                                                                        for this contest.</p>
+                                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Sidebar (Col-span 4) — Leaderboard & Info -->
+                                                        <div class="lg:col-span-4 space-y-6">
+
+                                                            <!-- Leaderboard Card -->
+                                                            <div
+                                                                class="glass-card border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
+                                                                <div class="absolute top-0 right-0 p-4 opacity-5">
+                                                                    <i data-lucide="trophy" class="w-16 h-16"></i>
+                                                                </div>
+
+                                                                <!-- Header -->
+                                                                <div
+                                                                    class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                                                                    <h3
+                                                                        class="text-sm font-bold text-foreground flex items-center gap-2">
+                                                                        <i data-lucide="crown"
+                                                                            class="w-4 h-4 text-amber-400"></i>
+                                                                        Leaderboard
+                                                                    </h3>
+                                                                    <% if (contest.status==='active' ) { %>
+                                                                        <div
+                                                                            class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                                                            <div
+                                                                                class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse">
+                                                                            </div>
+                                                                            <span
+                                                                                class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">Live</span>
+                                                                        </div>
+                                                                        <% } %>
+                                                                </div>
+
+                                                                <!-- Entries -->
+                                                                <div class="p-4 space-y-2">
+                                                                    <% if (contest.status==='past' ||
+                                                                        contest.status==='active' ) { %>
+                                                                        <% if (contest.leaderboard &&
+                                                                            contest.leaderboard.length> 0) { %>
+                                                                            <% contest.leaderboard.forEach(function(entry)
+                                                                                { %>
+                                                                                <div
+                                                                                    class="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.05] transition-colors group/entry">
+                                                                                    <div
+                                                                                        class="w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 border
                                                                             <%= entry.rank === 1 ? 'bg-gradient-to-br from-amber-300 to-amber-500 text-black border-amber-400/50' :
                                                                                 entry.rank === 2 ? 'bg-gradient-to-br from-slate-200 to-slate-300 text-black border-slate-300/50' :
                                                                                 entry.rank === 3 ? 'bg-gradient-to-br from-amber-700 to-amber-800 text-white border-amber-700/50' :
                                                                                 'bg-white/5 text-muted-foreground border-white/10' %>">
-                                                                            <%= entry.rank %>
-                                                                        </div>
-                                                                        <div class="flex-1 min-w-0">
-                                                                            <p class="text-sm font-semibold text-foreground/90 truncate group-hover/entry:text-white transition-colors"><%= entry.name %></p>
-                                                                        </div>
-                                                                        <div class="text-right">
-                                                                            <span class="text-sm font-bold text-primary tabular-nums"><%= entry.score %></span>
-                                                                            <span class="text-[9px] text-muted-foreground uppercase ml-0.5">pts</span>
-                                                                        </div>
-                                                                    </div>
-                                                                <% }); %>
-                                                            <% } else { %>
-                                                                <div class="flex flex-col items-center justify-center text-center py-10 opacity-40">
-                                                                    <i data-lucide="ghost" class="w-10 h-10 mb-3"></i>
-                                                                    <h4 class="text-xs font-bold uppercase tracking-wider">No entries yet</h4>
-                                                                    <p class="text-[10px] text-muted-foreground mt-1">Be the first to submit!</p>
+                                                                                        <%= entry.rank %>
+                                                                                    </div>
+                                                                                    <div class="flex-1 min-w-0">
+                                                                                        <p
+                                                                                            class="text-sm font-semibold text-foreground/90 truncate group-hover/entry:text-white transition-colors">
+                                                                                            <%= entry.name %>
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <div class="text-right">
+                                                                                        <span
+                                                                                            class="text-sm font-bold text-primary tabular-nums">
+                                                                                            <%= entry.score %>
+                                                                                        </span>
+                                                                                        <span
+                                                                                            class="text-[9px] text-muted-foreground uppercase ml-0.5">pts</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <% }); %>
+                                                                                    <% } else { %>
+                                                                                        <div
+                                                                                            class="flex flex-col items-center justify-center text-center py-10 opacity-40">
+                                                                                            <i data-lucide="ghost"
+                                                                                                class="w-10 h-10 mb-3"></i>
+                                                                                            <h4
+                                                                                                class="text-xs font-bold uppercase tracking-wider">
+                                                                                                No entries yet</h4>
+                                                                                            <p
+                                                                                                class="text-[10px] text-muted-foreground mt-1">
+                                                                                                Be the first to submit!
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <% } %>
+                                                                                            <% } else { %>
+                                                                                                <div
+                                                                                                    class="flex flex-col items-center justify-center text-center py-10 opacity-40">
+                                                                                                    <div
+                                                                                                        class="p-3 rounded-full bg-white/5 border border-white/10 mb-3">
+                                                                                                        <i data-lucide="shield-off"
+                                                                                                            class="w-6 h-6"></i>
+                                                                                                    </div>
+                                                                                                    <h4
+                                                                                                        class="text-xs font-bold uppercase tracking-wider text-foreground">
+                                                                                                        Results Hidden
+                                                                                                    </h4>
+                                                                                                    <p
+                                                                                                        class="text-[10px] text-muted-foreground mt-1">
+                                                                                                        Available after
+                                                                                                        contest starts
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                                <% } %>
                                                                 </div>
-                                                            <% } %>
-                                                        <% } else { %>
-                                                            <div class="flex flex-col items-center justify-center text-center py-10 opacity-40">
-                                                                <div class="p-3 rounded-full bg-white/5 border border-white/10 mb-3">
-                                                                    <i data-lucide="shield-off" class="w-6 h-6"></i>
-                                                                </div>
-                                                                <h4 class="text-xs font-bold uppercase tracking-wider text-foreground">Results Hidden</h4>
-                                                                <p class="text-[10px] text-muted-foreground mt-1">Available after contest starts</p>
                                                             </div>
-                                                        <% } %>
-                                                    </div>
-                                                </div>
 
-                                                <!-- Contest Info Card -->
-                                                <div class="glass-card p-6 border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
-                                                    <div class="absolute top-0 right-0 p-4 opacity-5">
-                                                        <i data-lucide="info" class="w-16 h-16"></i>
-                                                    </div>
-                                                    <h3 class="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
-                                                        <i data-lucide="clipboard-list" class="w-4 h-4 text-primary"></i>
-                                                        Contest Details
-                                                    </h3>
-                                                    <div class="space-y-0">
-                                                        <div class="flex items-center justify-between text-xs py-2.5 border-b border-white/5">
-                                                            <span class="text-muted-foreground">Status</span>
-                                                            <span class="font-bold uppercase <%= contest.status === 'active' ? 'text-emerald-400' : (contest.status === 'upcoming' ? 'text-amber-400' : 'text-rose-400') %>">
-                                                                <%= contest.status %>
-                                                            </span>
-                                                        </div>
-                                                        <div class="flex items-center justify-between text-xs py-2.5 border-b border-white/5">
-                                                            <span class="text-muted-foreground">Participants</span>
-                                                            <span class="text-foreground font-bold tabular-nums"><%= contest.participants || 0 %></span>
-                                                        </div>
-                                                        <div class="flex items-center justify-between text-xs py-2.5 border-b border-white/5">
-                                                            <span class="text-muted-foreground">Organizer</span>
-                                                            <span class="text-foreground font-bold"><%= contest.organizer || 'CodeWith?' %></span>
-                                                        </div>
-                                                        <div class="flex items-center justify-between text-xs py-2.5">
-                                                            <span class="text-muted-foreground">Contest ID</span>
-                                                            <span class="text-muted-foreground font-mono text-[10px]"><%= String(contest.id).substring(0, 12) %></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                            <!-- Contest Info Card -->
+                                                            <div
+                                                                class="glass-card p-6 border-white/5 bg-gradient-to-br from-white/5 to-transparent relative overflow-hidden">
+                                                                <div class="absolute top-0 right-0 p-4 opacity-5">
+                                                                    <i data-lucide="info" class="w-16 h-16"></i>
+                                                                </div>
+                                                                <h3
+                                                                    class="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                                                                    <i data-lucide="clipboard-list"
+                                                                        class="w-4 h-4 text-primary"></i>
+                                                                    Contest Details
+                                                                </h3>
+                                                                <div class="space-y-0">
+                                                                    <div
+                                                                        class="flex items-center justify-between text-xs py-2.5 border-b border-white/5">
+                                                                        <span
+                                                                            class="text-muted-foreground">Status</span>
+                                                                        <span
+                                                                            class="font-bold uppercase <%= contest.status === 'active' ? 'text-emerald-400' : (contest.status === 'upcoming' ? 'text-amber-400' : 'text-rose-400') %>">
+                                                                            <%= contest.status %>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        class="flex items-center justify-between text-xs py-2.5 border-b border-white/5">
+                                                                        <span
+                                                                            class="text-muted-foreground">Participants</span>
+                                                                        <span
+                                                                            class="text-foreground font-bold tabular-nums">
+                                                                            <%= contest.participants || 0 %>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        class="flex items-center justify-between text-xs py-2.5 border-b border-white/5">
+                                                                        <span
+                                                                            class="text-muted-foreground">Organizer</span>
+                                                                        <span class="text-foreground font-bold">
+                                                                            <%= contest.organizer || 'CodeWith?' %>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div
+                                                                        class="flex items-center justify-between text-xs py-2.5">
+                                                                        <span class="text-muted-foreground">Contest
+                                                                            ID</span>
+                                                                        <span
+                                                                            class="text-muted-foreground font-mono text-[10px]">
+                                                                            <%= String(contest.id).substring(0, 12) %>
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
 
-                                                <!-- Pro Tip Card -->
-                                                <div class="glass-card p-6 border-primary/20 bg-primary/5">
-                                                    <div class="flex items-center gap-3 mb-3">
-                                                        <div class="p-2 rounded-lg bg-primary/20 text-primary">
-                                                            <i data-lucide="lightbulb" class="w-4 h-4"></i>
-                                                        </div>
-                                                        <h3 class="text-sm font-bold text-foreground">Pro Tip</h3>
-                                                    </div>
-                                                    <p class="text-xs text-muted-foreground leading-relaxed">
-                                                        Read all the rules carefully before starting. Focus on easier problems first to build momentum and climb the leaderboard quickly.
-                                                    </p>
-                                                </div>
+                                                            <!-- Pro Tip Card -->
+                                                            <div class="glass-card p-6 border-primary/20 bg-primary/5">
+                                                                <div class="flex items-center gap-3 mb-3">
+                                                                    <div
+                                                                        class="p-2 rounded-lg bg-primary/20 text-primary">
+                                                                        <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                                                                    </div>
+                                                                    <h3 class="text-sm font-bold text-foreground">Pro
+                                                                        Tip</h3>
+                                                                </div>
+                                                                <p
+                                                                    class="text-xs text-muted-foreground leading-relaxed">
+                                                                    Read all the rules carefully before starting. Focus
+                                                                    on easier problems first to build momentum and climb
+                                                                    the leaderboard quickly.
+                                                                </p>
+                                                            </div>
 
-                                            </div>
+                                                        </div>
+                                                    </div>
                                         </div>
-                                    </div>
 
-                                </main>
-                            </div>
-                        </div>
-                    </div>
+                                    </main>
                 </div>
-            </div>v>
+            </div>
 
-        <script>
-            const contestId = "<%= contest.id %>";
-            const contestStatus = '<%= contest.status %>';
-            const endTime = new Date('<%= contest.endTime %>').getTime();
-            const startTime = new Date('<%= contest.startTime %>').getTime();
+            <script>
+                const contestId = "<%= contest.id %>";
+                const contestStatus = '<%= contest.status %>';
+                const endTime = new Date('<%= contest.endTime %>').getTime();
+                const startTime = new Date('<%= contest.startTime %>').getTime();
 
-            // User Identity for Persistence
-            let userId = localStorage.getItem('userId');
-            if (!userId) {
-                userId = 'user_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('userId', userId);
-            }
+                // User Identity for Persistence
+                let userId = localStorage.getItem('userId');
+                if (!userId) {
+                    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('userId', userId);
+                }
 
-            let hasJoined = false;
+                let hasJoined = false;
 
             // Only check join status if contest is not past
             <% if (contest.status !== 'past') { %>
-                // Check initial status
-                fetch(`/api/contest/${contestId}/status?userId=${userId}`)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.joined) {
-                            hasJoined = true;
-                            updateJoinButtonUI();
-                            if (contestStatus === 'active') {
-                                document.getElementById('joinFeed').style.maxHeight = '80px';
-                                document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
+                    // Check initial status
+                    fetch(`/api/contest/${contestId}/status?userId=${userId}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.joined) {
+                                hasJoined = true;
+                                if (contestStatus === 'active') {
+                                    document.getElementById('joinFeed').style.maxHeight = '80px';
+                                    document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
+                                }
                             }
-                        }
-                    })
-                    .catch(console.error);
+                            updateJoinButtonUI();
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            updateJoinButtonUI(); // Still update to show fallback state
+                        });
             <% } %>
 
-            function updateJoinButtonUI() {
-                const joinBtn = document.getElementById('joinBtn');
-                const problemsArea = document.getElementById('problemsArea');
-                const leaveBtn = document.getElementById('leaveBtn');
-                const text = document.getElementById('joinText');
-                const icon = document.getElementById('joinIcon');
-
-                if (hasJoined) {
-                    // Hide join button, show problems area (if active) or leave button (if upcoming)
-                    if (joinBtn) joinBtn.style.display = 'none';
-
-                    if (contestStatus === 'active') {
-                        if (problemsArea) problemsArea.style.display = 'flex';
-                        if (leaveBtn) leaveBtn.style.display = 'none';
-                    } else if (contestStatus === 'upcoming') {
-                        if (problemsArea) problemsArea.style.display = 'none';
-                        if (leaveBtn) leaveBtn.style.display = 'block';
-                    }
-                } else {
-                    // Show join button, hide others
-                    if (joinBtn) joinBtn.style.display = 'flex';
-                    if (problemsArea) problemsArea.style.display = 'none';
-                    if (leaveBtn) leaveBtn.style.display = 'none';
-
-                    if (text && icon) {
-                        text.textContent = contestStatus === 'active' ? 'Join Contest' : 'Register Now';
-                        icon.setAttribute('data-lucide', contestStatus === 'active' ? 'play' : 'bell');
-
-                        // Reset button styling
-                        joinBtn.disabled = false;
-                        joinBtn.classList.remove('cursor-not-allowed', 'opacity-50', 'bg-secondary');
-                        joinBtn.style.background = '';
-                        
-                        if (contestStatus === 'active') {
-                            joinBtn.className = 'w-full flex items-center justify-center gap-3 px-10 py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-xl bg-primary text-primary-foreground hover:scale-105 shadow-primary/20 hover:shadow-primary/40';
+                    function handleMainAction() {
+                        if (hasJoined && contestStatus === 'active') {
+                            window.location.href = `/contest/${contestId}/problems`;
                         } else {
-                            joinBtn.className = 'w-full flex items-center justify-center gap-3 px-10 py-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-xl bg-amber-500 text-white hover:scale-105 shadow-amber-500/20 hover:shadow-amber-500/40';
+                            toggleJoin();
                         }
                     }
-                }
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
 
-            // Toggle join state
-            function toggleJoin() {
-                // Prevent joining if contest is past
-                if (contestStatus === 'past') {
-                    alert('This contest has ended. Registration is closed.');
-                    return;
-                }
+                    function updateJoinButtonUI() {
+                        const btn = document.getElementById('mainActionBtn');
+                        const text = document.getElementById('mainActionText');
+                        const icon = document.getElementById('mainActionIcon');
+                        if (!btn || !text || !icon) return;
 
-                const action = hasJoined ? 'leave' : 'join';
-                const originalState = hasJoined;
+                        // Base classes for consistent sizing and alignment
+                        const baseClasses = "w-[180px] justify-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center gap-2 group shadow-lg";
 
-                // Optimistic update
-                hasJoined = !hasJoined;
-                updateJoinButtonUI();
-
-                fetch(`/api/contest/${contestId}/${action}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            if (hasJoined && contestStatus === 'active') {
-                                document.getElementById('joinFeed').style.maxHeight = '80px';
-                                document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
-                            } else if (!hasJoined) {
-                                document.getElementById('joinFeed').style.maxHeight = '0';
-                            }
-                            if (data.participants !== undefined) {
-                                document.getElementById('participantCount').textContent = data.participants.toLocaleString();
+                        if (hasJoined) {
+                            if (contestStatus === 'active') {
+                                text.textContent = "Go to Problems";
+                                icon.setAttribute('data-lucide', 'terminal');
+                                btn.className = `${baseClasses} bg-success text-success-foreground hover:shadow-success/20 hover:-translate-y-0.5`;
+                            } else {
+                                text.textContent = "Leave Contest";
+                                icon.setAttribute('data-lucide', 'log-out');
+                                btn.className = `${baseClasses} bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20`;
                             }
                         } else {
-                            // revert on failure
+                            text.textContent = contestStatus === 'active' ? "Join Contest" : "Register Now";
+                            icon.setAttribute('data-lucide', contestStatus === 'active' ? 'play' : 'bell');
+                            
+                            if (contestStatus === 'active') {
+                                btn.className = `${baseClasses} bg-primary text-primary-foreground hover:shadow-primary/20 hover:-translate-y-0.5`;
+                            } else {
+                                btn.className = `${baseClasses} bg-warning text-warning-foreground hover:shadow-warning/20 hover:-translate-y-0.5`;
+                            }
+                        }
+
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+                    }
+
+                // Toggle join state
+                function toggleJoin() {
+                    if (contestStatus === 'past') return;
+
+                    const action = hasJoined ? 'leave' : 'join';
+                    const originalState = hasJoined;
+                    const btn = document.getElementById('mainActionBtn');
+
+                    // Optimistic update & visual feedback
+                    hasJoined = !hasJoined;
+                    if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
+                    updateJoinButtonUI();
+
+                    fetch(`/api/contest/${contestId}/${action}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId })
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (btn) btn.classList.remove('opacity-70', 'pointer-events-none');
+                            if (data.success) {
+                                if (hasJoined && contestStatus === 'active') {
+                                    document.getElementById('joinFeed').style.maxHeight = '80px';
+                                    document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
+                                } else if (!hasJoined) {
+                                    document.getElementById('joinFeed').style.maxHeight = '0';
+                                }
+                                if (data.participants !== undefined) {
+                                    document.getElementById('participantCount').textContent = data.participants.toLocaleString();
+                                }
+                            } else {
+                                hasJoined = originalState;
+                                updateJoinButtonUI();
+                                alert(data.error || 'Action failed. Please try again.');
+                            }
+                        })
+                        .catch(err => {
+                            if (btn) btn.classList.remove('opacity-70', 'pointer-events-none');
                             hasJoined = originalState;
                             updateJoinButtonUI();
-                            alert(data.error || 'Action failed. Please try again.');
+                            console.error(err);
+                        });
+                }
+
+                // Countdown timer — reload guard prevents infinite reload loops
+                let hasReloaded = false;
+                function updateTimer() {
+                    if (contestStatus === 'past') {
+                        document.getElementById('countdownTimer').textContent = 'Ended';
+                        return;
+                    }
+
+                    const now = Date.now();
+                    let target;
+
+                    if (contestStatus === 'active') {
+                        target = endTime;
+                    } else {
+                        target = startTime;
+                    }
+
+                    const diff = target - now;
+
+                    if (diff <= 0) {
+                        // Show terminal state instead of reloading
+                        if (contestStatus === 'active') {
+                            document.getElementById('countdownTimer').textContent = '00:00:00';
+                        } else {
+                            document.getElementById('countdownTimer').textContent = 'Starting...';
                         }
-                    })
-                    .catch(err => {
-                        hasJoined = originalState;
-                        updateJoinButtonUI();
-                        console.error(err);
-                    });
-            }
+                        
+                        // Smart Reload: Check if server status has actually changed before refreshing
+                        if (!hasReloaded) {
+                            hasReloaded = true;
+                            setTimeout(async () => {
+                                try {
+                                    const resp = await fetch(`/api/contest/${contestId}/status?userId=${userId}`);
+                                    const data = await resp.json();
+                                    // If server says the status is now different from our current local state, reload
+                                    if (data.status !== contestStatus) {
+                                        window.location.reload();
+                                    } else {
+                                        // If still the same, try again in 5 seconds (maybe DB hasn't updated yet)
+                                        hasReloaded = false;
+                                    }
+                                } catch (e) {
+                                    hasReloaded = false; // Reset to try again
+                                }
+                            }, 3000);
+                        }
+                        return;
+                    }
 
-            // Countdown timer
-            function updateTimer() {
-                if (contestStatus === 'past') {
-                    document.getElementById('countdownTimer').textContent = 'Ended';
-                    return;
+                    const hours = Math.floor(diff / 3600000);
+                    const mins = Math.floor((diff % 3600000) / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+
+                    const h = hours.toString().padStart(2, '0');
+                    const m = mins.toString().padStart(2, '0');
+                    const s = secs.toString().padStart(2, '0');
+
+                    document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
                 }
-
-                const now = Date.now();
-                let target;
-                let displayText;
-
-                if (contestStatus === 'active') {
-                    target = endTime;
-                    displayText = 'Time Remaining';
-                } else {
-                    target = startTime;
-                    displayText = 'Starts In';
-                }
-
-                const diff = target - now;
-
-                if (diff <= 0) {
-                    // Contest just ended or started - reload to update status
-                    window.location.reload();
-                    return;
-                }
-
-                const hours = Math.floor(diff / 3600000);
-                const mins = Math.floor((diff % 3600000) / 60000);
-                const secs = Math.floor((diff % 60000) / 1000);
-
-                const h = hours.toString().padStart(2, '0');
-                const m = mins.toString().padStart(2, '0');
-                const s = secs.toString().padStart(2, '0');
-
-                document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
-            }
 
             // Only run timer if contest is not past
             <% if (contest.status !== 'past') { %>
-                setInterval(updateTimer, 1000);
-                updateTimer();
+                    setInterval(updateTimer, 1000);
+                    updateTimer();
             <% } %>
 
-                function shareContest() {
-                    const url = window.location.href;
-                    if (navigator.share) {
-                        navigator.share({
-                            title: '<%= contest.title %>',
-                            text: 'Check out this contest on CodeWith!',
-                            url: url
-                        }).catch(console.error);
-                    } else {
-                        navigator.clipboard.writeText(url).then(() => {
-                            alert('Link copied to clipboard!');
-                        });
+                    function shareContest() {
+                        const url = window.location.href;
+                        if (navigator.share) {
+                            navigator.share({
+                                title: '<%= contest.title %>',
+                                text: 'Check out this contest on CodeWith!',
+                                url: url
+                            }).catch(console.error);
+                        } else {
+                            navigator.clipboard.writeText(url).then(() => {
+                                alert('Link copied to clipboard!');
+                            });
+                        }
                     }
-                }
 
-            // Initialize Lucide icons
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        </script>
+                // Initialize Lucide icons
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            </script>
     </body>
 
     </html>

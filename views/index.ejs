@@ -1,7 +1,6 @@
 <%- include('partials/head') %>
 
-    <!-- Font for Thin Neon theme -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         /* ── Timer (index only) ── */
         .timer-display {
@@ -9,10 +8,7 @@
             font-size: 2.25rem;
             font-weight: 600;
             letter-spacing: 0.1em;
-            color: hsl(220 14% 90%);
-            text-shadow:
-                0 0 10px hsl(152 58% 52% / 0.3),
-                0 0 20px hsl(152 58% 52% / 0.15);
+            color: hsl(var(--primary));
         }
 
         /* ── Slide-in animation (index only) ── */
@@ -24,49 +20,18 @@
             animation: slide-in-right 0.3s ease-out;
         }
 
-        .nostalgic-text {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            color: #00ffaa;
-            font-size: 0.7rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            z-index: 12;
-            text-shadow: 0 0 5px #00ffaa, 0 0 10px #00ffaa;
-            opacity: 0.5;
-            font-family: 'Courier New', monospace;
-        }
 
-        .nostalgic-text:before {
-            content: ">";
-            margin-right: 5px;
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
     </style>
 
     <body>
         <div class="fixed inset-0 w-screen h-screen overflow-hidden">
-            <!-- Thin Neon / Edge Flow overlays -->
-            <!-- Thin Neon / Edge Flow overlays -->
-            <div class="vintage-overlay"></div>
-            <div class="scanlines"></div>
-            <div class="flicker-effect"></div>
 
-            <!-- Ultra-Elegant Minimalist Background -->
-            <div class="absolute inset-0 z-0 bg-[#050907]" id="bg-container">
-                <!-- Vast, extremely subtle ambient glow for depth -->
-                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(152_58%_52%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>
-                <!-- Faint secondary glow to balance the scene -->
-                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(38_92%_55%_/_0.03)_0%,_transparent_60%)] pointer-events-none"></div>
-                
-                <!-- Premium matte glass noise (prevents banding, adds a luxurious physical texture) -->
-                <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+
+            <!-- Light Theme Background -->
+            <div class="absolute inset-0 z-0 bg-background" id="bg-container">
+                <!-- Subtle ambient depth -->
+                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(var(--primary)_/_0.03)_0%,_transparent_70%)] pointer-events-none"></div>
+                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(var(--warning)_/_0.02)_0%,_transparent_60%)] pointer-events-none"></div>
             </div>
 
             <!-- Monitor Container -->
@@ -82,7 +47,7 @@
                                     <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                                         <div class="relative z-10 flex flex-col h-full overflow-hidden">
                                             <!-- Header (Global Glassy) -->
-                                            <header class="border-b border-border/30 backdrop-blur-xl bg-background/50 z-20">
+                                            <header class="border-b border-white/10 backdrop-blur-2xl bg-secondary/80 z-50 sticky top-0 transition-all duration-300">
                                                 <%- include('partials/top-bar', { showShinyLine: true }) %>
                                             </header>
 
@@ -94,34 +59,63 @@
                                                     <h2
                                                         class="text-lg font-semibold text-foreground mb-2 tracking-wide">
                                                         DAILY BYTE CHALLENGE</h2>
-                                                    <div class="relative inline-block">
-                                                        <div
-                                                            class="absolute -inset-3 bg-gradient-to-r from-primary/15 via-primary/25 to-primary/10 blur-xl rounded-lg">
-                                                        </div>
-                                                        <div class="timer-display text-foreground relative z-10 tabular-nums tracking-widest"
-                                                            id="timer">09:59:45</div>
-                                                    </div>
+                                                    <div class="timer-display text-foreground relative z-10 tabular-nums tracking-widest"
+                                                        id="timer">00:00:00</div>
                                                 </div>
 
-                                                <!-- Quick Stats Row -->
-                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 mb-8">
-                                                    <div class="glass-card p-3 md:p-4 text-center">
-                                                        <div class="text-2xl font-bold text-foreground">
-                                                            <%= typeof contests !== 'undefined' ? contests.length : 0 %>
+                                                <!-- Bento Stats Row -->
+                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 mb-8 text-foreground selection:bg-primary/20 selection:text-primary">
+                                                    <!-- Card 1 — Active Contests -->
+                                                    <div class="glass-card p-5 relative overflow-hidden group hover:border-primary/30 transition-all cursor-default bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
+                                                        <div class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-colors"></div>
+                                                        <div class="relative z-10">
+                                                            <div class="flex items-center justify-between mb-3">
+                                                                <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Active Contests</span>
+                                                                <i data-lucide="award" class="w-4 h-4 text-primary"></i>
+                                                            </div>
+                                                            <div class="text-2xl font-black text-foreground tabular-nums leading-none">
+                                                                <%= typeof activeContestsCount !== 'undefined' ? activeContestsCount : 0 %>
+                                                            </div>
                                                         </div>
-                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Active Contests</div>
                                                     </div>
-                                                    <div class="glass-card p-3 md:p-4 text-center">
-                                                        <div class="text-2xl font-bold text-foreground">12</div>
-                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Problems</div>
+                                                    <!-- Card 2 — Total Problems -->
+                                                    <div class="glass-card p-5 relative overflow-hidden group hover:border-emerald-500/30 transition-all cursor-default bg-gradient-to-br from-emerald-500/10 to-transparent border-emerald-500/20">
+                                                        <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-emerald-500/20 transition-colors"></div>
+                                                        <div class="relative z-10">
+                                                            <div class="flex items-center justify-between mb-3">
+                                                                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Total Problems</span>
+                                                                <i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i>
+                                                            </div>
+                                                            <div class="text-2xl font-black text-foreground tabular-nums leading-none">
+                                                                <%= (typeof recentProblems !== 'undefined' ? recentProblems.length : 0) + 124 %>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div class="glass-card p-3 md:p-4 text-center">
-                                                        <div class="text-2xl font-bold text-primary">6</div>
-                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Solved</div>
+                                                    <!-- Card 3 — Platform Users -->
+                                                    <div class="glass-card p-5 relative overflow-hidden group hover:border-violet-500/30 transition-all cursor-default bg-gradient-to-br from-violet-500/10 to-transparent border-violet-500/20">
+                                                        <div class="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-violet-500/20 transition-colors"></div>
+                                                        <div class="relative z-10">
+                                                            <div class="flex items-center justify-between mb-3">
+                                                                <span class="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Platform Users</span>
+                                                                <i data-lucide="users" class="w-4 h-4 text-violet-400"></i>
+                                                            </div>
+                                                            <div class="text-2xl font-black text-foreground tabular-nums leading-none">
+                                                                <%= typeof totalParticipants !== 'undefined' ? totalParticipants : 0 %>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div class="glass-card p-3 md:p-4 text-center">
-                                                        <div class="text-2xl font-bold text-foreground">15</div>
-                                                        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Day Streak</div>
+                                                    <!-- Card 4 — System Reliability -->
+                                                    <div class="glass-card p-5 relative overflow-hidden group hover:border-warning/30 transition-all cursor-default bg-gradient-to-br from-warning/10 to-transparent border-warning/20">
+                                                        <div class="absolute top-0 right-0 w-24 h-24 bg-warning/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-warning/20 transition-colors"></div>
+                                                        <div class="relative z-10">
+                                                            <div class="flex items-center justify-between mb-3">
+                                                                <span class="text-[10px] font-bold text-warning uppercase tracking-widest">Reliability</span>
+                                                                <i data-lucide="shield-check" class="w-4 h-4 text-warning"></i>
+                                                            </div>
+                                                            <div class="text-2xl font-black text-foreground tabular-nums leading-none">
+                                                                99.8<span class="text-xs font-bold text-muted-foreground mr-0.5">%</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -174,26 +168,27 @@
                                                         <section>
                                                             <h2 class="section-title mb-4">RECENT ACTIVITY</h2>
                                                             <div class="glass-card overflow-hidden">
-                                                                <% const solvers=[
-                                                                    { name: "Raj", problem: "Innovation Challenge", time: "2 min ago", difficulty: "easy" },
-                                                                    { name: "Manoj", problem: "Algorithm Challenge", time: "5 min ago", difficulty: "medium" },
-                                                                    { name: "Priya", problem: "Graph Theory", time: "8 min ago", difficulty: "easy" },
-                                                                    { name: "Alex", problem: "Dynamic Programming", time: "12 min ago", difficulty: "hard" },
-                                                                    { name: "Ravi", problem: "Arrays & Strings", time: "15 min ago", difficulty: "easy" },
-                                                                ]; solvers.forEach(function(s) {
-                                                                    const dc={ easy: "text-success", medium: "text-warning", hard: "text-destructive" }[s.difficulty]; %>
-                                                                    <div class="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border/15 last:border-b-0">
-                                                                        <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary border border-primary/20">
-                                                                            <%= s.name.charAt(0) %>
+                                                                <% if (typeof solvers !== 'undefined' && solvers && solvers.length > 0) { %>
+                                                                    <% solvers.forEach(function(s) { 
+                                                                        const dc = { easy: "text-success", medium: "text-warning", hard: "text-destructive" }[s.difficulty] || "text-muted-foreground"; %>
+                                                                        <div class="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-border/15 last:border-b-0">
+                                                                            <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-primary border border-primary/20">
+                                                                                <%= s.name.charAt(0) %>
+                                                                            </div>
+                                                                            <div class="flex-1 min-w-0">
+                                                                                <span class="text-[13px] text-foreground font-medium"><%= s.name %></span>
+                                                                                <span class="text-[11px] text-muted-foreground"> solved </span>
+                                                                                <span class="text-[11px] <%= dc %> truncate inline-block align-bottom max-w-[120px] sm:max-w-none"><%= s.problem %></span>
+                                                                            </div>
+                                                                            <span class="text-[10px] text-muted-foreground flex-shrink-0"><%= s.time %></span>
                                                                         </div>
-                                                                        <div class="flex-1 min-w-0">
-                                                                            <span class="text-[13px] text-foreground font-medium"><%= s.name %></span>
-                                                                            <span class="text-[11px] text-muted-foreground"> solved </span>
-                                                                            <span class="text-[11px] <%= dc %> truncate inline-block align-bottom max-w-[120px] sm:max-w-none"><%= s.problem %></span>
-                                                                        </div>
-                                                                        <span class="text-[10px] text-muted-foreground flex-shrink-0"><%= s.time %></span>
+                                                                    <% }); %>
+                                                                <% } else { %>
+                                                                    <div class="py-12 text-center opacity-40">
+                                                                        <i data-lucide="activity" class="w-8 h-8 mx-auto mb-2"></i>
+                                                                        <p class="text-xs italic">Awaiting new solutions...</p>
                                                                     </div>
-                                                                <% }); %>
+                                                                <% } %>
                                                             </div>
                                                         </section>
                                                     </div>
@@ -231,22 +226,21 @@
                                                         <section>
                                                             <h2 class="section-title mb-4">POPULAR TOPICS</h2>
                                                             <div class="flex flex-col gap-2">
-                                                                <% const topics=[
-                                                                    { name: "Arrays & Strings", count: 4, icon: "layers" },
-                                                                    { name: "Graph Theory", count: 3, icon: "share-2" },
-                                                                    { name: "Dynamic Programming", count: 3, icon: "git-branch" },
-                                                                    { name: "Trees", count: 2, icon: "git-merge" },
-                                                                ]; topics.forEach(function(t) { %>
+                                                                <% if (typeof topics !== 'undefined' && topics && topics.length > 0) { 
+                                                                    const icons = { "Arrays": "layers", "Strings": "type", "Math": "percent", "DP": "git-branch", "Dynamic Programming": "git-branch", "Trees": "git-merge", "Graphs": "share-2" };
+                                                                    topics.forEach(function(t) { %>
                                                                     <div class="glass-card p-3 flex items-center gap-3 hover:bg-white/[0.02] cursor-pointer transition-colors group">
                                                                         <div class="w-8 h-8 rounded-lg bg-card flex items-center justify-center flex-shrink-0 border border-border/30 group-hover:border-primary/30 transition-colors">
-                                                                            <i data-lucide="<%= t.icon %>" class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"></i>
+                                                                            <i data-lucide="<%= icons[t.name] || 'hash' %>" class="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"></i>
                                                                         </div>
                                                                         <div class="flex-1">
                                                                             <div class="text-sm font-medium text-foreground group-hover:text-primary transition-colors"><%= t.name %></div>
                                                                         </div>
                                                                         <span class="text-[10px] text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full"><%= t.count %> problems</span>
                                                                     </div>
-                                                                <% }); %>
+                                                                <% }); } else { %>
+                                                                    <div class="py-4 text-center text-xs text-muted-foreground italic">No topics found yet.</div>
+                                                                <% } %>
                                                             </div>
                                                         </section>
                                                     </div>
@@ -265,7 +259,7 @@
                             <!-- Friends Panel Overlay -->
                             <aside id="friends-aside"
                                 class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-2xl hidden">
-                                <%- include('partials/friends-panel') %>
+                                <%- include('partials/friends-panel', { friends: typeof friends !== 'undefined' ? friends : [] }) %>
                             </aside>
                         </div>
                     </div>
@@ -275,35 +269,42 @@
         </div>
 
         <script>
-            // Daily Challenge Timer - Fixed to start at 09:59:45 every time
-            document.addEventListener('DOMContentLoaded', function () {
+            // Daily Challenge Timer - Real-time countdown to midnight
+            // Handling both standard loads and Turbo navigation
+            function initDailyTimer() {
                 const timerElement = document.getElementById('timer');
+                if (!timerElement) return;
 
-                // Set initial time to 9 hours, 59 minutes, 45 seconds
-                let totalSeconds = (9 * 60 * 60) + (59 * 60) + 45; // 09:59:45
+                function updateTimer() {
+                    const now = new Date();
+                    const midnight = new Date();
+                    midnight.setHours(24, 0, 0, 0);
 
-                // Format time function
-                function formatTime(seconds) {
-                    const hrs = Math.floor(seconds / 3600);
-                    const mins = Math.floor((seconds % 3600) / 60);
-                    const secs = seconds % 60;
-
-                    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    const diff = Math.floor((midnight - now) / 1000);
+                    
+                    if (diff > 0) {
+                        const hrs = Math.floor(diff / 3600);
+                        const mins = Math.floor((diff % 3600) / 60);
+                        const secs = diff % 60;
+                        timerElement.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    } else {
+                        timerElement.textContent = "00:00:00";
+                    }
                 }
 
-                // Initial display
-                timerElement.textContent = formatTime(totalSeconds);
+                if (window.timerInterval) clearInterval(window.timerInterval);
+                updateTimer();
+                window.timerInterval = setInterval(updateTimer, 1000);
+            }
 
-                // Update timer every second
-                const timerInterval = setInterval(() => {
-                    if (totalSeconds > 0) {
-                        totalSeconds--;
-                        timerElement.textContent = formatTime(totalSeconds);
-                    } else {
-                        clearInterval(timerInterval);
-                    }
-                }, 1000);
-            });
+            // Listen for Turbo loads
+            document.addEventListener('turbo:load', initDailyTimer);
+            // Fallback for non-turbo loads
+            if (document.readyState !== 'loading') {
+                initDailyTimer();
+            } else {
+                document.addEventListener('DOMContentLoaded', initDailyTimer);
+            }
         </script>
 
         <script src="/js/friends-panel.js"></script>

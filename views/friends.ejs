@@ -1,182 +1,446 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
+<%- include('partials/head') %>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Friends Hub - CodeWith?</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        background: "hsl(var(--background))",
-                        foreground: "hsl(var(--foreground))",
-                        card: "hsl(var(--card))",
-                        "card-foreground": "hsl(var(--card-foreground))",
-                        primary: "hsl(152 58% 52%)",
-                        "primary-foreground": "hsl(152 58% 10%)",
-                        secondary: "hsl(217 45% 15%)",
-                        "secondary-foreground": "hsl(210 40% 98%)",
-                        muted: "hsl(217 45% 15%)",
-                        "muted-foreground": "hsl(215 20.2% 65.1%)",
-                        accent: "hsl(38 92% 55%)",
-                        "accent-foreground": "hsl(38 92% 10%)",
-                        border: "hsl(var(--border))",
-                        ring: "hsl(var(--ring))",
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        :root {
-            --background: 150 15% 4%;
-            --foreground: 210 40% 98%;
-            --card: 150 10% 8%;
-            --card-foreground: 210 40% 98%;
-            --border: 150 15% 20%;
-            --ring: 152 58% 52%;
-        }
-    </style>
-</head>
+    <body class="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground overflow-hidden">
+        <div class="fixed inset-0 w-screen h-screen overflow-hidden">
 
-<body>
-    <div class="fixed inset-0 w-screen h-screen overflow-hidden">
-        <!-- Ultra-Elegant Minimalist Background -->
-        <div class="absolute inset-0 z-0 bg-[#050907]" id="bg-container">
-            <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(152_58%_52%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>
-            <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(38_92%_55%_/_0.03)_0%,_transparent_60%)] pointer-events-none"></div>
-            <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
-        </div>
 
-        <div class="relative z-10 w-screen h-screen">
-            <div class="monitor-frame">
-                <div class="monitor-bezel">
-                    <div class="monitor-screen animate-fade-in">
-                        <div class="flex h-full relative">
-                            <!-- Main App Sidebar -->
-                            <%- include('partials/sidebar') %>
+            <!-- Light Theme Background -->
+            <div class="absolute inset-0 z-0 bg-background" id="bg-container">
+                <!-- Subtle ambient depth -->
+                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(var(--primary)_/_0.03)_0%,_transparent_70%)] pointer-events-none"></div>
+                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(var(--warning)_/_0.02)_0%,_transparent_60%)] pointer-events-none"></div>
+            </div>
 
-                            <!-- Main Content (Friends Hub Layout) -->
-                            <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-                                <%- include('partials/top-bar', { showShinyLine: false, title: 'Friends Hub' }) %>
+            <!-- Monitor Container -->
+            <div class="relative z-10 w-screen h-screen">
+                <div class="flex h-full relative">
+                                <!-- Main App Sidebar -->
+                                <%- include('partials/sidebar') %>
 
-                                <!-- Internal 2-Column Layout (Scrollable) -->
-                                <div class="flex-1 flex overflow-hidden">
-                                    <!-- Friends Left Menu -->
-                                    <div class="w-64 border-r border-border/20 flex flex-col bg-card/20 overflow-y-auto">
-                                        <div class="p-4 space-y-1">
-                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-primary/10 text-primary font-medium border border-primary/20 shadow-sm transition-colors">
-                                                <i data-lucide="globe" class="w-4 h-4"></i>
-                                                Online
-                                            </button>
-                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/40 hover:text-foreground transition-colors group">
-                                                <i data-lucide="users" class="w-4 h-4 group-hover:text-primary transition-colors"></i>
-                                                All Friends
-                                            </button>
-                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/40 hover:text-foreground transition-colors group">
-                                                <i data-lucide="clock" class="w-4 h-4 group-hover:text-primary transition-colors"></i>
-                                                Pending <span class="ml-auto bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full">2</span>
-                                            </button>
-                                        </div>
-                                        <div class="mt-4 px-4">
-                                            <div class="h-[1px] w-full bg-border/40 mb-4"></div>
-                                            <p class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Connect</p>
-                                            <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 font-medium transition-colors border border-emerald-500/20 shadow-sm border-dashed group">
-                                                <i data-lucide="user-plus" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
-                                                Add Friend
-                                            </button>
-                                        </div>
-                                    </div>
+                                <!-- Main Content -->
+                                <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+                                    <div class="relative z-10 flex flex-col h-full overflow-hidden">
+                                        <!-- Header -->
+                                        <header class="border-b border-white/10 backdrop-blur-2xl bg-secondary/80 z-50 sticky top-0 transition-all duration-300">
+                                            <%- include('partials/top-bar', { showShinyLine: false, title: 'Friends Hub' }) %>
+                                        </header>
 
-                                    <!-- Friends Main View -->
-                                    <div class="flex-1 overflow-y-auto scrollbar-thin p-8">
-                                        <!-- Search Header -->
-                                        <div class="max-w-3xl mx-auto mb-10">
-                                            <div class="relative group">
-                                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors"></i>
-                                                <input type="text" placeholder="Search your friends..." class="w-full bg-card/40 border border-border/40 rounded-xl py-3.5 pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all shadow-lg backdrop-blur-sm">
-                                            </div>
-                                        </div>
-
-                                        <!-- Content Label -->
-                                        <div class="max-w-5xl mx-auto">
-                                            <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6 border-b border-border/20 pb-2">Online — 3</h2>
-
-                                            <!-- Friends Grid -->
-                                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                                
-                                                <!-- Mock Friend Card 1 -->
-                                                <div class="glass-card p-5 hover:border-primary/40 transition-all duration-300 group flex items-start gap-4 shadow-xl hover:shadow-2xl hover:shadow-primary/5 cursor-pointer">
-                                                    <div class="relative flex-shrink-0">
-                                                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary/80 to-primary/40 flex items-center justify-center font-bold text-primary-foreground shadow-lg group-hover:scale-105 transition-transform">AC</div>
-                                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-card shadow-sm pulse-dot flex items-center justify-center">
-                                                           <div class="w-4 h-4 absolute inset-0 rounded-full bg-emerald-500 opacity-50 animate-ping"></div>
-                                                        </div>
+                                        <!-- Friends Hub Main Container -->
+                                        <div class="flex-1 flex overflow-hidden">
+                                            <!-- Internal Vertical Sidebar -->
+                                            <aside class="w-64 border-r border-white/5 flex flex-col bg-secondary/5 overflow-y-auto flex-shrink-0">
+                                                <div class="p-4 space-y-1">
+                                                    <div class="px-3 mb-4">
+                                                        <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50">Friends Hub</h2>
                                                     </div>
-                                                    <div class="flex-1 min-w-0">
-                                                        <h3 class="font-semibold text-foreground text-lg truncate group-hover:text-primary transition-colors">Alex Chen</h3>
-                                                        <p class="text-xs text-muted-foreground mt-0.5">Available to chat</p>
-                                                        <div class="flex items-center gap-2 mt-4">
-                                                            <button class="flex-1 py-1.5 rounded-lg bg-primary/10 hover:bg-primary hover:text-primary-foreground text-xs font-medium transition-colors text-primary border border-primary/20">Message</button>
-                                                            <button class="p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors text-muted-foreground"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                                    
+                                                    <button onclick="switchTab('online')" data-tab="online"
+                                                        class="friends-tab w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold border border-primary/20 transition-all text-xs">
+                                                        <i data-lucide="wifi" class="w-4 h-4"></i>
+                                                        <span class="flex-1 text-left uppercase tracking-wider">Online</span>
+                                                        <span class="text-[10px] bg-primary/20 px-1.5 py-0.5 rounded-full" id="count-online">0</span>
+                                                    </button>
+                                                    <button onclick="switchTab('all')" data-tab="all"
+                                                        class="friends-tab w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all text-xs font-bold">
+                                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                                        <span class="flex-1 text-left uppercase tracking-wider">All Friends</span>
+                                                        <span class="text-[10px] bg-white/5 px-1.5 py-0.5 rounded-full border border-white/10" id="count-all">0</span>
+                                                    </button>
+                                                    <button onclick="switchTab('pending')" data-tab="pending"
+                                                        class="friends-tab w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all text-xs font-bold">
+                                                        <i data-lucide="clock" class="w-4 h-4"></i>
+                                                        <span class="flex-1 text-left uppercase tracking-wider">Requests</span>
+                                                        <span class="text-[10px] bg-white/5 px-1.5 py-0.5 rounded-full border border-white/10" id="count-pending">0</span>
+                                                    </button>
+                                                    <button onclick="switchTab('suggestions')" data-tab="suggestions"
+                                                        class="friends-tab w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-white/5 hover:text-foreground transition-all text-xs font-bold">
+                                                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                                                        <span class="flex-1 text-left uppercase tracking-wider">Discover</span>
+                                                        <span class="text-[10px] bg-white/5 px-1.5 py-0.5 rounded-full border border-white/10" id="count-suggestions">0</span>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Footer Stats in Sidebar -->
+                                                <div class="mt-auto p-4 border-t border-white/5">
+                                                    <div class="flex flex-col gap-2 px-3">
+                                                        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                                            <span>Total Network</span>
+                                                            <span class="text-foreground" id="stat-total">0</span>
+                                                        </div>
+                                                        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                                            <span>Online Now</span>
+                                                            <span class="text-emerald-400" id="stat-online">0</span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
-                                                <!-- Mock Friend Card 2 -->
-                                                <div class="glass-card p-5 hover:border-primary/40 transition-all duration-300 group flex items-start gap-4 shadow-xl hover:shadow-2xl hover:shadow-primary/5 cursor-pointer">
-                                                    <div class="relative flex-shrink-0">
-                                                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/80 to-amber-500/40 flex items-center justify-center font-bold text-white shadow-lg group-hover:scale-105 transition-transform">SM</div>
-                                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 ring-2 ring-card shadow-sm"></div>
-                                                    </div>
-                                                    <div class="flex-1 min-w-0">
-                                                        <h3 class="font-semibold text-foreground text-lg truncate group-hover:text-amber-500 transition-colors">Sarah Miller</h3>
-                                                        <p class="text-xs text-amber-500/80 flex items-center gap-1 mt-0.5"><i data-lucide="gamepad-2" class="w-3 h-3"></i> Competing now</p>
-                                                        <div class="flex items-center gap-2 mt-4">
-                                                            <button class="flex-1 py-1.5 rounded-lg bg-secondary/50 hover:bg-secondary border border-transparent text-xs font-medium transition-colors text-muted-foreground">Message</button>
-                                                            <button class="p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors text-muted-foreground"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                            </aside>
+
+                                            <!-- Friends Content Area -->
+                                            <div class="flex-1 overflow-y-auto scrollbar-thin flex flex-col">
+                                                <!-- Search Bar (Pinned Top) -->
+                                                <div class="px-6 py-5 border-b border-white/5 sticky top-0 bg-background/40 backdrop-blur-md z-20">
+                                                    <div class="max-w-3xl relative group">
+                                                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                            <i data-lucide="search" class="w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors"></i>
                                                         </div>
+                                                        <input type="text" id="friends-search" placeholder="Search friends list..." oninput="handleSearch(this.value)"
+                                                            class="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all">
                                                     </div>
                                                 </div>
 
-                                                <!-- Mock Friend Card 3 -->
-                                                <div class="glass-card p-5 hover:border-primary/40 transition-all duration-300 group flex items-start gap-4 shadow-xl hover:shadow-2xl hover:shadow-primary/5 cursor-pointer">
-                                                    <div class="relative flex-shrink-0">
-                                                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary/50 to-primary/20 flex items-center justify-center font-bold text-foreground shadow-lg group-hover:scale-105 transition-transform">JL</div>
-                                                        <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-primary ring-2 ring-card shadow-sm"></div>
-                                                    </div>
-                                                    <div class="flex-1 min-w-0">
-                                                        <h3 class="font-semibold text-foreground text-lg truncate group-hover:text-primary transition-colors">Jordan Lee</h3>
-                                                        <p class="text-xs text-primary/80 flex items-center gap-1 mt-0.5"><i data-lucide="code" class="w-3 h-3"></i> Solving problems</p>
-                                                        <div class="flex items-center gap-2 mt-4">
-                                                            <button class="flex-1 py-1.5 rounded-lg bg-secondary/50 hover:bg-secondary border border-transparent text-xs font-medium transition-colors text-muted-foreground">Message</button>
-                                                            <button class="p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary/80 transition-colors text-muted-foreground"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+                                                <!-- Simplified List Area -->
+                                                <div class="p-6">
+                                                    <div class="max-w-4xl mx-auto" id="friends-content">
+                                                        <div class="flex items-center justify-center py-20">
+                                                            <div class="flex flex-col items-center gap-4">
+                                                                <div class="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                                                                <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Synchronizing...</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                </div>
-                            </main>
-
-                        </div>
-                    </div>
+                                </main>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <script src="/js/card-effects.js"></script>
-    <script>lucide.createIcons();</script>
-</body>
-</html>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-2"></div>
+
+        <style>
+            .friend-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .friend-card:hover { transform: translateY(-2px); }
+
+            .status-online { background: #10b981; box-shadow: 0 0 8px #10b981aa; }
+            .status-offline { background: #6b7280; }
+            .status-busy { background: #f59e0b; box-shadow: 0 0 8px #f59e0baa; }
+
+            .pulse-online { animation: pulse-status 2s infinite; }
+            @keyframes pulse-status { 0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 0 4px rgba(16,185,129,0); } }
+
+            .toast { animation: toastIn 0.4s ease-out, toastOut 0.4s ease-in 3.6s forwards; }
+            @keyframes toastIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+            @keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateY(8px); } }
+
+            @keyframes fadeCard { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+            .card-animate { animation: fadeCard 0.4s ease-out forwards; opacity: 0; }
+
+            .action-btn { transition: all 0.2s; }
+            .action-btn:active { transform: scale(0.92); }
+        </style>
+
+        <script>
+            let currentTab = 'online';
+            let friendsData = null;
+            let searchTimeout = null;
+
+            // ── Initial Load ──
+            fetchFriends();
+
+            function fetchFriends(search) {
+                const params = new URLSearchParams();
+                if (search) params.set('search', search);
+                fetch('/api/friends?' + params.toString())
+                    .then(r => r.json())
+                    .then(data => {
+                        friendsData = data;
+                        updateCounts(data.counts);
+                        renderTab();
+                    });
+            }
+
+            function updateCounts(counts) {
+                document.getElementById('count-online').textContent = counts.online;
+                document.getElementById('count-all').textContent = counts.all;
+                document.getElementById('count-pending').textContent = counts.pending;
+                document.getElementById('count-suggestions').textContent = counts.suggestions;
+                document.getElementById('stat-total').textContent = counts.all;
+                document.getElementById('stat-online').textContent = counts.online;
+            }
+
+            function switchTab(tab) {
+                currentTab = tab;
+                // Update button styles
+                document.querySelectorAll('.friends-tab').forEach(btn => {
+                    btn.classList.remove('bg-primary/10', 'text-primary', 'border-primary/20');
+                    btn.classList.add('text-muted-foreground', 'hover:bg-white/5', 'hover:text-foreground');
+                    const badge = btn.querySelector('span:last-child');
+                    if (badge) {
+                        badge.classList.remove('bg-primary/20');
+                        badge.classList.add('bg-white/5', 'border-white/10');
+                    }
+                });
+                const active = document.querySelector('.friends-tab[data-tab="' + tab + '"]');
+                if (active) {
+                    active.classList.add('bg-primary/10', 'text-primary', 'border-primary/20');
+                    active.classList.remove('text-muted-foreground', 'hover:bg-white/5', 'hover:text-foreground');
+                    const badge = active.querySelector('span:last-child');
+                    if (badge) {
+                        badge.classList.remove('bg-white/5', 'border-white/10');
+                        badge.classList.add('bg-primary/20');
+                    }
+                }
+                renderTab();
+            }
+
+            function handleSearch(val) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => fetchFriends(val), 250);
+            }
+
+            function renderTab() {
+                if (!friendsData) return;
+                const content = document.getElementById('friends-content');
+
+                switch (currentTab) {
+                    case 'online':
+                        renderFriendCards(friendsData.onlineFriends, 'Online', 'online');
+                        break;
+                    case 'all':
+                        renderFriendCards(friendsData.friends, 'All Friends', 'all');
+                        break;
+                    case 'pending':
+                        renderPending();
+                        break;
+                    case 'suggestions':
+                        renderSuggestions();
+                        break;
+                }
+                lucide.createIcons();
+            }
+
+            function getInitials(name) {
+                return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+            }
+
+            function getStatusDot(status) {
+                const cls = status === 'online' ? 'status-online pulse-online' : status === 'busy' ? 'status-busy' : 'status-offline';
+                return '<div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full ' + cls + ' ring-2 ring-[hsl(var(--card))]"></div>';
+            }
+
+            function renderFriendCards(friends, label, type) {
+                const content = document.getElementById('friends-content');
+                if (!friends || friends.length === 0) {
+                    content.innerHTML =
+                        '<div class="flex flex-col items-center justify-center py-20 text-center">' +
+                        '<div class="w-16 h-16 rounded-2xl bg-secondary/40 flex items-center justify-center mb-4"><i data-lucide="users" class="w-7 h-7 text-muted-foreground"></i></div>' +
+                        '<h3 class="text-xs font-bold text-foreground uppercase tracking-widest mb-1">No friends found</h3>' +
+                        '<p class="text-[11px] text-muted-foreground max-w-sm">Check the Discover tab to find people to connect with!</p>' +
+                        '</div>';
+                    return;
+                }
+
+                let html = '<h2 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-6 border-b border-white/5 pb-2">' + label + ' • ' + friends.length + '</h2>';
+                html += '<div class="space-y-1.5">';
+
+                friends.forEach((f, i) => {
+                    const isOnline = f.status === 'online';
+                    const statusColor = isOnline ? 'text-emerald-400' : 'text-muted-foreground/50';
+                    const statusDot = isOnline ? '<div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>' : '<div class="w-1.5 h-1.5 rounded-full bg-white/10"></div>';
+                    
+                    html +=
+                        '<div class="friend-row group card-animate bg-white/[0.02] hover:bg-white/[0.03] border border-white/5 rounded-xl transition-all overflow-hidden" style="animation-delay:' + (i * 0.04) + 's">' +
+                            '<div class="flex items-center justify-between p-3 cursor-pointer select-none" onclick="toggleFriendActions(\'' + f.id + '\')">' +
+                                '<div class="flex items-center gap-2.5">' +
+                                    statusDot +
+                                    '<span class="font-bold text-sm text-foreground/90 tracking-tight">' + f.name + '</span>' +
+                                    '<span class="text-[10px] text-muted-foreground/40 font-medium">@' + f.username + '</span>' +
+                                '</div>' +
+                                '<div class="flex items-center gap-3">' +
+                                    '<span class="text-[9px] font-black uppercase tracking-[0.15em] ' + statusColor + '">' + (isOnline ? 'Online' : 'Offline') + '</span>' +
+                                    '<i data-lucide="chevron-down" class="w-3.5 h-3.5 text-muted-foreground/30 transition-transform duration-300" id="chevron-' + f.id + '"></i>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div id="actions-' + f.id + '" class="hidden border-t border-white/5 bg-white/[0.01] p-1.5 flex items-center justify-end gap-1.5">' +
+                                '<a href="/profile?username=' + f.username + '" class="px-3 py-1 rounded-full bg-white/5 hover:bg-primary/20 text-muted-foreground hover:text-primary transition-all text-[10px] font-bold uppercase tracking-wider">' +
+                                    'Profile' +
+                                '</a>' +
+                                '<button onclick="removeFriend(\'' + f.id + '\')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive transition-all text-[10px] font-bold uppercase tracking-wider">' +
+                                    'Delete' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>';
+                });
+
+                html += '</div>';
+                content.innerHTML = html;
+            }
+
+            function toggleFriendActions(id) {
+                const actions = document.getElementById('actions-' + id);
+                const chevron = document.getElementById('chevron-' + id);
+                if (actions.classList.contains('hidden')) {
+                    // Close others first
+                    document.querySelectorAll('[id^="actions-"]').forEach(el => el.classList.add('hidden'));
+                    document.querySelectorAll('[id^="chevron-"]').forEach(el => el.classList.remove('rotate-180'));
+                    
+                    actions.classList.remove('hidden');
+                    chevron.classList.add('rotate-180');
+                    lucide.createIcons();
+                } else {
+                    actions.classList.add('hidden');
+                    chevron.classList.remove('rotate-180');
+                }
+            }
+
+            function renderPending() {
+                const content = document.getElementById('friends-content');
+                const received = friendsData.pendingReceived || [];
+                const sent = friendsData.pendingSent || [];
+
+                if (received.length === 0 && sent.length === 0) {
+                    content.innerHTML =
+                        '<div class="flex flex-col items-center justify-center py-20 text-center">' +
+                        '<div class="w-16 h-16 rounded-2xl bg-secondary/40 flex items-center justify-center mb-4"><i data-lucide="inbox" class="w-7 h-7 text-muted-foreground"></i></div>' +
+                        '<h3 class="text-xs font-bold text-foreground uppercase tracking-widest mb-1">No pending requests</h3>' +
+                        '<p class="text-[11px] text-muted-foreground">You\'re all caught up!</p>' +
+                        '</div>';
+                    return;
+                }
+
+                let html = '';
+
+                if (received.length > 0) {
+                    html += '<h2 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 border-b border-white/5 pb-2">Incoming Requests • ' + received.length + '</h2>';
+                    html += '<div class="space-y-1.5 mb-10">';
+                    received.forEach((f, i) => {
+                        html +=
+                            '<div class="friend-row group card-animate bg-white/[0.02] border border-white/5 rounded-xl transition-all" style="animation-delay:' + (i * 0.04) + 's">' +
+                                '<div class="flex items-center justify-between p-3.5">' +
+                                    '<div class="flex items-center gap-3">' +
+                                        '<div class="w-2 h-2 rounded-full bg-amber-400"></div>' +
+                                        '<span class="font-bold text-sm text-foreground tracking-tight">' + f.name + '</span>' +
+                                        '<span class="text-[10px] text-muted-foreground font-medium opacity-50">@' + f.username + '</span>' +
+                                    '</div>' +
+                                    '<div class="flex items-center gap-2">' +
+                                        '<button onclick="acceptFriend(\'' + f.id + '\')" class="px-3 py-1 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-bold uppercase tracking-wider transition-all border border-primary/20">Accept</button>' +
+                                        '<button onclick="rejectFriend(\'' + f.id + '\')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive text-[10px] font-bold uppercase tracking-wider transition-all">Decline</button>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>';
+                    });
+                    html += '</div>';
+                }
+
+                if (sent.length > 0) {
+                    html += '<h2 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 border-b border-white/5 pb-2">Sent Requests • ' + sent.length + '</h2>';
+                    html += '<div class="space-y-1.5">';
+                    sent.forEach((f, i) => {
+                        html +=
+                            '<div class="friend-row group card-animate bg-white/[0.02] border border-white/5 rounded-xl transition-all" style="animation-delay:' + (i * 0.04) + 's">' +
+                                '<div class="flex items-center justify-between p-3.5">' +
+                                    '<div class="flex items-center gap-3">' +
+                                        '<div class="w-2 h-2 rounded-full bg-white/10"></div>' +
+                                        '<span class="font-bold text-sm text-foreground tracking-tight text-muted-foreground">' + f.name + '</span>' +
+                                        '<span class="text-[10px] text-muted-foreground font-medium opacity-30">@' + f.username + '</span>' +
+                                    '</div>' +
+                                    '<button onclick="rejectFriend(\'' + f.id + '\')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-destructive/10 text-muted-foreground/60 hover:text-destructive text-[10px] font-bold uppercase tracking-wider transition-all">Cancel</button>' +
+                                '</div>' +
+                            '</div>';
+                    });
+                    html += '</div>';
+                }
+
+                content.innerHTML = html;
+                lucide.createIcons();
+            }
+
+            function renderSuggestions() {
+                const content = document.getElementById('friends-content');
+                const suggestions = friendsData.suggestions || [];
+
+                if (suggestions.length === 0) {
+                    content.innerHTML =
+                        '<div class="flex flex-col items-center justify-center py-20 text-center">' +
+                        '<div class="w-16 h-16 rounded-2xl bg-secondary/40 flex items-center justify-center mb-4"><i data-lucide="compass" class="w-7 h-7 text-muted-foreground"></i></div>' +
+                        '<h3 class="text-xs font-bold text-foreground uppercase tracking-widest mb-1">No suggestions</h3>' +
+                        '<p class="text-[11px] text-muted-foreground">Check back later for new connections!</p>' +
+                        '</div>';
+                    return;
+                }
+
+                let html = '<h2 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-5 border-b border-white/5 pb-2">Discover New Friends • ' + suggestions.length + '</h2>';
+                html += '<div class="space-y-1.5">';
+
+                suggestions.forEach((f, i) => {
+                    html +=
+                        '<div class="friend-row group card-animate bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl transition-all" style="animation-delay:' + (i * 0.04) + 's">' +
+                            '<div class="flex items-center justify-between p-3.5">' +
+                                '<div class="flex items-center gap-3">' +
+                                    '<div class="w-2 h-2 rounded-full bg-primary/40"></div>' +
+                                    '<span class="font-bold text-sm text-foreground tracking-tight">' + f.name + '</span>' +
+                                    '<span class="text-[10px] text-muted-foreground font-medium opacity-50">@' + f.username + '</span>' +
+                                '</div>' +
+                                '<button onclick="sendRequest(\'' + f.id + '\')" class="px-3 py-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"><i data-lucide="user-plus" class="w-3 h-3"></i> Add</button>' +
+                            '</div>' +
+                        '</div>';
+                });
+
+                html += '</div>';
+                content.innerHTML = html;
+                lucide.createIcons();
+            }
+
+            // ── Friend Actions ──
+            function sendRequest(userId) {
+                friendAction('/api/friends/request', { userId });
+            }
+            function acceptFriend(userId) {
+                friendAction('/api/friends/accept', { userId });
+            }
+            function rejectFriend(userId) {
+                friendAction('/api/friends/reject', { userId });
+            }
+            function removeFriend(userId) {
+                friendAction('/api/friends/remove', { userId });
+            }
+
+            function friendAction(url, body) {
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast(data.error || 'Action failed', 'error');
+                    }
+                    // Refresh data
+                    const searchVal = document.getElementById('friends-search').value;
+                    fetchFriends(searchVal || undefined);
+                })
+                .catch(() => showToast('Network error', 'error'));
+            }
+
+            // ── Toast System ──
+            function showToast(message, type) {
+                const container = document.getElementById('toast-container');
+                const colors = {
+                    success: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
+                    error: 'border-rose-500/40 bg-rose-500/10 text-rose-400',
+                    info: 'border-primary/40 bg-primary/10 text-primary'
+                };
+                const icons = {
+                    success: '<i data-lucide="check-circle" class="w-4 h-4 flex-shrink-0"></i>',
+                    error: '<i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0"></i>',
+                    info: '<i data-lucide="info" class="w-4 h-4 flex-shrink-0"></i>'
+                };
+                const toast = document.createElement('div');
+                toast.className = 'toast flex items-center gap-2 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl text-sm ' + (colors[type] || colors.info);
+                toast.innerHTML = (icons[type] || icons.info) + '<span>' + message + '</span>';
+                container.appendChild(toast);
+                lucide.createIcons({ attrs: {} });
+                setTimeout(() => toast.remove(), 4000);
+            }
+
+            lucide.createIcons();
+        </script>
+    </body>
+
+    </html>

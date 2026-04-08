@@ -2,28 +2,18 @@
 
     <body class="min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground overflow-hidden">
         <div class="fixed inset-0 w-screen h-screen overflow-hidden">
-            <!-- Thin Neon / Edge Flow overlays -->
-            <div class="vintage-overlay"></div>
-            <div class="scanlines"></div>
-            <div class="flicker-effect"></div>
 
-            <!-- Ultra-Elegant Minimalist Background -->
-            <div class="absolute inset-0 z-0 bg-[#050907]" id="bg-container">
-                <!-- Vast, extremely subtle ambient glow for depth -->
-                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(152_58%_52%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>
-                <!-- Faint secondary glow to balance the scene -->
-                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(38_92%_55%_/_0.03)_0%,_transparent_60%)] pointer-events-none"></div>
-                
-                <!-- Premium matte glass noise (prevents banding, adds a luxurious physical texture) -->
-                <div class="absolute inset-0 opacity-[0.02] pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+
+            <!-- Light Theme Background -->
+            <div class="absolute inset-0 z-0 bg-background" id="bg-container">
+                <!-- Subtle ambient depth -->
+                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(var(--primary)_/_0.03)_0%,_transparent_70%)] pointer-events-none"></div>
+                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(var(--warning)_/_0.02)_0%,_transparent_60%)] pointer-events-none"></div>
             </div>
 
             <!-- Monitor Container -->
             <div class="relative z-10 w-screen h-screen">
-                <div class="monitor-frame">
-                    <div class="monitor-bezel">
-                        <div class="monitor-screen">
-                            <div class="flex h-full relative">
+                <div class="flex h-full relative">
                                 <!-- Sticky Sidebar -->
                                 <%- include('partials/sidebar') %>
 
@@ -31,18 +21,59 @@
                                 <main class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
                                     <div class="relative z-10 flex flex-col h-full overflow-hidden">
                                         <!-- Header (Global Glassy) -->
-                                        <header class="border-b border-border/30 backdrop-blur-xl bg-background/50 z-20">
+                                        <header class="border-b border-white/10 backdrop-blur-2xl bg-secondary/80 z-50 sticky top-0 transition-all duration-300">
                                             <%- include('partials/top-bar', { showShinyLine: false, title: 'Profile' }) %>
                                         </header>
 
                                         <!-- Scrollable Content -->
-                                        <div class="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-6 pb-6 mt-6">
+                                        <div class="flex-1 overflow-y-auto scrollbar-thin px-4 md:px-6 pb-6 mt-4" id="profile-scroll">
                                             <div id="profile-root">
-                                                <div class="text-center py-8 text-muted-foreground" id="profile-loading">Loading...</div>
+                                                <div class="flex items-center justify-center py-16" id="profile-loading">
+                                                    <div class="flex flex-col items-center gap-3">
+                                                        <div class="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                                        <span class="text-sm text-muted-foreground">Loading profile...</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-            </main>
+                                    </div>
+                                </main>
+                </div>
+            </div>
         </div>
+
+        <style>
+            .heatmap-cell { width: 11px; height: 11px; border-radius: 2px; transition: all 0.15s; }
+            .heatmap-cell:hover { transform: scale(1.8); z-index: 10; outline: 1px solid hsl(var(--primary)); }
+            .heatmap-level-0 { background: hsl(var(--card)); }
+            .heatmap-level-1 { background: hsl(213 28% 38% / 0.20); }
+            .heatmap-level-2 { background: hsl(213 28% 38% / 0.40); }
+            .heatmap-level-3 { background: hsl(213 28% 38% / 0.65); }
+            .heatmap-level-4 { background: hsl(213 28% 32% / 1.0); }
+
+            .skill-bar-fill { transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+            .stat-number { font-variant-numeric: tabular-nums; }
+
+            @keyframes countUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+            .count-up { animation: countUp 0.6s ease-out forwards; }
+
+            @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+            .fade-up { animation: fadeInUp 0.5s ease-out forwards; }
+            .fade-up-delay-1 { animation-delay: 0.1s; opacity: 0; }
+            .fade-up-delay-2 { animation-delay: 0.2s; opacity: 0; }
+            .fade-up-delay-3 { animation-delay: 0.3s; opacity: 0; }
+            .fade-up-delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+            .activity-dot { position: relative; }
+            .activity-dot::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); width: 1px; height: calc(100% + 12px); background: hsl(var(--border) / 0.3); }
+            .activity-item:last-child .activity-dot::after { display: none; }
+
+            .achievement-card.locked { filter: grayscale(0.8); opacity: 0.5; }
+            .achievement-card.locked:hover { filter: grayscale(0.4); opacity: 0.7; }
+
+            .heatmap-tooltip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: hsl(var(--card)); border: 1px solid hsl(var(--border) / 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 50; opacity: 0; transition: opacity 0.15s; }
+            .heatmap-cell:hover .heatmap-tooltip { opacity: 1; }
+        </style>
 
         <script>
             (function () {
@@ -53,60 +84,266 @@
                         document.getElementById('profile-loading').innerHTML = '<span class="text-destructive">Failed to load profile</span>';
                     });
 
+                function timeAgo(dateStr) {
+                    const diff = Date.now() - new Date(dateStr).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 60) return mins + 'm ago';
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return hrs + 'h ago';
+                    const days = Math.floor(hrs / 24);
+                    return days + 'd ago';
+                }
+
+                function getActivityIcon(type) {
+                    switch (type) {
+                        case 'solve': return '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i>';
+                        case 'contest': return '<i data-lucide="trophy" class="w-3.5 h-3.5"></i>';
+                        case 'streak': return '<i data-lucide="flame" class="w-3.5 h-3.5"></i>';
+                        case 'rating': return '<i data-lucide="trending-up" class="w-3.5 h-3.5"></i>';
+                        default: return '<i data-lucide="activity" class="w-3.5 h-3.5"></i>';
+                    }
+                }
+
+                function getDifficultyBadge(d) {
+                    if (!d) return '';
+                    const colors = { easy: 'text-emerald-600 bg-emerald-500/10', medium: 'text-amber-600 bg-amber-500/10', hard: 'text-rose-600 bg-rose-500/10' };
+                    return '<span class="text-[10px] px-1.5 py-0.5 rounded ' + (colors[d] || '') + '">' + d.charAt(0).toUpperCase() + d.slice(1) + '</span>';
+                }
+
                 function renderProfile(data) {
-                    const { user, achievements, activity } = data;
+                    const { user, activity, achievements, heatmap } = data;
                     const root = document.getElementById('profile-root');
+                    const initials = (user.name || 'AC').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+                    // Social links
+                    const socialIcons = [];
+                    if (user.social?.github) socialIcons.push('<a href="' + user.social.github + '" target="_blank" rel="noopener" class="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary transition-all"><i data-lucide="github" class="w-4 h-4"></i></a>');
+                    if (user.social?.twitter) socialIcons.push('<a href="' + user.social.twitter + '" target="_blank" rel="noopener" class="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary transition-all"><i data-lucide="twitter" class="w-4 h-4"></i></a>');
+                    if (user.social?.linkedin) socialIcons.push('<a href="' + user.social.linkedin + '" target="_blank" rel="noopener" class="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary transition-all"><i data-lucide="linkedin" class="w-4 h-4"></i></a>');
+                    if (user.social?.website) socialIcons.push('<a href="' + user.social.website + '" target="_blank" rel="noopener" class="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary transition-all"><i data-lucide="globe" class="w-4 h-4"></i></a>');
+
+                    // Skill bars
                     const skillBars = (user.skills || []).map(s =>
-                        '<div><div class="flex justify-between mb-1"><span class="text-sm text-foreground">' + s.name + '</span><span class="text-sm text-muted-foreground">' + s.level + '%</span></div><div class="h-2 bg-secondary rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500" style="width:' + s.level + '%"></div></div></div>'
+                        '<div class="group">' +
+                        '<div class="flex justify-between mb-1.5">' +
+                        '<span class="text-sm font-medium text-foreground">' + s.name + '</span>' +
+                        '<span class="text-xs font-mono text-muted-foreground group-hover:text-primary transition-colors">' + s.level + '%</span>' +
+                        '</div>' +
+                        '<div class="h-2 bg-secondary/60 rounded-full overflow-hidden">' +
+                        '<div class="skill-bar-fill h-full rounded-full bg-gradient-to-r from-primary/80 to-primary" style="width: 0%" data-width="' + s.level + '%"></div>' +
+                        '</div></div>'
                     ).join('');
 
-                    const activityItems = activity.map(a =>
-                        '<div class="flex items-center gap-3 p-3 rounded-lg bg-card/50 hover:bg-card transition-all"><div class="w-2 h-2 rounded-full flex-shrink-0 bg-primary"></div><div class="flex-1 min-w-0"><div class="text-sm font-medium text-foreground truncate">' + a.title + '</div><div class="text-xs text-muted-foreground">' + new Date(a.time).toLocaleString() + '</div></div></div>'
+                    // Language distribution
+                    const langItems = (user.languages || []).map(l =>
+                        '<div class="flex items-center gap-3">' +
+                        '<div class="w-3 h-3 rounded-full flex-shrink-0" style="background:' + l.color + '"></div>' +
+                        '<span class="text-sm text-foreground flex-1">' + l.name + '</span>' +
+                        '<span class="text-xs font-mono text-muted-foreground">' + l.percentage + '%</span>' +
+                        '</div>'
                     ).join('');
 
+                    // Build language bar
+                    let langBar = '<div class="h-3 rounded-full overflow-hidden flex">';
+                    (user.languages || []).forEach(l => {
+                        langBar += '<div class="h-full transition-all hover:opacity-80" style="width:' + l.percentage + '%;background:' + l.color + '" title="' + l.name + ' — ' + l.percentage + '%"></div>';
+                    });
+                    langBar += '</div>';
+
+                    // Activity timeline
+                    const activityItems = (activity || []).slice(0, 6).map(a =>
+                        '<div class="activity-item flex items-start gap-3 pb-4">' +
+                        '<div class="activity-dot w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary mt-0.5">' + getActivityIcon(a.type) + '</div>' +
+                        '<div class="flex-1 min-w-0">' +
+                        '<div class="flex items-center gap-2 flex-wrap">' +
+                        '<span class="text-sm text-foreground">' + a.title + '</span>' +
+                        getDifficultyBadge(a.difficulty) +
+                        '</div>' +
+                        '<span class="text-xs text-muted-foreground">' + timeAgo(a.time) + '</span>' +
+                        '</div></div>'
+                    ).join('');
+
+                    // Achievements
                     const achItems = achievements.map(a => {
                         const earned = a.earned;
-                        return '<div class="glass-card p-4 transition-all ' + (earned ? 'border-primary/30' : 'opacity-50 grayscale') + '"><div class="flex items-center gap-3 mb-2"><span class="text-2xl md:text-3xl">' + a.icon + '</span><div class="min-w-0"><div class="font-bold text-foreground truncate">' + a.name + '</div><div class="text-xs text-muted-foreground">' + a.description + '</div></div></div>' + (earned ? '<div class="flex items-center gap-1 text-xs text-success mt-2"><i data-lucide="calendar" class="w-3 h-3"></i><span>Earned ' + (a.date ? new Date(a.date).toLocaleDateString() : '') + '</span></div>' : '') + '</div>';
+                        return '<div class="achievement-card glass-card p-4 transition-all hover:border-primary/30 cursor-default ' + (earned ? '' : 'locked') + '">' +
+                            '<div class="flex items-center gap-3 mb-2">' +
+                            '<span class="text-2xl">' + a.icon + '</span>' +
+                            '<div class="min-w-0">' +
+                            '<div class="font-semibold text-foreground text-sm truncate">' + a.name + '</div>' +
+                            '<div class="text-[11px] text-muted-foreground">' + a.description + '</div>' +
+                            '</div></div>' +
+                            (earned ? '<div class="flex items-center gap-1 text-[10px] text-primary/70"><i data-lucide="check-circle" class="w-3 h-3"></i><span>' + new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + '</span></div>' : '<div class="text-[10px] text-muted-foreground/50 flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> Locked</div>') +
+                            '</div>';
                     }).join('');
 
-                    const socialLinks = [];
-                    if (user.social && user.social.github) socialLinks.push('<a href="' + user.social.github + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="github" class="w-5 h-5"></i></a>');
-                    if (user.social && user.social.twitter) socialLinks.push('<a href="' + user.social.twitter + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="twitter" class="w-5 h-5"></i></a>');
-                    if (user.social && user.social.linkedin) socialLinks.push('<a href="' + user.social.linkedin + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="linkedin" class="w-5 h-5"></i></a>');
-                    if (user.social && user.social.website) socialLinks.push('<a href="' + user.social.website + '" class="text-muted-foreground hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer"><i data-lucide="globe" class="w-5 h-5"></i></a>');
+                    // Heatmap
+                    let heatmapHTML = buildHeatmap(heatmap);
 
-                    root.innerHTML = '' +
-                        '<!-- Profile Header -->' +
-                        '<div class="glass-card p-4 md:p-6 mb-6 relative overflow-hidden">' +
-                        '<div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-primary/30 via-accent/20 to-primary/30"></div>' +
-                        '<div class="relative flex flex-col md:flex-row md:items-end gap-4 md:gap-6 pt-8">' +
-                        '<div class="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl md:text-4xl font-bold text-primary-foreground shadow-xl ring-4 ring-background">AC</div>' +
-                        '<div class="flex-1 pb-2">' +
-                        '<div class="flex flex-wrap items-center gap-3 mb-2"><h1 class="text-xl md:text-2xl font-bold text-foreground">' + (user.name || user.username) + '</h1></div>' +
-                        '<p class="text-sm md:text-base text-muted-foreground mb-3">' + user.bio + '</p>' +
-                        '<div class="flex items-center gap-4">' + socialLinks.join('') + '</div>' +
-                        '</div>' +
-                        '<button class="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-all self-start md:self-auto"><i data-lucide="edit-2" class="w-4 h-4"></i> Edit Profile</button>' +
-                        '</div>' +
-                        '</div>' +
+                    // Total contributions
+                    const totalContributions = heatmap.reduce((sum, d) => sum + d.count, 0);
 
-                        '<!-- Stats -->' +
-                        '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-6">' +
-                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="target" class="w-4 h-4 md:w-5 md:h-5 text-primary"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.solved || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Problems Solved</div></div>' +
-                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-success/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="flame" class="w-4 h-4 md:w-5 md:h-5 text-success"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.streak || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Day Streak</div></div>' +
-                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-warning/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="trophy" class="w-4 h-4 md:w-5 md:h-5 text-warning"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">#' + (user.stats.globalRank || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Global Rank</div></div>' +
-                        '<div class="glass-card p-3 md:p-4 text-center"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-accent/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="award" class="w-4 h-4 md:w-5 md:h-5 text-accent"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.contestsWon || 0) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Contests Won</div></div>' +
-                        '<div class="glass-card p-3 md:p-4 text-center col-span-2 sm:col-span-1"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-destructive/20 flex items-center justify-center mx-auto mb-2"><i data-lucide="trending-up" class="w-4 h-4 md:w-5 md:h-5 text-destructive"></i></div><div class="text-lg md:text-2xl font-bold text-foreground">' + (user.stats.rating || 1500) + '</div><div class="text-[10px] md:text-xs text-muted-foreground">Rating</div></div>' +
+                    root.innerHTML =
+                        // ═══ Hero Banner ═══
+                        '<div class="glass-card p-0 mb-5 relative overflow-hidden fade-up">' +
+                            '<div class="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/5 to-accent/10"></div>' +
+                            '<div class="absolute top-0 right-0 w-[300px] h-[300px] bg-[radial-gradient(circle,_hsl(213_28%_38%_/_0.06)_0%,_transparent_70%)] pointer-events-none"></div>' +
+                            '<div class="relative p-5 md:p-6">' +
+                                '<div class="flex flex-col sm:flex-row sm:items-center gap-5">' +
+                                    '<div class="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-2xl md:text-3xl font-bold text-primary-foreground shadow-2xl shadow-primary/20 ring-4 ring-background flex-shrink-0">' + initials + '</div>' +
+                                    '<div class="flex-1 min-w-0">' +
+                                        '<h1 class="text-xl md:text-2xl font-bold text-foreground">' + (user.name || user.username) + '</h1>' +
+                                        '<p class="text-sm text-muted-foreground mb-1">@' + user.username + '</p>' +
+                                        '<p class="text-sm text-foreground/70 mb-3 max-w-lg">' + (user.bio || '') + '</p>' +
+                                        '<div class="flex items-center gap-2 flex-wrap">' + socialIcons.join('') +
+                                            '<div class="h-6 w-px bg-border/20 mx-1 hidden sm:block"></div>' +
+                                            '<span class="text-xs text-muted-foreground flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i> Joined ' + new Date(user.joinedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</span>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<button class="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-all self-start text-sm font-medium"><i data-lucide="edit-2" class="w-4 h-4"></i> Edit</button>' +
+                                '</div>' +
+                            '</div>' +
                         '</div>' +
 
-                        '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">' +
-                        '<div class="glass-card p-4 md:p-6"><h2 class="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-primary"></i> Skill Progress</h2><div class="space-y-4">' + skillBars + '</div></div>' +
-                        '<div class="glass-card p-4 md:p-6"><h2 class="text-lg font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-primary"></i> Recent Activity</h2><div class="space-y-3">' + activityItems + '</div></div>' +
+                        // ═══ Stats Row ═══
+                        '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5 fade-up fade-up-delay-1">' +
+                            buildStatCard('target', 'primary', user.stats.solved, 'Problems Solved') +
+                            buildStatCard('flame', 'success', user.stats.streak, 'Day Streak') +
+                            buildStatCard('trophy', 'warning', '#' + user.stats.globalRank, 'Global Rank') +
+                            buildStatCard('award', 'accent', user.stats.contestsWon, 'Contests Won') +
+                            buildStatCard('trending-up', 'destructive', user.stats.rating, 'Rating') +
                         '</div>' +
 
-                        '<section class="mt-6"><h2 class="section-title mb-4">ACHIEVEMENTS</h2><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">' + achItems + '</div></section>';
+                        // ═══ Contribution Heatmap ═══
+                        '<div class="glass-card p-4 md:p-5 mb-5 fade-up fade-up-delay-2">' +
+                            '<div class="flex items-center justify-between mb-4">' +
+                                '<h2 class="text-sm font-bold text-foreground flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-primary"></i> ' + totalContributions + ' contributions in the last year</h2>' +
+                                '<div class="flex items-center gap-1 text-[10px] text-muted-foreground">' +
+                                    '<span>Less</span>' +
+                                    '<div class="heatmap-cell heatmap-level-0"></div>' +
+                                    '<div class="heatmap-cell heatmap-level-1"></div>' +
+                                    '<div class="heatmap-cell heatmap-level-2"></div>' +
+                                    '<div class="heatmap-cell heatmap-level-3"></div>' +
+                                    '<div class="heatmap-cell heatmap-level-4"></div>' +
+                                    '<span>More</span>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="overflow-x-auto pb-1">' + heatmapHTML + '</div>' +
+                        '</div>' +
+
+                        // ═══ Bento Grid: Skills + Languages | Activity ═══
+                        '<div class="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-5 fade-up fade-up-delay-3">' +
+                            // Left column (3/5)
+                            '<div class="lg:col-span-3 space-y-5">' +
+                                '<div class="glass-card p-4 md:p-5">' +
+                                    '<h2 class="text-sm font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-primary"></i> Skill Progress</h2>' +
+                                    '<div class="space-y-3">' + skillBars + '</div>' +
+                                '</div>' +
+                                '<div class="glass-card p-4 md:p-5">' +
+                                    '<h2 class="text-sm font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="code-2" class="w-4 h-4 text-primary"></i> Language Distribution</h2>' +
+                                    langBar +
+                                    '<div class="mt-4 space-y-2.5">' + langItems + '</div>' +
+                                '</div>' +
+                            '</div>' +
+                            // Right column (2/5)
+                            '<div class="lg:col-span-2">' +
+                                '<div class="glass-card p-4 md:p-5 h-full">' +
+                                    '<h2 class="text-sm font-bold text-foreground mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-primary"></i> Recent Activity</h2>' +
+                                    '<div>' + activityItems + '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+
+                        // ═══ Achievements ═══
+                        '<div class="fade-up fade-up-delay-4">' +
+                            '<h2 class="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2"><i data-lucide="medal" class="w-4 h-4 text-primary"></i> Achievements <span class="text-xs text-primary/60 ml-1">' + achievements.filter(a => a.earned).length + '/' + achievements.length + '</span></h2>' +
+                            '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">' + achItems + '</div>' +
+                        '</div>';
+
+                    // Animate skill bars
+                    setTimeout(() => {
+                        document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+                            bar.style.width = bar.dataset.width;
+                        });
+                    }, 300);
 
                     lucide.createIcons();
+                }
+
+                function buildStatCard(icon, colorClass, value, label) {
+                    return '<div class="glass-card p-3 md:p-4 text-center hover:border-' + colorClass + '/30 transition-all group cursor-default">' +
+                        '<div class="w-9 h-9 rounded-xl bg-' + colorClass + '/15 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">' +
+                        '<i data-lucide="' + icon + '" class="w-4 h-4 text-' + colorClass + '"></i></div>' +
+                        '<div class="text-lg md:text-xl font-bold text-foreground stat-number count-up">' + value + '</div>' +
+                        '<div class="text-[10px] md:text-xs text-muted-foreground">' + label + '</div></div>';
+                }
+
+                function buildHeatmap(heatmap) {
+                    if (!heatmap || heatmap.length === 0) return '<div class="text-sm text-muted-foreground">No activity data</div>';
+                    // Organize into weeks (columns) with 7 rows (Sun-Sat)
+                    const weeks = [];
+                    let currentWeek = [];
+                    const firstDay = new Date(heatmap[0].date).getDay();
+
+                    // Pad the first week
+                    for (let i = 0; i < firstDay; i++) {
+                        currentWeek.push(null);
+                    }
+
+                    heatmap.forEach(d => {
+                        currentWeek.push(d);
+                        if (currentWeek.length === 7) {
+                            weeks.push(currentWeek);
+                            currentWeek = [];
+                        }
+                    });
+                    if (currentWeek.length > 0) {
+                        while (currentWeek.length < 7) currentWeek.push(null);
+                        weeks.push(currentWeek);
+                    }
+
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    let monthLabels = '<div class="flex mb-1 ml-7" style="gap:0px">';
+                    let lastMonth = -1;
+                    weeks.forEach((week, wi) => {
+                        const validDay = week.find(d => d);
+                        if (validDay) {
+                            const m = new Date(validDay.date).getMonth();
+                            if (m !== lastMonth) {
+                                monthLabels += '<span class="text-[10px] text-muted-foreground" style="width:' + (wi === 0 ? '13px' : '13px') + ';text-align:left">' + months[m] + '</span>';
+                                lastMonth = m;
+                            } else {
+                                monthLabels += '<span style="width:13px"></span>';
+                            }
+                        }
+                    });
+                    monthLabels += '</div>';
+
+                    const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+                    let html = '<div style="display:inline-block;min-width:max-content">' + monthLabels + '<div class="flex gap-0">';
+                    // Day labels column
+                    html += '<div class="flex flex-col mr-1" style="gap:2px">';
+                    dayLabels.forEach(l => {
+                        html += '<div style="height:11px;line-height:11px" class="text-[9px] text-muted-foreground w-6 text-right pr-1">' + l + '</div>';
+                    });
+                    html += '</div>';
+
+                    // Week columns
+                    weeks.forEach(week => {
+                        html += '<div class="flex flex-col" style="gap:2px">';
+                        week.forEach(d => {
+                            if (!d) {
+                                html += '<div style="width:11px;height:11px"></div>';
+                            } else {
+                                const level = Math.min(d.count, 4);
+                                html += '<div class="heatmap-cell heatmap-level-' + level + ' relative" title="' + d.count + ' contributions on ' + d.date + '"><div class="heatmap-tooltip text-foreground">' + d.count + ' contributions<br><span class="text-muted-foreground">' + d.date + '</span></div></div>';
+                            }
+                        });
+                        html += '</div>';
+                    });
+
+                    html += '</div></div>';
+                    return html;
                 }
             })();
         </script>
