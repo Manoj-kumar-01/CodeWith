@@ -775,9 +775,9 @@ app.get('/', async (req, res) => {
                 recentProblems, 
                 activeContestsCount, 
                 totalParticipants,
-                solvers: solvers.length > 0 ? solvers : null,
-                topics: topics.length > 0 ? topics : null,
-                friends: friends.length > 0 ? friends : null
+                solvers: solvers || [],
+                topics: topics || [],
+                friends: friends || []
             });
         } else {
             const enriched = mockContests.map(c => ({
@@ -792,11 +792,29 @@ app.get('/', async (req, res) => {
             activeContestsCount = enriched.filter(c => c.status === 'active').length;
             totalParticipants = mockContests.reduce((acc, c) => acc + c.participants.length, 0);
             contests = enriched.filter(c => c.status === 'active').slice(0, 6);
-            res.render('index', { currentPath: '/', contests, recentProblems: mockProblems.slice(0, 6), activeContestsCount, totalParticipants });
+            res.render('index', { 
+                currentPath: '/', 
+                contests, 
+                recentProblems: mockProblems.slice(0, 6), 
+                activeContestsCount, 
+                totalParticipants,
+                solvers: [],
+                topics: [],
+                friends: []
+            });
         }
     } catch (err) {
         console.error(err);
-        res.render('index', { currentPath: '/', contests: [], recentProblems: [], activeContestsCount: 0, totalParticipants: 0 });
+        res.render('index', { 
+            currentPath: '/', 
+            contests: [], 
+            recentProblems: [], 
+            activeContestsCount: 0, 
+            totalParticipants: 0,
+            solvers: [],
+            topics: [],
+            friends: []
+        });
     }
 });
 
