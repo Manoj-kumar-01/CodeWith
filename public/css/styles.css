@@ -2,7 +2,7 @@
 
 /* ── CSS Custom Properties (outer.html Monochrome Light Theme) ── */
 :root {
-    --background: 210 20% 98%;
+    --background: 220 15% 97%;
     --foreground: 210 18% 10%;
     --card: 0 0% 100%;
     --card-foreground: 210 18% 10%;
@@ -54,13 +54,29 @@
 body {
     margin: 0;
     background-color: hsl(var(--background));
-    background-image: radial-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px);
-    background-size: 24px 24px;
     color: hsl(var(--foreground));
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+}
+
+/* ── Productive Grid Background ── */
+.bg-productive-grid {
+    background-color: hsl(var(--background));
+    background-image: 
+        linear-gradient(hsl(var(--primary) / 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, hsl(var(--primary) / 0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+    position: relative;
+}
+
+.bg-productive-grid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.02) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 /* ── Glass Card (used across many pages) ── */
@@ -199,6 +215,30 @@ body {
 
 .contest-card:active {
     transform: translateY(-1px);
+}
+
+/* ── Professional Contest Status Styles ── */
+.status-active-card {
+    border-color: rgba(16, 185, 129, 0.2) !important;
+    background: linear-gradient(to br, rgba(16, 185, 129, 0.1), transparent) !important;
+}
+.status-active-card .status-indicator-dot {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.status-upcoming-card {
+    border-color: rgba(245, 158, 11, 0.2) !important;
+    background: linear-gradient(to br, rgba(245, 158, 11, 0.1), transparent) !important;
+}
+
+.status-past-card {
+    border-color: rgba(100, 116, 139, 0.15) !important;
+    background: linear-gradient(to br, rgba(100, 116, 139, 0.05), transparent) !important;
+    opacity: 0.9;
+}
+.status-past-card:hover {
+    opacity: 1;
 }
 
 /* ── Section title (index + profile + practice) ── */

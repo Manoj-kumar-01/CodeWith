@@ -138,7 +138,7 @@
                                                             </span>
                                                             <i data-lucide="timer" class="w-4 h-4 text-primary"></i>
                                                         </div>
-                                                        <div class="text-2xl font-mono font-bold text-foreground tabular-nums tracking-tight leading-none mb-1"
+                                                        <div class="text-2xl font-bold text-foreground tabular-nums tracking-tight leading-none mb-1"
                                                             id="countdownTimer">
                                                             <%= contest.status==='past' ? '00:00:00' :
                                                                 (contest.status==='active' ? contest.timeLeft :
@@ -505,219 +505,199 @@
                                                     </div>
                                         </div>
 
-                                    </main>
-                </div>
-            </div>
+                     <script>
+                // Ultimate Contest Controller (State-Persistent, Idempotent & Loop-Resistant)
+                (function() {
+                    const contestId = "<%= contest.id %>";
+                    const initialStatus = '<%= contest.status %>';
+                    const userId = localStorage.getItem('userId');
+                    
+                    // Instant hydration from cache to prevent "flicker"
+                    const cachedJoined = sessionStorage.getItem(`joined_${contestId}`) === 'true';
 
-            <script>
-                const contestId = "<%= contest.id %>";
-                const contestStatus = '<%= contest.status %>';
-                const endTime = new Date('<%= contest.endTime %>').getTime();
-                const startTime = new Date('<%= contest.startTime %>').getTime();
+                    const ctx = {
+                        interval: null,
+                        checkPending: false,
+                        joined: cachedJoined,
+                        userId: userId,
+                        contestId: contestId,
+                        status: initialStatus,
+                        endTime: new Date('<%= contest.endTime %>').getTime(),
+                        startTime: new Date('<%= contest.startTime %>').getTime(),
+                        abortCtrl: null
+                    };
 
-                // User Identity for Persistence
-                let userId = localStorage.getItem('userId');
-                if (!userId) {
-                    userId = 'user_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('userId', userId);
-                }
-
-                let hasJoined = false;
-
-            // Only check join status if contest is not past
-            <% if (contest.status !== 'past') { %>
-                    // Check initial status
-                    fetch(`/api/contest/${contestId}/status?userId=${userId}`)
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.joined) {
-                                hasJoined = true;
-                                if (contestStatus === 'active') {
-                                    document.getElementById('joinFeed').style.maxHeight = '80px';
-                                    document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
-                                }
-                            }
-                            updateJoinButtonUI();
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            updateJoinButtonUI(); // Still update to show fallback state
-                        });
-            <% } %>
-
-                    function handleMainAction() {
-                        if (hasJoined && contestStatus === 'active') {
-                            window.location.href = `/contest/${contestId}/problems`;
-                        } else {
-                            toggleJoin();
-                        }
-                    }
-
-                    function updateJoinButtonUI() {
+                    function updateBtn() {
                         const btn = document.getElementById('mainActionBtn');
                         const text = document.getElementById('mainActionText');
                         const icon = document.getElementById('mainActionIcon');
                         if (!btn || !text || !icon) return;
 
-                        // Base classes for consistent sizing and alignment
-                        const baseClasses = "w-[180px] justify-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center gap-2 group shadow-lg";
-
-                        if (hasJoined) {
-                            if (contestStatus === 'active') {
+                        const base = "w-[180px] justify-center px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center gap-2 group shadow-lg";
+                        
+                        // Apply state-aware styling
+                        if (ctx.joined) {
+                            if (ctx.status === 'active') {
                                 text.textContent = "Go to Problems";
                                 icon.setAttribute('data-lucide', 'terminal');
-                                btn.className = `${baseClasses} bg-success text-success-foreground hover:shadow-success/20 hover:-translate-y-0.5`;
+                                btn.className = `${base} bg-success text-success-foreground hover:shadow-success/20 hover:-translate-y-0.5`;
                             } else {
                                 text.textContent = "Leave Contest";
                                 icon.setAttribute('data-lucide', 'log-out');
-                                btn.className = `${baseClasses} bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20`;
+                                btn.className = `${base} bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20`;
                             }
                         } else {
-                            text.textContent = contestStatus === 'active' ? "Join Contest" : "Register Now";
-                            icon.setAttribute('data-lucide', contestStatus === 'active' ? 'play' : 'bell');
-                            
-                            if (contestStatus === 'active') {
-                                btn.className = `${baseClasses} bg-primary text-primary-foreground hover:shadow-primary/20 hover:-translate-y-0.5`;
-                            } else {
-                                btn.className = `${baseClasses} bg-warning text-warning-foreground hover:shadow-warning/20 hover:-translate-y-0.5`;
-                            }
+                            text.textContent = ctx.status === 'active' ? "Join Contest" : "Register Now";
+                            icon.setAttribute('data-lucide', ctx.status === 'active' ? 'play' : 'bell');
+                            btn.className = `${base} ${ctx.status === 'active' ? 'bg-primary text-primary-foreground' : 'bg-warning text-warning-foreground'} hover:-translate-y-0.5 shadow-lg`;
                         }
+                        if (window.lucide) lucide.createIcons();
+                    }
 
-                        if (typeof lucide !== 'undefined') {
-                            lucide.createIcons();
+                    async function init() {
+                        if (ctx.interval) clearInterval(ctx.interval);
+                        if (ctx.abortCtrl) ctx.abortCtrl.abort();
+                        ctx.abortCtrl = new AbortController();
+
+                        // Immediate UI sync from cache
+                        updateBtn();
+
+                        if (ctx.status !== 'past') {
+                            try {
+                                const r = await fetch(`/api/contest/${ctx.contestId}/status?userId=${ctx.userId}`, { 
+                                    signal: ctx.abortCtrl.signal 
+                                });
+                                const data = await r.json();
+                                
+                                // Update and persist true state
+                                if (data.joined !== ctx.joined) {
+                                    ctx.joined = data.joined;
+                                    sessionStorage.setItem(`joined_${ctx.contestId}`, ctx.joined);
+                                    updateBtn();
+                                }
+                                
+                                if (data.status && data.status !== ctx.status) {
+                                    ctx.status = data.status;
+                                    updateBtn();
+                                }
+                                
+                                if (ctx.joined && ctx.status === 'active') {
+                                    const feed = document.getElementById('joinFeed');
+                                    if (feed) feed.style.maxHeight = '80px';
+                                }
+                            } catch (e) {
+                                if (e.name !== 'AbortError') console.warn('Sync failed');
+                            }
+
+                            ctx.interval = setInterval(tick, 1000);
+                            tick();
                         }
                     }
 
-                // Toggle join state
-                function toggleJoin() {
-                    if (contestStatus === 'past') return;
+                    async function tick() {
+                        const el = document.getElementById('countdownTimer');
+                        if (!el) return;
+                        
+                        const now = Date.now();
+                        const target = ctx.status === 'active' ? ctx.endTime : ctx.startTime;
+                        const diff = target - now;
 
-                    const action = hasJoined ? 'leave' : 'join';
-                    const originalState = hasJoined;
-                    const btn = document.getElementById('mainActionBtn');
+                        if (diff <= 0) {
+                            // Stable text to avoid layout shifts
+                            el.textContent = ctx.status === 'active' ? '00:00:00' : 'Starting Soon';
+                            
+                            if (!ctx.checkPending) {
+                                const lastReloadTime = sessionStorage.getItem(`lastReload_${ctx.contestId}`);
+                                if (lastReloadTime && (now - parseInt(lastReloadTime)) < 15000) return;
 
-                    // Optimistic update & visual feedback
-                    hasJoined = !hasJoined;
-                    if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
-                    updateJoinButtonUI();
+                                ctx.checkPending = true;
+                                setTimeout(async () => {
+                                    try {
+                                        const r = await fetch(`/api/contest/${ctx.contestId}/status?userId=${ctx.userId}`);
+                                        const d = await r.json();
+                                        if (d.status !== ctx.status) {
+                                            sessionStorage.setItem(`lastReload_${ctx.contestId}`, Date.now().toString());
+                                            if (window.Turbo) Turbo.visit(window.location.href, { action: 'replace' });
+                                            else window.location.reload();
+                                        } else {
+                                            ctx.checkPending = false;
+                                        }
+                                    } catch (e) { ctx.checkPending = false; }
+                                }, 5000);
+                            }
+                            return;
+                        }
 
-                    fetch(`/api/contest/${contestId}/${action}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId })
-                    })
-                        .then(r => r.json())
-                        .then(data => {
+                        const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                        const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                        const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                        el.textContent = `${h}:${m}:${s}`;
+                    }
+
+                    window.handleMainAction = () => {
+                        if (ctx.joined && ctx.status === 'active') window.location.href = `/contest/${ctx.contestId}/problems`;
+                        else toggle();
+                    };
+
+                    async function toggle() {
+                        const action = ctx.joined ? 'leave' : 'join';
+                        const original = ctx.joined;
+                        const btn = document.getElementById('mainActionBtn');
+
+                        // Optimistic + Persistent update
+                        ctx.joined = !ctx.joined;
+                        sessionStorage.setItem(`joined_${ctx.contestId}`, ctx.joined);
+                        
+                        if (btn) btn.classList.add('opacity-70', 'pointer-events-none');
+                        updateBtn();
+
+                        try {
+                            const r = await fetch(`/api/contest/${ctx.contestId}/${action}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: ctx.userId })
+                            });
+                            const data = await r.json();
                             if (btn) btn.classList.remove('opacity-70', 'pointer-events-none');
                             if (data.success) {
-                                if (hasJoined && contestStatus === 'active') {
-                                    document.getElementById('joinFeed').style.maxHeight = '80px';
-                                    document.getElementById('joinFeedText').textContent = '🎉 You are participating in this contest.';
-                                } else if (!hasJoined) {
-                                    document.getElementById('joinFeed').style.maxHeight = '0';
+                                if (ctx.joined && ctx.status === 'active') {
+                                    const feed = document.getElementById('joinFeed');
+                                    if (feed) feed.style.maxHeight = '80px';
+                                } else if (!ctx.joined) {
+                                    const feed = document.getElementById('joinFeed');
+                                    if (feed) feed.style.maxHeight = '0';
                                 }
                                 if (data.participants !== undefined) {
-                                    document.getElementById('participantCount').textContent = data.participants.toLocaleString();
+                                    const pc = document.getElementById('participantCount');
+                                    if (pc) pc.textContent = data.participants.toLocaleString();
                                 }
                             } else {
-                                hasJoined = originalState;
-                                updateJoinButtonUI();
-                                alert(data.error || 'Action failed. Please try again.');
+                                ctx.joined = original;
+                                sessionStorage.setItem(`joined_${ctx.contestId}`, ctx.joined);
+                                updateBtn();
+                                alert(data.error || 'Action failed');
                             }
-                        })
-                        .catch(err => {
+                        } catch (err) {
                             if (btn) btn.classList.remove('opacity-70', 'pointer-events-none');
-                            hasJoined = originalState;
-                            updateJoinButtonUI();
-                            console.error(err);
-                        });
-                }
-
-                // Countdown timer — reload guard prevents infinite reload loops
-                let hasReloaded = false;
-                function updateTimer() {
-                    if (contestStatus === 'past') {
-                        document.getElementById('countdownTimer').textContent = 'Ended';
-                        return;
-                    }
-
-                    const now = Date.now();
-                    let target;
-
-                    if (contestStatus === 'active') {
-                        target = endTime;
-                    } else {
-                        target = startTime;
-                    }
-
-                    const diff = target - now;
-
-                    if (diff <= 0) {
-                        // Show terminal state instead of reloading
-                        if (contestStatus === 'active') {
-                            document.getElementById('countdownTimer').textContent = '00:00:00';
-                        } else {
-                            document.getElementById('countdownTimer').textContent = 'Starting...';
+                            ctx.joined = original;
+                            sessionStorage.setItem(`joined_${ctx.contestId}`, ctx.joined);
+                            updateBtn();
                         }
-                        
-                        // Smart Reload: Check if server status has actually changed before refreshing
-                        if (!hasReloaded) {
-                            hasReloaded = true;
-                            setTimeout(async () => {
-                                try {
-                                    const resp = await fetch(`/api/contest/${contestId}/status?userId=${userId}`);
-                                    const data = await resp.json();
-                                    // If server says the status is now different from our current local state, reload
-                                    if (data.status !== contestStatus) {
-                                        window.location.reload();
-                                    } else {
-                                        // If still the same, try again in 5 seconds (maybe DB hasn't updated yet)
-                                        hasReloaded = false;
-                                    }
-                                } catch (e) {
-                                    hasReloaded = false; // Reset to try again
-                                }
-                            }, 3000);
-                        }
-                        return;
                     }
 
-                    const hours = Math.floor(diff / 3600000);
-                    const mins = Math.floor((diff % 3600000) / 60000);
-                    const secs = Math.floor((diff % 60000) / 1000);
-
-                    const h = hours.toString().padStart(2, '0');
-                    const m = mins.toString().padStart(2, '0');
-                    const s = secs.toString().padStart(2, '0');
-
-                    document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
-                }
-
-            // Only run timer if contest is not past
-            <% if (contest.status !== 'past') { %>
-                    setInterval(updateTimer, 1000);
-                    updateTimer();
-            <% } %>
-
-                    function shareContest() {
+                    window.shareContest = () => {
                         const url = window.location.href;
-                        if (navigator.share) {
-                            navigator.share({
-                                title: '<%= contest.title %>',
-                                text: 'Check out this contest on CodeWith!',
-                                url: url
-                            }).catch(console.error);
-                        } else {
-                            navigator.clipboard.writeText(url).then(() => {
-                                alert('Link copied to clipboard!');
-                            });
-                        }
-                    }
+                        if (navigator.share) navigator.share({ title: '<%= contest.title %>', url }).catch(console.error);
+                        else { navigator.clipboard.writeText(url).then(() => alert('Link copied!')); }
+                    };
 
-                // Initialize Lucide icons
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+                    init();
+
+                    document.addEventListener('turbo:before-cache', () => {
+                        if (ctx.interval) clearInterval(ctx.interval);
+                        if (ctx.abortCtrl) ctx.abortCtrl.abort();
+                    }, { once: true });
+                })();
             </script>
     </body>
 

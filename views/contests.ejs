@@ -47,12 +47,8 @@
         <div class="fixed inset-0 w-screen h-screen overflow-hidden">
 
 
-            <!-- Light Theme Background -->
-            <div class="absolute inset-0 z-0 bg-background" id="bg-container">
-                <!-- Subtle ambient depth -->
-                <div class="absolute top-[-20%] left-[10%] w-[80vw] h-[80vw] bg-[radial-gradient(circle,_hsl(var(--primary)_/_0.03)_0%,_transparent_70%)] pointer-events-none"></div>
-                <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-[radial-gradient(circle,_hsl(var(--warning)_/_0.02)_0%,_transparent_60%)] pointer-events-none"></div>
-            </div>
+            <!-- Clean Background -->
+            <div class="absolute inset-0 z-0 bg-background" id="bg-container"></div>
 
             <!-- Monitor Container -->
             <div class="relative z-10 w-screen h-screen">
@@ -136,45 +132,42 @@
                                                 <!-- Contests Grid — compact cards -->
                                                 <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"
                                                     id="contests-grid">
-                                                    <% contests.forEach(function(c) { %>
+                                                    <% contests.forEach(function(c) { 
+                                                        const statusClass = c.status === 'active' ? 'status-active-card' : (c.status === 'past' ? 'status-past-card' : 'status-upcoming-card');
+                                                        const statusLabel = c.status === 'active' ? 'Live' : (c.status === 'past' ? 'Ended' : 'Upcoming');
+                                                        const labelColor = c.status === 'active' ? 'text-emerald-400' : (c.status === 'past' ? 'text-slate-400' : 'text-amber-400');
+                                                        const glowColor = c.status === 'active' ? 'bg-emerald-500/10' : (c.status === 'past' ? 'bg-slate-500/10' : 'bg-amber-500/10');
+                                                    %>
                                                         <a href="/contest/<%= c.id %>"
-                                                            class="contest-card group relative block flex flex-col"
+                                                            class="contest-card group relative block flex flex-col <%= statusClass %>"
                                                             data-status="<%= c.status %>"
                                                             data-title="<%= c.title.toLowerCase() %>"
                                                             data-participants='<%= JSON.stringify(c.participants) %>'>
+
+                                                            <!-- Architectural Glow -->
+                                                            <div class="absolute top-0 right-0 w-24 h-24 <%= glowColor %> rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:opacity-80 transition-opacity"></div>
 
                                                             <!-- Card Header — Title + Status -->
                                                             <div
                                                                 class="relative z-10 flex items-start justify-between gap-3 mb-3">
                                                                 <div class="flex-1 min-w-0">
-                                                                    <h3
-                                                                        class="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate mb-1">
-                                                                        <%= c.title %>
-                                                                    </h3>
+                                                                    <div class="flex items-center gap-2 mb-1">
+                                                                        <% if (c.status === 'active') { %>
+                                                                            <div class="status-indicator-dot w-2 h-2 rounded-full animate-pulse"></div>
+                                                                        <% } %>
+                                                                        <h3
+                                                                            class="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                                                                            <%= c.title %>
+                                                                        </h3>
+                                                                    </div>
                                                                     <p
                                                                         class="text-[11px] text-muted-foreground truncate">
                                                                         <%= c.subtitle %>
                                                                     </p>
                                                                 </div>
-                                                                <% if (c.status==='active' ) { %>
-                                                                    <span
-                                                                        class="flex items-center gap-1 text-[9px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0 uppercase tracking-wider">
-                                                                        <div
-                                                                            class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse">
-                                                                        </div>
-                                                                        Live
-                                                                    </span>
-                                                                    <% } else if (c.status==='past' ) { %>
-                                                                        <span
-                                                                            class="flex items-center gap-1 text-[9px] font-bold bg-rose-500/15 text-rose-400 px-2 py-0.5 rounded-full border border-rose-500/20 shrink-0 uppercase tracking-wider">
-                                                                            Ended
-                                                                        </span>
-                                                                        <% } else { %>
-                                                                            <span
-                                                                                class="flex items-center gap-1 text-[9px] font-bold bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 shrink-0 uppercase tracking-wider">
-                                                                                Upcoming
-                                                                            </span>
-                                                                            <% } %>
+                                                                <span class="text-[9px] font-black uppercase tracking-widest <%= labelColor %> opacity-70 group-hover:opacity-100 transition-opacity">
+                                                                    <%= statusLabel %>
+                                                                </span>
                                                             </div>
 
                                                             <!-- Tags -->
@@ -244,19 +237,19 @@
 
                             <script>
                                 function filterContests() {
-                                    var search = document.getElementById('contest-search').value.toLowerCase();
-                                    var filter = document.getElementById('contest-filter').value;
-                                    var userId = localStorage.getItem('userId');
+                                    const search = document.getElementById('contest-search').value.toLowerCase();
+                                    const filter = document.getElementById('contest-filter').value;
+                                    const userId = localStorage.getItem('userId');
 
                                     document.querySelectorAll('#contests-grid .contest-card').forEach(function (card) {
-                                        var title = card.getAttribute('data-title');
-                                        var status = card.getAttribute('data-status');
-                                        var participantsStr = card.getAttribute('data-participants');
-                                        var participants = participantsStr ? JSON.parse(participantsStr) : [];
+                                        const title = card.getAttribute('data-title');
+                                        const status = card.getAttribute('data-status');
+                                        const participantsStr = card.getAttribute('data-participants');
+                                        const participants = participantsStr ? JSON.parse(participantsStr) : [];
 
-                                        var matchSearch = !search || title.includes(search);
+                                        const matchSearch = !search || title.includes(search);
 
-                                        var matchFilter = true;
+                                        let matchFilter = true;
                                         if (filter === 'participated') {
                                             matchFilter = userId && participants.includes(userId);
                                         } else if (filter !== 'all') {
@@ -267,13 +260,23 @@
                                     });
                                 }
 
-                                // Run initial filter to hide non-active if 'active' is default selected
-                                document.addEventListener('DOMContentLoaded', filterContests);
+                                // Run on load and handle query params (Turbo-aware)
+                                document.addEventListener('turbo:load', () => {
+                                    const urlParams = new URLSearchParams(window.location.search);
+                                    const filterParam = urlParams.get('filter');
+                                    if (filterParam) {
+                                        const filterSelect = document.getElementById('contest-filter');
+                                        if (filterSelect) {
+                                            filterSelect.value = filterParam;
+                                        }
+                                    }
+                                    filterContests();
 
-                                // Initialize Lucide icons
-                                if (typeof lucide !== 'undefined') {
-                                    lucide.createIcons();
-                                }
+                                    // Initialize Lucide icons on every turbo load
+                                    if (typeof lucide !== 'undefined') {
+                                        lucide.createIcons();
+                                    }
+                                });
                             </script>
                             <script src="/js/card-effects.js"></script>
     </body>

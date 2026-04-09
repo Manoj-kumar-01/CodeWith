@@ -485,7 +485,7 @@ const formatTimeLeft = (end) => {
 const formatTimeUntilStart = (start) => {
     const now = new Date();
     const diff = new Date(start) - now;
-    if (diff <= 0) return "Starting soon";
+    if (diff <= 0) return "Starting Soon";
 
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
@@ -974,7 +974,7 @@ app.get('/api/contest/:id/status', async (req, res) => {
                 joined = contest.participants.includes(userId);
             }
         }
-        res.json({ joined, contestStatus });
+        res.json({ joined, status: contestStatus });
     } catch (err) {
         res.status(500).json({ error: 'Check failed' });
     }
@@ -989,7 +989,7 @@ app.post('/api/contest/:id/join', async (req, res) => {
                 const contest = await Contest.findById(req.params.id);
                 if (!contest) return res.status(404).json({ error: 'Contest not found' });
                 if (getContestStatus(contest.startTime, contest.endTime) === 'past') return res.json({ success: false, error: 'Contest has ended' });
-                const updated = await Contest.findByIdAndUpdate(req.params.id, { $addToSet: { participants: userId } }, { new: true });
+                const updated = await Contest.findByIdAndUpdate(req.params.id, { $addToSet: { participants: userId } }, { returnDocument: 'after' });
                 return res.json({ success: true, participants: updated.participants.length });
             }
         } else {
@@ -1012,7 +1012,7 @@ app.post('/api/contest/:id/leave', async (req, res) => {
             if (mongoose.Types.ObjectId.isValid(req.params.id)) {
                 const contest = await Contest.findById(req.params.id);
                 if (getContestStatus(contest.startTime, contest.endTime) !== 'upcoming') return res.json({ success: false, error: 'Cannot leave' });
-                const updated = await Contest.findByIdAndUpdate(req.params.id, { $pull: { participants: userId } }, { new: true });
+                const updated = await Contest.findByIdAndUpdate(req.params.id, { $pull: { participants: userId } }, { returnDocument: 'after' });
                 return res.json({ success: true, participants: updated.participants.length });
             }
         } else {
