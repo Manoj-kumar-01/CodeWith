@@ -1257,13 +1257,24 @@ app.post('/admin/contest', async (req, res) => {
 
 app.get('/admin/contest/:id', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database required');
-        const contest = await Contest.findById(req.params.id);
+        let contest;
+        let availableProblems = [];
+        if (dbConnected) {
+            contest = await Contest.findById(req.params.id);
+            availableProblems = await Problem.find();
+        } else {
+            contest = mockContests.find(c => c.id == req.params.id);
+            availableProblems = mockProblems;
+        }
+
         if (!contest) return res.status(404).send('Contest not found');
-        const availableProblems = await Problem.find();
+        
+        const contestObj = dbConnected ? contest.toObject() : contest;
+        const status = getContestStatus(contest.startTime, contest.endTime);
+
         res.render('admin-contest', {
             currentPath: '/admin',
-            contest: { ...contest.toObject(), status: getContestStatus(contest.startTime, contest.endTime) },
+            contest: { ...contestObj, _id: contest.id || contest._id, status },
             availableProblems
         });
     } catch (err) {
@@ -1274,19 +1285,36 @@ app.get('/admin/contest/:id', async (req, res) => {
 app.post('/admin/contest/:id/problem', async (req, res) => {
     try {
         const { problemId, points } = req.body;
-        const problem = await Problem.findById(problemId);
-        await Contest.findByIdAndUpdate(req.params.id, {
-            $push: {
-                problemsList: {
-                    id: problem._id.toString(),
+        let problem;
+        if (dbConnected) {
+            problem = await Problem.findById(problemId);
+            await Contest.findByIdAndUpdate(req.params.id, {
+                $push: {
+                    problemsList: {
+                        id: problemId,
+                        title: problem.title,
+                        difficulty: problem.difficulty,
+                        points: parseInt(points) || 100,
+                        solved: 0,
+                        acceptance: '0%'
+                    }
+                }
+            });
+        } else {
+            const contest = mockContests.find(c => c.id == req.params.id);
+            problem = mockProblems.find(p => p.id == problemId);
+            if (contest && problem) {
+                if (!contest.problemsList) contest.problemsList = [];
+                contest.problemsList.push({
+                    id: problemId,
                     title: problem.title,
                     difficulty: problem.difficulty,
                     points: parseInt(points) || 100,
                     solved: 0,
                     acceptance: '0%'
-                }
+                });
             }
-        });
+        }
         res.redirect(`/admin/contest/${req.params.id}`);
     } catch (err) {
         res.status(500).send('Error adding problem');
@@ -1296,7 +1324,14 @@ app.post('/admin/contest/:id/problem', async (req, res) => {
 app.post('/admin/contest/:id/remove-problem', async (req, res) => {
     try {
         const { problemId } = req.body;
-        await Contest.findByIdAndUpdate(req.params.id, { $pull: { problemsList: { id: problemId } } });
+        if (dbConnected) {
+            await Contest.findByIdAndUpdate(req.params.id, { $pull: { problemsList: { id: problemId } } });
+        } else {
+            const contest = mockContests.find(c => c.id == req.params.id);
+            if (contest && contest.problemsList) {
+                contest.problemsList = contest.problemsList.filter(p => p.id != problemId);
+            }
+        }
         res.redirect(`/admin/contest/${req.params.id}`);
     } catch (err) {
         res.status(500).send('Error removing problem');
@@ -1305,8 +1340,12 @@ app.post('/admin/contest/:id/remove-problem', async (req, res) => {
 
 app.post('/admin/contest/:id/delete', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).json({ error: 'DB disconnected' });
-        await Contest.findByIdAndDelete(req.params.id);
+        if (dbConnected) {
+            await Contest.findByIdAndDelete(req.params.id);
+        } else {
+            const index = mockContests.findIndex(c => c.id == req.params.id);
+            if (index !== -1) mockContests.splice(index, 1);
+        }
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Deletion failed' });
@@ -1324,11 +1363,25 @@ app.get('/admin/problems', async (req, res) => {
 
 app.post('/admin/problems', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).send('Database required');
         const { title, difficulty, category, tags, description, constraints } = req.body;
         const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
         const constraintsArray = constraints ? constraints.split(',').map(c => c.trim()).filter(Boolean) : [];
-        await Problem.create({ title, difficulty, category, tags: tagsArray, description, constraints: constraintsArray });
+        
+        if (dbConnected) {
+            await Problem.create({ title, difficulty, category, tags: tagsArray, description, constraints: constraintsArray });
+        } else {
+            const newProblem = {
+                id: Date.now().toString(),
+                title, 
+                difficulty, 
+                category, 
+                tags: tagsArray, 
+                description, 
+                constraints: constraintsArray,
+                testCases: [{ input: "1", expected: "1", isHidden: false }]
+            };
+            mockProblems.unshift(newProblem);
+        }
         res.redirect('/admin/problems');
     } catch (err) {
         res.status(500).send('Error creating problem');
@@ -1337,11 +1390,196 @@ app.post('/admin/problems', async (req, res) => {
 
 app.post('/admin/problem/:id/delete', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(503).json({ error: 'DB disconnected' });
-        await Problem.findByIdAndDelete(req.params.id);
+        if (dbConnected) {
+            await Problem.findByIdAndDelete(req.params.id);
+        } else {
+            const index = mockProblems.findIndex(p => p.id == req.params.id);
+            if (index !== -1) mockProblems.splice(index, 1);
+        }
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Deletion failed' });
+    }
+});
+
+// ── Custom Rooms Routes ──
+const mockCustomRooms = [
+    { 
+        id: '101', 
+        name: 'Elite Coders 6v6', 
+        host: 'alexchen', 
+        size: '6vs6', 
+        map: 'Bermuda (Easy)', 
+        status: 'lobby', 
+        players: 1,
+        slots: {
+            'team1-1': { username: 'alexchen', name: 'Alex Chen', role: 'Room Owner', avatar: 'AC', isHost: true }
+        },
+        chat: [
+            { name: 'System', content: 'Welcome to the battle lobby. Respect all players.', isSystem: true }
+        ]
+    },
+    { 
+        id: '102', 
+        name: '1v1 Pro Battle', 
+        host: 'sarahm', 
+        size: '1vs1', 
+        map: 'Purgatory (Hard)', 
+        status: 'lobby', 
+        players: 1,
+        slots: {
+            'team2-1': { username: 'sarahm', name: 'Sarah Miller', role: 'Room Owner', avatar: 'SM', isHost: true }
+        },
+        chat: [
+            { name: 'System', content: 'Welcome to the battle lobby. Respect all players.', isSystem: true }
+        ]
+    }
+];
+
+app.get('/custom', async (req, res) => {
+    try {
+        // Fetch users for friends panel integration
+        let friends = [];
+        if (dbConnected) {
+            const currentUser = await User.findOne({ username: 'alexchen' });
+            if (currentUser) {
+                const friendships = await Friendship.find({
+                    $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
+                    status: 'accepted'
+                }).populate('requester recipient');
+                friends = friendships.map(f => {
+                    const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                    return { name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
+                });
+            }
+        }
+        res.render('custom', { currentPath: '/custom', rooms: mockCustomRooms, friends });
+    } catch (err) {
+        res.status(500).send('Error');
+    }
+});
+
+app.get('/custom/room/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUsername = req.query.guest ? 'guest_user' : 'alexchen';
+        
+        let room = mockCustomRooms.find(r => r.id === id);
+        
+        if (!room) {
+            room = { 
+                id, 
+                name: 'Custom Battle-Unit', 
+                host: currentUsername,
+                size: '6vs6', 
+                map: 'Bermuda', 
+                status: 'lobby',
+                players: 1,
+                slots: {
+                    'team1-1': { 
+                        username: currentUsername, 
+                        name: currentUsername === 'alexchen' ? 'Alex Chen' : 'Guest Player', 
+                        role: 'Room Owner', 
+                        avatar: currentUsername === 'alexchen' ? 'AC' : 'GP', 
+                        isHost: true 
+                    }
+                },
+                chat: [
+                    { name: 'System', content: 'Welcome to the battle lobby. Respect all players.', isSystem: true }
+                ]
+            };
+            mockCustomRooms.push(room);
+        } else {
+            // Ensure host is in slots if missing
+            if (!room.slots || Object.keys(room.slots).length === 0) {
+                room.slots = {
+                    'team1-1': { username: room.host, name: room.host === 'alexchen' ? 'Alex Chen' : 'Guest Player', role: 'Room Owner', avatar: room.host === 'alexchen' ? 'AC' : 'GP', isHost: true }
+                };
+            }
+            
+            const isUserInRoom = Object.values(room.slots).some(p => p.username === currentUsername);
+            if (!isUserInRoom) {
+                const allSlotIds = [
+                    ...Array.from({length: 6}, (_, i) => `team1-${i+1}`),
+                    ...Array.from({length: 6}, (_, i) => `team2-${i+1}`)
+                ];
+                const emptySlotId = allSlotIds.find(sid => !room.slots[sid]);
+                if (emptySlotId) {
+                    room.slots[emptySlotId] = { 
+                        username: currentUsername, 
+                        name: currentUsername === 'alexchen' ? 'Alex Chen' : 'Guest Player', 
+                        role: 'Player', 
+                        avatar: currentUsername === 'alexchen' ? 'AC' : 'GP', 
+                        isHost: false 
+                    };
+                    room.players++;
+                }
+            }
+        }
+        
+        let friends = [];
+        if (dbConnected) {
+            const currentUser = await User.findOne({ username: 'alexchen' });
+            if (currentUser) {
+                const friendships = await Friendship.find({
+                    $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
+                    status: 'accepted'
+                }).populate('requester recipient');
+                friends = friendships.map(f => {
+                    const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                    return { name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
+                });
+            }
+        }
+        res.render('custom-room', { currentPath: '/custom', room, friends, currentUsername });
+    } catch (err) {
+        res.status(500).send('Error');
+    }
+});
+
+app.post('/api/custom/room/:id/settings', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, map, size } = req.body;
+        const roomIndex = mockCustomRooms.findIndex(r => r.id === id);
+        
+        if (roomIndex !== -1) {
+            mockCustomRooms[roomIndex].name = name;
+            mockCustomRooms[roomIndex].map = map;
+            mockCustomRooms[roomIndex].size = size;
+            res.json({ success: true, room: mockCustomRooms[roomIndex] });
+        } else {
+            // If it's the demo room not in mock list
+            const updatedRoom = { id, name, map, size, host: 'alexchen', status: 'lobby', players: 1, slots: {}, chat: [] };
+            res.json({ success: true, room: updatedRoom });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update settings' });
+    }
+});
+
+app.get('/api/custom/room/:id/state', (req, res) => {
+    const room = mockCustomRooms.find(r => r.id === req.params.id);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    res.json(room);
+});
+
+app.post('/api/custom/room/:id/action', (req, res) => {
+    const { action, payload } = req.body;
+    const room = mockCustomRooms.find(r => r.id === req.params.id);
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+
+    if (action === 'move') {
+        const { from, to, player } = payload;
+        if (from) delete room.slots[from];
+        room.slots[to] = player;
+        res.json({ success: true });
+    } else if (action === 'chat') {
+        room.chat.push(payload);
+        if (room.chat.length > 50) room.chat.shift(); // Keep last 50
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ error: 'Invalid action' });
     }
 });
 

@@ -1,0 +1,988 @@
+<%- include('partials/head') %>
+
+    <style>
+        .slot-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            height: 76px;
+            display: flex;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .slot-card.occupied {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .slot-card.occupied::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+        }
+
+        .slot-card:not(.occupied):hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        /* Glass Effects for containers */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.82);
+        }
+
+        /* FS Overlay */
+        #fs-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+
+        #fs-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .team-badge {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+        }
+
+        .team-badge-red {
+            background: linear-gradient(90deg, #ef4444, #b91c1c);
+            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+        }
+
+        .start-btn-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+            }
+        }
+
+        /* Chat Styling */
+        .chat-container {
+            position: absolute;
+            bottom: 100px;
+            left: 24px;
+            width: 320px;
+            max-height: 240px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            z-index: 45;
+            pointer-events: none;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        /* Minimalist Colored Scrollbar */
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 20px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+
+        .chat-msg {
+            font-size: 11px;
+            line-height: 1.4;
+            animation: slide-up 0.3s ease-out;
+        }
+
+        .chat-msg .name {
+            font-weight: 800;
+            color: #60a5fa;
+            text-transform: uppercase;
+            margin-right: 4px;
+        }
+
+        .chat-msg.system .content {
+            color: #facc15;
+            font-style: italic;
+        }
+
+        .chat-msg .content {
+            color: #e2e8f0;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-input-wrapper {
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 11px;
+            flex: 1;
+            outline: none;
+        }
+
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* User Context Menu */
+        #user-context-menu {
+            position: fixed;
+            z-index: 1000;
+            min-width: 160px;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            animation: menu-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .menu-item {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .menu-item.danger {
+            color: #ef4444;
+        }
+
+        .menu-item.danger:hover {
+            background: #ef444415;
+        }
+
+        @keyframes menu-pop {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Confirmation Modal */
+        #confirm-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confirm-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 32px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modal-in {
+            from {
+                transform: scale(0.9) translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Sidebar hiding in full-screen */
+        #lobby-container.full-screen-mode aside {
+            display: none !important;
+        }
+
+        .exit-btn-header {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .exit-btn-header:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+    </style>
+
+    <body class="bg-[#020617]">
+        <div id="fs-overlay" onclick="enterLobby()">
+            <div class="text-center">
+                <div class="relative w-24 h-24 mb-6 mx-auto">
+                    <div class="absolute inset-0 bg-blue-500/20 blur-xl animate-pulse rounded-full"></div>
+                    <div
+                        class="relative w-full h-full border-2 border-blue-500/30 rounded-full flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-10 h-10 text-blue-400 animate-bounce"></i>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-black text-white italic tracking-widest uppercase mb-2">Syncing Lobby...</h1>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Click to engage battle unit
+                </p>
+            </div>
+        </div>
+
+        <div class="fixed inset-0 w-screen h-screen overflow-hidden">
+            <div class="absolute inset-0 z-0 bg-[#020617]">
+                <div class="absolute inset-0 opacity-20"
+                    style="background-image: radial-gradient(#3b82f6 1px, transparent 1px); background-size: 40px 40px;">
+                </div>
+            </div>
+
+            <div class="relative z-10 w-screen h-screen">
+                <div class="monitor-frame">
+                    <div class="monitor-bezel">
+                        <div class="monitor-screen">
+                            <div class="flex h-full relative" id="lobby-container">
+                                <%- include('partials/sidebar') %>
+
+                                    <main
+                                        class="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[#0f172a] text-slate-100">
+                                        <!-- Room Header -->
+                                        <div
+                                            class="h-16 border-b border-white/5 glass-panel flex items-center justify-between px-6 shrink-0 z-30">
+                                            <div class="flex items-center gap-4">
+                                                <a href="/custom"
+                                                    class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                                                    <i data-lucide="chevron-left" class="w-5 h-5 text-slate-400"></i>
+                                                </a>
+                                                <div class="h-8 w-[1px] bg-white/10"></div>
+                                                <div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span
+                                                            class="text-[9px] font-black text-blue-400 tracking-[0.2em] uppercase">Private
+                                                            Lobby</span>
+                                                        <span
+                                                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">#
+                                                            <%= room.id %>
+                                                        </span>
+                                                    </div>
+                                                    <h2 id="room-name-display"
+                                                        class="font-black text-base uppercase tracking-wider">
+                                                        <%= room.name %>
+                                                    </h2>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center gap-4">
+                                                <div class="hidden sm:flex flex-col items-end">
+                                                    <p
+                                                        class="text-[10px] font-black text-white/20 uppercase tracking-tighter">
+                                                        Environment</p>
+                                                    <p id="room-map-display" class="text-xs font-bold text-slate-300">
+                                                        <%= room.map %>
+                                                    </p>
+                                                </div>
+                                                <button onclick="openSettings()"
+                                                    class="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 group">
+                                                    <i data-lucide="settings"
+                                                        class="w-4 h-4 text-white/40 group-hover:text-white transition-colors"></i>
+                                                </button>
+                                                <button onclick="leaveRoom()"
+                                                    class="p-2.5 exit-btn-header rounded-xl transition-all group"
+                                                    title="Leave Room">
+                                                    <i data-lucide="log-out" class="w-4 h-4 transition-colors"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Room Grid -->
+                                        <div
+                                            class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center gap-10 scrollbar-thin relative selection:bg-blue-500/30">
+                                            <div
+                                                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10rem] font-black text-white/[0.02] italic tracking-tighter pointer-events-none select-none">
+                                                VS</div>
+
+                                            <div
+                                                class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 relative z-10">
+
+                                                <!-- Team 1 -->
+                                                <div class="space-y-6">
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex items-center gap-4">
+                                                            <div
+                                                                class="team-badge py-1.5 px-8 text-white font-black italic tracking-widest text-sm">
+                                                                TEAM 01</div>
+                                                            <span
+                                                                class="text-xs font-black text-white/30 tabular-nums"><span
+                                                                    id="team1-count" class="text-blue-400">1</span> /
+                                                                6</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="team1-slots">
+                                                        <% for(let i=1; i<=6; i++) { const sid=`team1-${i}`; const
+                                                            playerData=room.slots[sid]; const isLocal=playerData &&
+                                                            playerData.username===(locals.currentUsername || '' ); %>
+                                                            <div id="slot-<%= sid %>"
+                                                                class="slot-card p-4 rounded-xl flex <%= playerData ? 'occupied justify-between' : 'justify-center cursor-pointer' %> <%= isLocal ? 'local-player' : '' %> group"
+                                                                onclick="handleSlotClick(this, '<%= sid %>', 1, <%= i %>)"
+                                                                <% if (playerData) { %>
+                                                                data-username="<%= playerData.username %>"
+                                                                    data-is-host="<%= playerData.isHost %>"
+                                                                        data-p-name="<%= playerData.name %>"
+                                                                            data-p-role="<%= playerData.role %>"
+                                                                                data-p-avatar="<%= playerData.avatar %>"
+                                                                                    <% } %>
+                                                                                        >
+                                                                                        <% if (playerData) { %>
+                                                                                            <div
+                                                                                                class="flex items-center gap-3">
+                                                                                                <div
+                                                                                                    class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-black shadow-inner shadow-blue-500/10">
+                                                                                                    <%= playerData.avatar
+                                                                                                        %>
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <p
+                                                                                                        class="font-black text-xs uppercase tracking-wide text-white">
+                                                                                                        <%= playerData.name
+                                                                                                            %>
+                                                                                                    </p>
+                                                                                                    <div
+                                                                                                        class="flex items-center gap-1 mt-0.5">
+                                                                                                        <span
+                                                                                                            class="text-[9px] font-black uppercase text-blue-500 tracking-tighter">
+                                                                                                            <%= playerData.role
+                                                                                                                %>
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <% if (playerData.isHost) {
+                                                                                                %>
+                                                                                                <i data-lucide="crown"
+                                                                                                    class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>
+                                                                                                <% } %>
+                                                                                                    <% } %>
+                                                                                                        <span
+                                                                                                            class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">S
+                                                                                                            <%= i.toString().padStart(2, '0'
+                                                                                                                ) %>
+                                                                                                        </span>
+                                                            </div>
+                                                            <% } %>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Team 2 -->
+                                                <div class="space-y-6">
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex items-center gap-4">
+                                                            <div
+                                                                class="team-badge-red py-1.5 px-8 text-white font-black italic tracking-widest text-sm">
+                                                                TEAM 02</div>
+                                                            <span
+                                                                class="text-xs font-black text-white/30 tabular-nums"><span
+                                                                    id="team2-count" class="text-red-400">0</span> /
+                                                                6</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="team2-slots">
+                                                        <% for(let i=1; i<=6; i++) { const sid=`team2-${i}`; const
+                                                            playerData=room.slots[sid]; const isLocal=playerData &&
+                                                            playerData.username===(locals.currentUsername || '' ); %>
+                                                            <div id="slot-<%= sid %>"
+                                                                class="slot-card p-4 rounded-xl flex <%= playerData ? 'occupied justify-between' : 'justify-center cursor-pointer' %> <%= isLocal ? 'local-player' : '' %> group"
+                                                                onclick="handleSlotClick(this, '<%= sid %>', 2, <%= i %>)"
+                                                                <% if (playerData) { %>
+                                                                data-username="<%= playerData.username %>"
+                                                                    data-is-host="<%= playerData.isHost %>"
+                                                                        data-p-name="<%= playerData.name %>"
+                                                                            data-p-role="<%= playerData.role %>"
+                                                                                data-p-avatar="<%= playerData.avatar %>"
+                                                                                    <% } %>
+                                                                                        >
+                                                                                        <% if (playerData) { %>
+                                                                                            <div
+                                                                                                class="flex items-center gap-3">
+                                                                                                <div
+                                                                                                    class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 font-black shadow-inner">
+                                                                                                    <%= playerData.avatar
+                                                                                                        %>
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <p
+                                                                                                        class="font-black text-xs uppercase tracking-wide text-white">
+                                                                                                        <%= playerData.name
+                                                                                                            %>
+                                                                                                    </p>
+                                                                                                    <div
+                                                                                                        class="flex items-center gap-1 mt-0.5">
+                                                                                                        <span
+                                                                                                            class="text-[9px] font-black uppercase text-red-500 tracking-tighter">
+                                                                                                            <%= playerData.role
+                                                                                                                %>
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <% if (playerData.isHost) {
+                                                                                                %>
+                                                                                                <i data-lucide="crown"
+                                                                                                    class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>
+                                                                                                <% } %>
+                                                                                                    <% } %>
+                                                                                                        <span
+                                                                                                            class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">S
+                                                                                                            <%= i.toString().padStart(2, '0'
+                                                                                                                ) %>
+                                                                                                        </span>
+                                                            </div>
+                                                            <% } %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Live Chat UI -->
+                                        <div class="chat-container">
+                                            <div class="chat-messages" id="chat-feed">
+                                                <div class="chat-msg system">
+                                                    <span class="content">Welcome to the battle lobby. Respect all
+                                                        players.</span>
+                                                </div>
+                                            </div>
+                                            <div class="chat-input-wrapper">
+                                                <input type="text" id="chat-input" placeholder="Type a message..."
+                                                    class="chat-input" autocomplete="off">
+                                                <button onclick="sendChatMessage()"
+                                                    class="p-1.5 rounded-lg hover:bg-white/10 transition-all">
+                                                    <i data-lucide="send" class="w-3 h-3 text-blue-400"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Footer Controls -->
+                                        <div
+                                            class="h-24 glass-panel shrink-0 z-40 flex items-center justify-between px-8 relative overflow-hidden">
+                                            <div
+                                                class="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent">
+                                            </div>
+
+                                            <div
+                                                class="hidden xl:flex items-center gap-4 relative z-10 scale-90 origin-left">
+                                                <div class="p-3 bg-white/5 rounded-full border border-white/10">
+                                                    <i data-lucide="volume-2" class="w-4 h-4 text-slate-400"></i>
+                                                </div>
+                                                <div>
+                                                    <p
+                                                        class="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                                        Voice Channel</p>
+                                                    <p class="text-xs font-bold text-slate-300">Lobby Public Channel</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center gap-4 relative z-10 flex-1 justify-center">
+                                                <% if (room.host===(locals.currentUsername || '' )) { %>
+                                                    <button onclick="openSettings()" id="footer-settings-btn"
+                                                        class="h-12 px-10 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 font-black text-xs uppercase tracking-widest transition-all">Settings</button>
+                                                    <button onclick="startMatch()" id="footer-start-btn"
+                                                        class="h-14 px-16 rounded-xl bg-blue-600 text-white font-black italic text-sm uppercase tracking-[0.3em] start-btn-glow hover:scale-105 active:scale-95 transition-all">Start
+                                                        Match</button>
+                                                    <% } %>
+                                                        <button onclick="toggleFriends()"
+                                                            class="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
+                                                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                                                        </button>
+                                            </div>
+
+                                            <div
+                                                class="hidden xl:flex items-center gap-4 relative z-10 scale-90 origin-right">
+                                                <div class="text-right">
+                                                    <p
+                                                        class="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                                        Ping Status</p>
+                                                    <p class="text-xs font-bold text-emerald-400 tabular-nums">12ms
+                                                        (Stable)</p>
+                                                </div>
+                                                <div
+                                                    class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                                    <i data-lucide="wifi" class="w-5 h-5 text-emerald-500"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </main>
+
+                                    <!-- Friends Sidebar Integration -->
+                                    <button data-friends-toggle onclick="toggleFriends()"
+                                        class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] p-3 rounded-full bg-black/40 border border-white/10 backdrop-blur-md transition-all shadow-2xl hover:scale-110"
+                                        title="Invite Friends">
+                                        <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+                                    </button>
+
+                                    <aside id="friends-aside"
+                                        class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-[0_0_50px_rgba(0,0,0,0.5)] hidden">
+                                        <%- include('partials/friends-panel', { friends: typeof friends !=='undefined' ?
+                                            friends : [] }) %>
+                                    </aside>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal"
+            class="fixed inset-0 z-[100] hidden bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            <div
+                class="glass-card w-full max-w-lg p-8 animate-in zoom-in-95 duration-200 border-white/10 bg-slate-900 shadow-2xl">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-2xl font-black uppercase tracking-tight text-white italic">Room Configuration
+                        </h2>
+                        <p class="text-[10px] font-bold text-blue-400 tracking-widest uppercase mt-1">Host Privilege
+                            Access Only</p>
+                    </div>
+                    <button onclick="closeSettings()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-6 h-6 text-slate-400"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Battle
+                            Label</label>
+                        <input type="text" id="setting-name" value="<%= room.name %>"
+                            class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-semibold text-white outline-none focus:border-blue-500/50 transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Map
+                                Selection</label>
+                            <select id="setting-map"
+                                class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold text-white outline-none appearance-none">
+                                <option <%=room.map.includes('Bermuda') ? 'selected' : '' %>>Bermuda (Easy)</option>
+                                <option <%=room.map.includes('Purgatory') ? 'selected' : '' %>>Purgatory (Medium)
+                                </option>
+                                <option <%=room.map.includes('Kalahari') ? 'selected' : '' %>>Kalahari (Hard)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Team
+                                Mode</label>
+                            <select id="setting-size"
+                                class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold text-white outline-none appearance-none">
+                                <option value="6vs6" <%=room.size==='6vs6' ? 'selected' : '' %>>6vs6 Battle</option>
+                                <option value="4vs4" <%=room.size==='4vs4' ? 'selected' : '' %>>4vs4 Squad</option>
+                                <option value="2vs2" <%=room.size==='2vs2' ? 'selected' : '' %>>2vs2 Duo</option>
+                                <option value="1vs1" <%=room.size==='1vs1' ? 'selected' : '' %>>1vs1 Duel</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 flex gap-4">
+                        <button onclick="closeSettings()"
+                            class="flex-1 px-6 py-4 rounded-xl font-bold uppercase tracking-widest text-[11px] text-slate-400 hover:bg-white/5 transition-all">Cancel</button>
+                        <button onclick="saveSettings()"
+                            class="flex-1 px-6 py-4 rounded-xl bg-blue-600 text-white font-black italic uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-blue-500/20 hover:bg-blue-500 transition-all">Apply
+                            Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Context Menu -->
+        <div id="user-context-menu" class="hidden">
+            <div class="menu-item" onclick="viewProfile()"><i data-lucide="user" class="w-4 h-4"></i> Profile</div>
+            <div class="menu-item" onclick="addFriend()"><i data-lucide="user-plus" class="w-4 h-4"></i> Add Friend
+            </div>
+            <div id="kick-option" class="menu-item danger" onclick="kickPlayer()"><i data-lucide="user-x"
+                    class="w-4 h-4"></i> Kick Player</div>
+        </div>
+
+        <!-- Custom Confirmation Modal -->
+        <div id="confirm-modal">
+            <div class="confirm-card">
+                <h3 id="confirm-title" class="text-xl font-black text-white italic tracking-wider mb-2 uppercase">Switch
+                    Position?</h3>
+                <p id="confirm-msg" class="text-sm text-slate-400 mb-8 leading-relaxed">Are you sure you want to move to
+                    this slot?</p>
+                <div class="flex gap-4">
+                    <button id="confirm-cancel"
+                        class="flex-1 py-3 px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] text-slate-500 hover:bg-white/5 transition-all">Cancel</button>
+                    <button id="confirm-action"
+                        class="flex-1 py-3 px-6 rounded-xl bg-blue-600 text-white font-black italic uppercase tracking-widest text-[10px] shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="/js/friends-panel.js"></script>
+        <script>
+            const ROOM_ID = '<%= room.id %>';
+            const ROOM_HOST = '<%= room.host %>';
+            const USERNAME = window.location.search.includes('guest') ? 'guest_user' : 'alexchen';
+            const IS_HOST = (USERNAME === ROOM_HOST);
+            let lastChatCount = 0;
+
+            // Seed initial state from server-rendered keys
+            let previousSlotsState = {
+            <% Object.keys(room.slots).forEach(sid => { %>
+                '<%= sid %>': '<%= room.slots[sid].username %>-<%= room.slots[sid].isHost %>',
+            <% }); %>
+        };
+
+            async function fetchRoomState() {
+                try {
+                    const response = await fetch(`/api/custom/room/${ROOM_ID}/state`);
+                    const room = await response.json();
+                    updateUI(room);
+                } catch (err) {
+                    console.error('Failed to sync room state:', err);
+                }
+            }
+
+            function updateUI(room) {
+                // Update Slots partially to prevent flickering
+                const allSlots = document.querySelectorAll('.slot-card');
+                allSlots.forEach(slot => {
+                    const slotId = slot.id.replace('slot-', '');
+                    const playerData = room.slots[slotId];
+                    const slotIdx = slot.querySelector('.slot-idx').innerText;
+
+                    // Only update if state changed for this slot
+                    const currentStateKey = playerData ? `${playerData.username}-${playerData.isHost}` : 'empty';
+                    if (previousSlotsState[slotId] === currentStateKey) return;
+                    previousSlotsState[slotId] = currentStateKey;
+
+                    if (playerData) {
+                        const isLocal = playerData.username === USERNAME;
+
+                        slot.classList.add('occupied', 'justify-between');
+                        slot.classList.toggle('local-player', isLocal);
+                        slot.classList.remove('justify-center', 'cursor-pointer');
+
+                        slot.dataset.username = playerData.username;
+                        slot.dataset.isHost = playerData.isHost;
+                        slot.dataset.pName = playerData.name;
+                        slot.dataset.pRole = playerData.role;
+                        slot.dataset.pAvatar = playerData.avatar;
+
+                        slot.innerHTML = `
+                        <div class="flex items-center gap-3 animate-in fade-in duration-300">
+                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-black shadow-inner shadow-blue-500/10">${playerData.avatar}</div>
+                            <div>
+                                <p class="font-black text-xs uppercase tracking-wide text-white">${playerData.name}</p>
+                                <div class="flex items-center gap-1 mt-0.5">
+                                    <span class="text-[9px] font-black uppercase text-blue-500 tracking-tighter">${playerData.role}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ${playerData.isHost ? '<i data-lucide="crown" class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>' : ''}
+                        <span class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">${slotIdx}</span>
+                    `;
+                    } else {
+                        slot.classList.remove('occupied', 'local-player', 'justify-between');
+                        slot.classList.add('justify-center', 'cursor-pointer');
+                        slot.innerHTML = `<span class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">${slotIdx}</span>`;
+                        delete slot.dataset.username;
+                        delete slot.dataset.isHost;
+                    }
+                });
+
+                // Update Chat if new messages
+                if (room.chat.length > lastChatCount) {
+                    const feed = document.getElementById('chat-feed');
+                    const newMessages = room.chat.slice(lastChatCount);
+                    newMessages.forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = `chat-msg ${msg.isSystem ? 'system' : ''} animate-in slide-in-from-bottom-2 duration-300`;
+                        div.innerHTML = `
+                        ${msg.isSystem ? '' : `<span class="name font-black">${msg.name === USERNAME ? 'You' : msg.name}:</span>`}
+                        <span class="content">${msg.content}</span>
+                    `;
+                        feed.appendChild(div);
+                    });
+                    feed.scrollTop = feed.scrollHeight;
+                    lastChatCount = room.chat.length;
+                }
+                // Always refresh icons if items were modified
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+
+            function showConfirm(title, msg, onConfirm) {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-msg').innerText = msg;
+                modal.style.display = 'flex';
+
+                const cleanup = () => {
+                    modal.style.display = 'none';
+                    document.getElementById('confirm-action').onclick = null;
+                    document.getElementById('confirm-cancel').onclick = null;
+                };
+
+                document.getElementById('confirm-action').onclick = () => {
+                    onConfirm();
+                    cleanup();
+                };
+                document.getElementById('confirm-cancel').onclick = cleanup;
+            }
+
+            async function handleSlotClick(element, slotId, team, slotIndex) {
+                if (element.classList.contains('occupied')) {
+                    openUserMenu(element);
+                    return;
+                }
+
+                const currentPlayerSlot = document.querySelector('.slot-card.occupied.local-player');
+                if (!currentPlayerSlot) return;
+
+                showConfirm(`Switch Position?`, `Move to Team ${team} - Slot ${slotIndex}?`, async () => {
+                    const fromId = currentPlayerSlot.id.replace('slot-', '');
+                    const player = {
+                        username: USERNAME,
+                        name: currentPlayerSlot.dataset.pName || 'Alex Chen',
+                        role: currentPlayerSlot.dataset.pRole || 'Room Owner',
+                        avatar: currentPlayerSlot.dataset.pAvatar || 'AC',
+                        isHost: IS_HOST
+                    };
+
+                    await fetch(`/api/custom/room/${ROOM_ID}/action`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'move',
+                            payload: { from: fromId, to: slotId, player }
+                        })
+                    });
+                    fetchRoomState();
+                });
+            }
+
+            function openUserMenu(element) {
+                const menu = document.getElementById('user-context-menu');
+                const kickOption = document.getElementById('kick-option');
+
+                const targetUsername = element.dataset.username;
+                const targetIsHost = element.dataset.isHost === 'true';
+
+                // Kick visibility: Only host can kick, and can't kick themselves
+                const canKick = IS_HOST && (targetUsername !== USERNAME);
+                kickOption.style.display = canKick ? 'flex' : 'none';
+
+                const rect = element.getBoundingClientRect();
+                menu.style.left = `${rect.right + 10}px`;
+                menu.style.top = `${rect.top}px`;
+                menu.classList.remove('hidden');
+
+                const closer = (e) => {
+                    if (!menu.contains(e.target) && e.target !== element) {
+                        menu.classList.add('hidden');
+                        document.removeEventListener('mousedown', closer);
+                    }
+                };
+                document.addEventListener('mousedown', closer);
+            }
+
+            function viewProfile() { alert('Viewing Profile...'); }
+            function addFriend() { alert('Friend Request Sent!'); }
+            function kickPlayer() { if (confirm('Are you sure you want to kick this elite?')) alert('Player kicked.'); }
+
+            function leaveRoom() {
+                showConfirm('Leave Room?', 'Are you sure you want to abandon the battle lobby?', async () => {
+                    if (document.fullscreenElement) {
+                        await document.exitFullscreen();
+                    }
+                    window.location.href = '/custom';
+                });
+            }
+
+            // Settings Modal logic
+            function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); }
+            function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+            async function saveSettings() {
+                const name = document.getElementById('setting-name').value;
+                const map = document.getElementById('setting-map').value;
+                const size = document.getElementById('setting-size').value;
+                const roomId = '<%= room.id %>';
+
+                try {
+                    const response = await fetch(`/api/custom/room/${roomId}/settings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, map, size })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        document.getElementById('room-name-display').innerText = data.room.name;
+                        document.getElementById('room-map-display').innerText = data.room.map;
+                        closeSettings();
+                        addChatMessage('System', `Room update: ${data.room.name} | ${data.room.map}`, true);
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            // Chat logic
+            async function sendChatMessage() {
+                const input = document.getElementById('chat-input');
+                const val = input.value.trim();
+                if (!val) return;
+
+                await fetch(`/api/custom/room/${ROOM_ID}/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'chat',
+                        payload: { name: USERNAME, content: val, isSystem: false }
+                    })
+                });
+                input.value = '';
+                fetchRoomState();
+            }
+
+            document.getElementById('chat-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+
+            // Improved FS Logic
+            async function enterLobby() {
+                const container = document.getElementById('lobby-container');
+                const overlay = document.getElementById('fs-overlay');
+
+                try {
+                    if (!document.fullscreenElement) {
+                        await document.documentElement.requestFullscreen();
+                        container.classList.add('full-screen-mode');
+                    }
+                } catch (err) {
+                    console.warn('FS Request ignored or failed');
+                }
+                overlay.classList.add('fade-out');
+                setTimeout(() => overlay.remove(), 500);
+            }
+
+            window.addEventListener('load', () => {
+                // Initial UI management for non-hosts
+                if (!IS_HOST) {
+                    const settingsBtn = document.getElementById('footer-settings-btn');
+                    const startBtn = document.getElementById('footer-start-btn');
+                    if (settingsBtn) settingsBtn.remove();
+                    if (startBtn) startBtn.remove();
+                }
+
+                // Initial state fetch
+                fetchRoomState();
+                setInterval(fetchRoomState, 2000);
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                // Failsafe resize handler
+                window.addEventListener('resize', () => {
+                    const container = document.getElementById('lobby-container');
+                    if (document.fullscreenElement) {
+                        container.classList.add('full-screen-mode');
+                    } else {
+                        container.classList.remove('full-screen-mode');
+                    }
+                });
+            });
+
+            function startMatch() {
+                const btn = event.currentTarget;
+                if (btn.innerText.includes('Starting')) return;
+
+                btn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> INITIALIZING BATTLE...</span>';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                addChatMessage('System', 'Initializing battle sequence...', true);
+
+                setTimeout(() => {
+                    addChatMessage('System', 'All players confirmed. Launching battle environment.', true);
+                    setTimeout(() => {
+                        alert('Battle sequence initiated. Good luck, Elite!');
+                        btn.innerHTML = 'Start Match';
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    }, 1000);
+                }, 1000);
+            }
+        </script>
+    </body>
+
+    </html>
