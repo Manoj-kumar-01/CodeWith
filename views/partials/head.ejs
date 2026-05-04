@@ -40,6 +40,70 @@
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
       }
+      
+      // Global Invite Polling
+      if (!window.globalInvitePoller) {
+        window.globalInvitePoller = setInterval(async () => {
+          try {
+            const isGuest = window.location.search.includes('guest') ? '?guest=true' : '';
+            const res = await fetch('/api/invites' + isGuest);
+            if (!res.ok) return;
+            const invites = await res.json();
+            
+            invites.forEach(invite => {
+              // Ensure we don't show the same invite twice
+              if (document.getElementById(`invite-toast-${invite.id}`)) return;
+              
+              const toast = document.createElement('div');
+              toast.id = `invite-toast-${invite.id}`;
+              toast.className = 'fixed top-20 md:top-6 right-4 md:right-6 z-[10000] w-80 bg-[#0f172a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl flex flex-col gap-3 transform translate-x-full transition-transform duration-500 ease-out';
+              // Trigger entrance animation
+              setTimeout(() => { toast.classList.remove('translate-x-full'); }, 50);
+              
+              toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                     <i data-lucide="mail-open" class="w-5 h-5"></i>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-bold text-white"><span class="text-blue-400 capitalize">${invite.from}</span> invited you!</p>
+                    <p class="text-[10px] font-mono text-slate-400 tracking-wider uppercase">${invite.roomName}</p>
+                  </div>
+                </div>
+                <div class="flex gap-2 mt-1">
+                  <button onclick="respondToInvite('${invite.id}', 'decline', this)" class="flex-1 py-2 rounded-xl text-xs font-bold text-slate-400 bg-white/5 hover:bg-white/10 transition-colors">Decline</button>
+                  <button onclick="respondToInvite('${invite.id}', 'accept', this, '${invite.roomId}')" class="flex-1 py-2 rounded-xl text-[11px] uppercase tracking-widest font-black text-white bg-blue-600 hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20">Accept & Join</button>
+                </div>
+              `;
+              document.body.appendChild(toast);
+              if (typeof lucide !== 'undefined') lucide.createIcons();
+            });
+          } catch(err) {
+            console.error('Invite polling error', err);
+          }
+        }, 3000);
+      }
+      
+      window.respondToInvite = async (inviteId, action, btnElem, roomId) => {
+        try {
+          const toast = btnElem.closest('div[id^="invite-toast-"]');
+          if (toast) {
+            toast.classList.add('translate-x-[120%]', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+          }
+          await fetch('/api/invites/respond', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inviteId, action })
+          });
+          if (action === 'accept') {
+            const isGuest = window.location.search.includes('guest') ? '?guest=true' : '';
+            window.location.href = '/custom/room/' + roomId + isGuest;
+          }
+        } catch(err) {
+            console.error('Error responding to invite', err);
+        }
+      };
     });
   </script>
 </head>

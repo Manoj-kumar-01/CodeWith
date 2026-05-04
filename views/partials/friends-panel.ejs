@@ -132,9 +132,9 @@
                                 </p>
                             </div>
                         </div>
-                        <button
-                            class="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-primary/20 transition-all">
-                            <i data-lucide="message-circle" class="w-4 h-4 text-primary"></i>
+                        <button onclick="inviteFriendToRoom(this, '<%= friend.username ? friend.username : friend.name.toLowerCase().replace(/ /g, ` `) %>', '<%= friend.name %>')"
+                            class="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-primary/20 transition-all" title="Invite to Match">
+                            <i data-lucide="send" class="w-4 h-4 text-primary"></i>
                         </button>
                     </div>
                     <% }); } else { %>

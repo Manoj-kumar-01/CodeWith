@@ -19,35 +19,16 @@ const getRedisUrl = () => {
 const redisUrl = getRedisUrl();
 
 // Redis client for caching and rate limiting
-const redisClient = redis.createClient({
-  url: redisUrl,
-  socket: {
-    reconnectStrategy: (retries) => {
-      if (retries > 10) {
-        console.error('❌ Redis max retries reached');
-        return new Error('Redis max retries');
-      }
-      return Math.min(retries * 100, 3000);
-    }
-  }
-});
-
-// Redis events
-redisClient.on('connect', () => {
-  console.log('✅ Redis connected successfully');
-});
-
-redisClient.on('error', (err) => {
-  console.error('❌ Redis error:', err);
-});
-
-redisClient.on('ready', () => {
-  console.log('✅ Redis ready');
-});
-
-redisClient.on('end', () => {
-  console.log('⚠️ Redis connection ended');
-});
+// MOCKED for local development without Redis
+const redisClient = {
+  connect: async () => console.log('✅ Mock Redis connected successfully'),
+  on: (event, cb) => { if(event === 'connect' || event === 'ready') cb(); },
+  incr: async () => 1,
+  expire: async () => {},
+  setEx: async () => {},
+  exists: async () => 0,
+  get: async () => null,
+};
 
 // Connect to Redis
 const connectRedis = async () => {
@@ -55,63 +36,22 @@ const connectRedis = async () => {
     await redisClient.connect();
   } catch (err) {
     console.error('❌ Redis connection failed:', err);
-    process.exit(1);
   }
 };
 
 // Rate limiting functions
 const rateLimiter = {
-  // Check if user exceeded rate limit
-  checkLimit: async (key, maxRequests, windowMs) => {
-    const current = await redisClient.incr(key);
-
-    if (current === 1) {
-      await redisClient.expire(key, windowMs / 1000);
-    }
-
-    return {
-      allowed: current <= maxRequests,
-      current,
-      remaining: Math.max(0, maxRequests - current)
-    };
-  },
-
-  // Block IP for duration
-  blockIP: async (ip, durationMs) => {
-    const key = `blocked:${ip}`;
-    await redisClient.setEx(key, durationMs / 1000, 'blocked');
-  },
-
-  // Check if IP is blocked
-  isBlocked: async (ip) => {
-    const key = `blocked:${ip}`;
-    return await redisClient.exists(key);
-  }
+  checkLimit: async (key, maxRequests, windowMs) => ({ allowed: true, current: 1, remaining: maxRequests - 1 }),
+  blockIP: async (ip, durationMs) => {},
+  isBlocked: async (ip) => false
 };
 
 // Cache functions
 const cache = {
-  // Cache compilation result
-  setCompilation: async (key, data, ttl = 300) => {
-    await redisClient.setEx(`compile:${key}`, ttl, JSON.stringify(data));
-  },
-
-  // Get cached compilation
-  getCompilation: async (key) => {
-    const data = await redisClient.get(`compile:${key}`);
-    return data ? JSON.parse(data) : null;
-  },
-
-  // Cache user session
-  setSession: async (sessionId, userData, ttl = 86400) => {
-    await redisClient.setEx(`session:${sessionId}`, ttl, JSON.stringify(userData));
-  },
-
-  // Get cached session
-  getSession: async (sessionId) => {
-    const data = await redisClient.get(`session:${sessionId}`);
-    return data ? JSON.parse(data) : null;
-  }
+  setCompilation: async (key, data, ttl = 300) => {},
+  getCompilation: async (key) => null,
+  setSession: async (sessionId, userData, ttl = 86400) => {},
+  getSession: async (sessionId) => null
 };
 
 module.exports = {

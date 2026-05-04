@@ -440,8 +440,10 @@
                                                 data-idx="<%= i %>">
                                                 Case <%= i + 1 %>
                                             </button>
-                                            <% }); %>
-                                                <% } %>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <div class="text-gray-500 text-sm p-2 italic w-full text-center">No test cases to display</div>
+                                    <% } %>
                                 </div>
 
                                 <div id="tc-detail"
@@ -456,10 +458,12 @@
                                         <div>
                                             <span class="text-gray-500 text-xs">Expected:</span>
                                             <div class="text-purple-400 mt-1 bg-gray-900/50 p-2 rounded">
-                                                <%= problem.testCases[0].expected %>
+                                                <%= problem.testCases[0].expected || problem.testCases[0].output || 'N/A' %>
                                             </div>
                                         </div>
-                                        <% } %>
+                                    <% } else { %>
+                                        <div class="text-gray-400 text-center py-4">No test cases found in database.</div>
+                                    <% } %>
                                 </div>
                             </div>
 
@@ -498,9 +502,7 @@
             }
                         
             // Monaco Loader
-            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
-            
-            require(['vs/editor/editor.main'], function() {
+            function initMonacoEditor() {
                 // Register a grayish-black premium theme
                 monaco.editor.defineTheme('premium-dark', {
                     base: 'vs-dark',
@@ -523,7 +525,11 @@
                     }
                 });
 
-                editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                // Clear previous editor instance if it exists
+                const container = document.getElementById('monaco-editor');
+                if (container) container.innerHTML = '';
+
+                editor = monaco.editor.create(container, {
                     value: starterCode['javascript'] || '',
                     language: 'javascript',
                     theme: 'premium-dark',
@@ -549,7 +555,20 @@
                 
                 // Sync Lucide icons
                 lucide.createIcons();
-            });
+            }
+
+            if (typeof monaco !== 'undefined') {
+                initMonacoEditor();
+            } else {
+                if (!window.requirePathsConfigured) {
+                    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+                    window.requirePathsConfigured = true;
+                }
+                
+                require(['vs/editor/editor.main'], function() {
+                    initMonacoEditor();
+                });
+            }
 
             // Monaco language mode mapping
             const monacoLangMap = {
@@ -684,6 +703,7 @@
 
                 const tc = testCases[idx];
                 if (tc) {
+                    const expectedVal = tc.expected || tc.output || 'N/A';
                     document.getElementById('tc-detail').innerHTML = `
                         <div>
                             <span class="text-gray-500 text-xs">Input:</span>
@@ -691,7 +711,7 @@
                         </div>
                         <div>
                             <span class="text-gray-500 text-xs">Expected:</span>
-                            <div class="text-purple-400 mt-1 bg-gray-900/50 p-2 rounded">${tc.expected}</div>
+                            <div class="text-purple-400 mt-1 bg-gray-900/50 p-2 rounded">${expectedVal}</div>
                         </div>
                     `;
                 }
@@ -779,6 +799,12 @@
 
                 const container = document.getElementById('output-results');
                 container.classList.remove('hidden');
+
+                if (!results || results.length === 0) {
+                    container.innerHTML = '<div class="text-gray-400 p-4">No test cases or outputs available.</div>';
+                    document.getElementById('pass-badge').classList.add('hidden');
+                    return;
+                }
 
                 const passCount = results.filter(r => r.status === 'pass').length;
                 const totalCount = results.length;

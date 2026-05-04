@@ -1096,9 +1096,10 @@ app.post('/api/compiler/run', async (req, res) => {
         let allPassed = true;
         for (const tc of visibleCases) {
             const resp = await axios.post(COMPILER_URL, { code, language, input: tc.input }, { headers: { 'compiler-internal-key': 'secret' } });
-            const passed = (resp.data.output || '').trim() === (tc.expected || '').trim();
+            const expectedVal = tc.expected || tc.output || '';
+            const passed = (resp.data.output || '').trim() === expectedVal.trim();
             if (!passed) allPassed = false;
-            results.push({ input: tc.input, expected: tc.expected, output: resp.data.output, status: passed ? 'pass' : 'fail', time: resp.data.executionTime + 'ms' });
+            results.push({ input: tc.input, expected: expectedVal, output: resp.data.output, status: passed ? 'pass' : 'fail', time: resp.data.executionTime + 'ms' });
         }
         res.json({ success: allPassed, results });
     } catch (err) {
@@ -1121,14 +1122,15 @@ app.post('/api/compiler/submit', async (req, res) => {
             try {
                 const resp = await axios.post(COMPILER_URL, { code, language, input: tc.input }, { headers: { 'compiler-internal-key': 'secret' } });
                 const actualOutput = (resp.data.output || '').trim();
-                const expectedOutput = (tc.expected || '').trim();
+                const expectedVal = tc.expected || tc.output || '';
+                const expectedOutput = expectedVal.trim();
                 const passed = actualOutput === expectedOutput;
                 
                 if (!passed) allPassed = false;
                 
                 results.push({ 
                     input: tc.isHidden ? 'Hidden' : tc.input, 
-                    expected: tc.isHidden ? 'Hidden' : tc.expected, 
+                    expected: tc.isHidden ? 'Hidden' : expectedVal, 
                     output: tc.isHidden ? (passed ? 'Correct' : 'Incorrect') : resp.data.output, 
                     status: passed ? 'pass' : 'fail', 
                     time: resp.data.executionTime + 'ms',
@@ -1175,6 +1177,33 @@ app.get('/problem/:id', async (req, res) => {
         const allProblems = dbConnected ? await Problem.find().limit(50) : mockProblems;
         res.render('code', { currentPath: '/problem', problem, contest: null, contestProblems: allProblems });
     } catch (err) {
+        res.status(500).render('404', { currentPath: '' });
+    }
+});
+
+app.get('/contest/:contestId/problem/:id', async (req, res) => {
+    try {
+        let problem = dbConnected ? await Problem.findById(req.params.id) : mockProblems.find(p => p.id == req.params.id);
+        if (!problem) return res.status(404).render('404', { currentPath: '' });
+        
+        let contest = null;
+        let contestProblems = [];
+        if (dbConnected) {
+            contest = await Contest.findById(req.params.contestId);
+            if (contest) {
+                for (const p of contest.problemsList) {
+                    const prob = await Problem.findById(p.id);
+                    if (prob) contestProblems.push(prob);
+                }
+            }
+        } else {
+            contest = mockContests.find(c => c.id == req.params.contestId);
+            if (contest) contestProblems = mockProblems;
+        }
+        
+        res.render('code', { currentPath: `/contest/${req.params.contestId}`, problem, contest, contestProblems });
+    } catch (err) {
+        console.error(err);
         res.status(500).render('404', { currentPath: '' });
     }
 });
@@ -1436,6 +1465,8 @@ const mockCustomRooms = [
     }
 ];
 
+let customRoomInvites = [];
+
 app.get('/custom', async (req, res) => {
     try {
         // Fetch users for friends panel integration
@@ -1449,10 +1480,21 @@ app.get('/custom', async (req, res) => {
                 }).populate('requester recipient');
                 friends = friendships.map(f => {
                     const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
-                    return { name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
+                    return { username: friend.username, name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
                 });
             }
         }
+        
+        // ADD GUEST USER FOR TESTING
+        friends.push({
+            username: 'guest_user',
+            name: 'Guest Player',
+            avatar: 'GP',
+            mode: 'online',
+            desc: 'Available',
+            color: 'bg-emerald-500'
+        });
+
         res.render('custom', { currentPath: '/custom', rooms: mockCustomRooms, friends });
     } catch (err) {
         res.status(500).send('Error');
@@ -1527,10 +1569,21 @@ app.get('/custom/room/:id', async (req, res) => {
                 }).populate('requester recipient');
                 friends = friendships.map(f => {
                     const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
-                    return { name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
+                    return { username: friend.username, name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
                 });
             }
         }
+        
+        // ADD GUEST USER FOR TESTING
+        friends.push({
+            username: 'guest_user',
+            name: 'Guest Player',
+            avatar: 'GP',
+            mode: 'online',
+            desc: 'Available',
+            color: 'bg-emerald-500'
+        });
+
         res.render('custom-room', { currentPath: '/custom', room, friends, currentUsername });
     } catch (err) {
         res.status(500).send('Error');
@@ -1580,6 +1633,42 @@ app.post('/api/custom/room/:id/action', (req, res) => {
         res.json({ success: true });
     } else {
         res.status(400).json({ error: 'Invalid action' });
+    }
+});
+
+app.get('/api/invites', (req, res) => {
+    const currentUsername = req.query.guest ? 'guest_user' : 'alexchen';
+    // Return invites where to == currentUsername
+    const userInvites = customRoomInvites.filter(i => i.to === currentUsername);
+    res.json(userInvites);
+});
+
+app.post('/api/invites', (req, res) => {
+    const { roomId, roomName, to, from } = req.body;
+    if (!roomId || !to || !from) return res.status(400).json({ error: 'Missing fields' });
+    
+    // Prevent duplicate active invites for the same room to the same person
+    if (!customRoomInvites.find(i => i.roomId === roomId && i.to === to)) {
+        customRoomInvites.push({
+            id: Date.now().toString() + Math.floor(Math.random()*1000),
+            roomId,
+            roomName: roomName || `Room #${roomId}`,
+            to,
+            from,
+            timestamp: new Date()
+        });
+    }
+    res.json({ success: true });
+});
+
+app.post('/api/invites/respond', (req, res) => {
+    const { inviteId, action } = req.body;
+    const inviteIndex = customRoomInvites.findIndex(i => i.id === inviteId);
+    if (inviteIndex > -1) {
+        customRoomInvites.splice(inviteIndex, 1);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Invite not found' });
     }
 });
 
