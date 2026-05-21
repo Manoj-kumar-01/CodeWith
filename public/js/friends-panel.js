@@ -1,13 +1,16 @@
 // Friends panel toggle
-function toggleFriends() {
+function toggleFriends(e) {
+    if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }
     const aside = document.getElementById('friends-aside');
-    const panel = document.getElementById('friends-panel');
     if (!aside) return;
 
     if (aside.classList.contains('hidden')) {
         aside.classList.remove('hidden');
+        const panel = document.getElementById('friends-panel');
         if (panel) panel.classList.remove('hidden');
-        // Re-render lucide icons inside panel
         if (window.lucide) lucide.createIcons();
     } else {
         aside.classList.add('hidden');
@@ -17,10 +20,17 @@ function toggleFriends() {
 // Close panel on click outside
 document.addEventListener('mousedown', function (e) {
     const aside = document.getElementById('friends-aside');
-    const toggleBtn = document.querySelector('[data-friends-toggle]');
     if (!aside || aside.classList.contains('hidden')) return;
+    
+    // Don't close if clicking inside the aside
     if (aside.contains(e.target)) return;
-    if (toggleBtn && toggleBtn.contains(e.target)) return;
+    
+    // Don't close if clicking any toggle button
+    const toggleBtns = document.querySelectorAll('[onclick="toggleFriends()"], [data-friends-toggle]');
+    for (let btn of toggleBtns) {
+        if (btn.contains(e.target)) return;
+    }
+    
     aside.classList.add('hidden');
 });
 

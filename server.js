@@ -1,5 +1,10 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
+const MongoStore = require('connect-mongo').default;
+const bcrypt = require('bcryptjs');
+const http = require('http');
+const socketIo = require('socket.io');
 const axios = require('axios');
 const path = require('path');
 const mongoose = require('mongoose');
@@ -8,8 +13,14 @@ const Contest = require('./models/Contest');
 const Problem = require('./models/Problem');
 const Friendship = require('./models/Friendship');
 const Activity = require('./models/Activity');
+const CustomRoom = require('./models/CustomRoom');
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+// Store io instance for global usage if needed
+app.set('io', io);
 const PORT = process.env.PORT || 3000;
 
 // View engine
@@ -17,11 +28,163 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use(express.text({ type: 'text/plain' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+// Session Configuration
+const sessionMiddleware = session({
+    secret: process.env.SESSION_SECRET || 'codewith-super-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: process.env.MONGO_URI ? MongoStore.create({ mongoUrl: process.env.MONGO_URI }) : new session.MemoryStore(),
+    cookie: { secure: false, maxAge: 1000 * 60 * 60 * 24 } // 1 day
+});
+app.use(sessionMiddleware);
 
+// Socket.io session sharing
+io.engine.use(sessionMiddleware);
 
+// Socket.io connection handling
+io.on('connection', (socket) => {
+    const session = socket.request.session;
+    if (session && session.user) {
+        socket.join('user_' + session.user.username); // Join personal room for invites
+        console.log('Socket connected for user:', session.user.username);
+    }
+
+    socket.on('invite_friend', (data) => {
+        // data: { friendUsername, roomId }
+        if (session && session.user) {
+            io.to('user_' + data.friendUsername).emit('room_invite', {
+                from: session.user.username,
+                roomId: data.roomId
+            });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        // Handle disconnect
+    });
+});
+
+// Global Map to track online status by username -> lastActiveTimestamp
+global.onlineUsers = global.onlineUsers || new Map();
+
+// Helper function to check if a user is online
+global.isUserOnline = (username) => {
+    if (!global.onlineUsers) return false;
+    const lastActive = global.onlineUsers.get(username);
+    if (!lastActive) return false;
+    return (Date.now() - lastActive) < 10000; // 10 seconds threshold for responsiveness
+};
+
+// Middleware to inject user into views and track active online status
+app.use((req, res, next) => {
+    res.locals.user = req.session.user || null;
+    if (req.session && req.session.user) {
+        global.onlineUsers.set(req.session.user.username, Date.now());
+    }
+    next();
+});
+
+const customRoomInvites = [];
+const roomCreateCooldowns = new Map();
+
+// Auth Middleware
+const requireAuth = (req, res, next) => {
+    if (req.session && req.session.user) {
+        return next();
+    }
+    if (req.originalUrl.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    res.redirect('/login');
+};
+
+// --- Authentication Routes ---
+app.get('/login', (req, res) => {
+    if (req.session && req.session.user) return res.redirect('/');
+    res.render('login', { error: null });
+});
+
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ username });
+        if (!user) return res.render('login', { error: 'Invalid credentials' });
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.render('login', { error: 'Invalid credentials' });
+        
+        // Ensure user has a permanent 10-digit UID on login
+        if (!user.uid) {
+            let unique = false;
+            let uid = '';
+            while (!unique) {
+                uid = '';
+                for (let i = 0; i < 10; i++) {
+                    uid += Math.floor(Math.random() * 10).toString();
+                }
+                const existing = await User.findOne({ uid });
+                if (!existing) {
+                    unique = true;
+                }
+            }
+            user.uid = uid;
+            await user.save();
+        }
+        
+        req.session.user = user;
+        res.redirect('/');
+    } catch (err) {
+        console.error('Login error:', err);
+        res.render('login', { error: 'Server error' });
+    }
+});
+
+app.get('/register', (req, res) => {
+    if (req.session && req.session.user) return res.redirect('/');
+    res.render('register', { error: null });
+});
+
+app.post('/register', async (req, res) => {
+    try {
+        const { username, name, email, password } = req.body;
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) return res.render('register', { error: 'Email or username already exists' });
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
+        const user = new User({
+            username,
+            name,
+            email,
+            password: hashedPassword
+        });
+        await user.save();
+        
+        req.session.user = user;
+        res.redirect('/');
+    } catch (err) {
+        console.error('Register error:', err);
+        if (err.code === 11000) {
+            return res.render('register', { error: 'Email or username already exists' });
+        }
+        res.render('register', { error: 'Server error' });
+    }
+});
+
+app.get('/logout', (req, res) => {
+    if (req.session && req.session.user) {
+        if (global.onlineUsers) {
+            global.onlineUsers.delete(req.session.user.username);
+        }
+    }
+    req.session.destroy();
+    res.redirect('/login');
+});
 
 // Global variable to track DB status
 let dbConnected = false;
@@ -432,15 +595,37 @@ const seedData = async () => {
     try {
         if (!dbConnected) return;
 
+        // Ensure all existing users have a unique 10-digit UID
+        const usersWithoutUid = await User.find({ $or: [{ uid: { $exists: false } }, { uid: null }] });
+        if (usersWithoutUid.length > 0) {
+            console.log(`Updating ${usersWithoutUid.length} users with unique UIDs...`);
+            for (let u of usersWithoutUid) {
+                let unique = false;
+                let uid = '';
+                while (!unique) {
+                    uid = '';
+                    for (let i = 0; i < 10; i++) {
+                        uid += Math.floor(Math.random() * 10).toString();
+                    }
+                    const existing = await User.findOne({ uid });
+                    if (!existing) {
+                        unique = true;
+                    }
+                }
+                u.uid = uid;
+                await u.save();
+            }
+        }
+
         const userCount = await User.countDocuments();
         if (userCount === 0) {
             console.log('Seeding initial users...');
-            const mainUser = await User.create({ username: 'alexchen', name: 'Alex Chen', email: 'alex@codewith.dev', stats: { rating: 1847, solved: 247 } });
+            const mainUser = await User.create({ username: (req.session.user ? req.session.user.username : 'alexchen'), name: 'Alex Chen', email: 'alex@codewith.dev', stats: { rating: 1847, solved: 247 } });
             const dummy1 = await User.create({ username: 'sarahm', name: 'Sarah Miller', email: 'sarah@example.com', stats: { rating: 1650, solved: 189 } });
             const dummy2 = await User.create({ username: 'jordanl', name: 'Jordan Lee', email: 'jordan@example.com', stats: { rating: 1920, solved: 312 } });
             const dummy3 = await User.create({ username: 'priyas', name: 'Priya Sharma', email: 'priya@example.com', stats: { rating: 1780, solved: 256 } });
             const dummy4 = await User.create({ username: 'marcusj', name: 'Marcus Johnson', email: 'marcus@example.com', stats: { rating: 1540, solved: 143 } });
-            
+
             // Seed a friendship and pending request
             await Friendship.create({ requester: dummy1._id, recipient: mainUser._id, status: 'accepted' });
             await Friendship.create({ requester: dummy2._id, recipient: mainUser._id, status: 'pending' });
@@ -524,13 +709,30 @@ const getContestStatus = (startTime, endTime) => {
 // ── API Routes ──
 
 // Expanded Profile API
-app.get('/api/user/profile', async (req, res) => {
+app.get('/api/user/profile', requireAuth, async (req, res) => {
     try {
         let user;
         if (dbConnected) {
-            user = await User.findOne({ username: 'alexchen' });
+            user = await User.findOne({ username: req.session.user.username });
+            if (user && !user.uid) {
+                let unique = false;
+                let uid = '';
+                while (!unique) {
+                    uid = '';
+                    for (let i = 0; i < 10; i++) {
+                        uid += Math.floor(Math.random() * 10).toString();
+                    }
+                    const existing = await User.findOne({ uid });
+                    if (!existing) {
+                        unique = true;
+                    }
+                }
+                user.uid = uid;
+                await user.save();
+                req.session.user = user; // Sync session state
+            }
         }
-        
+
         // Fallback or Mock data
         if (!user) {
             return res.json({
@@ -550,23 +752,73 @@ app.get('/api/user/profile', async (req, res) => {
             let count = (dayOfWeek === 0 || dayOfWeek === 6) ? Math.floor(Math.random() * 2) : Math.floor(Math.random() * 4);
             heatmap.push({ date: d.toISOString().split('T')[0], count });
         }
+        let customRooms = [];
+        if (dbConnected) {
+            const allRooms = await CustomRoom.find({}).lean();
+            customRooms = allRooms.filter(r => 
+                r.host === user.username || 
+                (r.slots && Object.values(r.slots).some(s => s.username === user.username))
+            );
+        }
+
+        const fallbackLanguages = [
+            { name: 'JavaScript', percentage: 65, color: '#f7df1e' },
+            { name: 'Python', percentage: 25, color: '#3776ab' },
+            { name: 'HTML/CSS', percentage: 10, color: '#e34c26' }
+        ];
+
+        const fallbackAchievements = [
+            { name: 'First Blood', description: 'Solved your first problem', icon: '🩸', earned: true, date: user.createdAt || new Date() },
+            { name: 'Streak Master', description: 'Maintain a 7-day streak', icon: '🔥', earned: false },
+            { name: 'Battle Veteran', description: 'Participate in 10 custom rooms', icon: '⚔️', earned: false }
+        ];
+
         res.json({
-            user: { ...user.toObject(), joinedAt: user.createdAt || new Date() },
+            user: { 
+                ...user.toObject(), 
+                joinedAt: user.createdAt || new Date(),
+                languages: user.languages || fallbackLanguages 
+            },
             activity: user.activity || [],
-            achievements: [],
-            heatmap
+            achievements: fallbackAchievements,
+            heatmap,
+            customRooms
         });
-    } catch(err) {
+    } catch (err) {
         console.error('Profile API error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-app.get('/api/friends', async (req, res) => {
+app.post('/api/user/profile', requireAuth, async (req, res) => {
+    try {
+        if (!dbConnected) return res.status(500).json({ error: 'DB not connected' });
+        const { name, bio, social, skills } = req.body;
+        
+        const updateData = {};
+        if (name !== undefined) updateData.name = name;
+        if (bio !== undefined) updateData.bio = bio;
+        if (social !== undefined) updateData.social = social;
+        if (skills !== undefined) updateData.skills = skills;
+
+        const updatedUser = await User.findOneAndUpdate(
+            { username: req.session.user.username },
+            { $set: updateData },
+            { new: true }
+        );
+        req.session.user = updatedUser; // Update session
+        res.json({ success: true, user: updatedUser });
+    } catch (err) {
+        console.error('Profile Update Error:', err);
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+app.get('/api/friends', requireAuth, async (req, res) => {
     try {
         let currentUser;
         if (dbConnected) {
-            currentUser = await User.findOne({ username: 'alexchen' });
+            currentUser = await User.findOne({ username: req.session.user.username });
         }
 
         if (!currentUser) {
@@ -589,17 +841,17 @@ app.get('/api/friends', async (req, res) => {
         }).populate('requester recipient');
 
         const allUsers = await User.find({ _id: { $ne: currentUser._id } });
-        
+
         let friends = [];
         let pendingReceived = [];
         let pendingSent = [];
         const relatedUserIds = new Set();
-        // ... same logic as before for population ...
         friendships.forEach(f => {
             if (f.status === 'accepted') {
                 const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
                 if (friend) {
-                    friends.push({ id: friend._id, name: friend.name, username: friend.username, status: 'online', rating: friend.stats?.rating || 1200, solved: friend.stats?.solved || 0 });
+                    const isOnline = global.isUserOnline(friend.username);
+                    friends.push({ id: friend._id, name: friend.name, username: friend.username, status: isOnline ? 'online' : 'offline', rating: friend.stats?.rating || 1200, solved: friend.stats?.solved || 0 });
                     relatedUserIds.add(friend._id.toString());
                 }
             } else if (f.status === 'pending') {
@@ -625,7 +877,7 @@ app.get('/api/friends', async (req, res) => {
             friends, onlineFriends: friends.filter(f => f.status === 'online'), pendingReceived, pendingSent, suggestions,
             counts: { all: friends.length, online: friends.filter(f => f.status === 'online').length, pending: pendingReceived.length + pendingSent.length, suggestions: suggestions.length }
         });
-    } catch(err) {
+    } catch (err) {
         console.error('Friends API error:', err);
         res.status(500).json({ error: 'Server error' });
     }
@@ -633,36 +885,80 @@ app.get('/api/friends', async (req, res) => {
 
 app.post('/api/friends/request', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
-        const { userId } = req.body;
-        const currentUser = await User.findOne({ username: 'alexchen' });
-        await Friendship.create({ requester: currentUser._id, recipient: userId, status: 'pending' });
+        if (!dbConnected) return res.status(400).json({ error: 'DB disconnected' });
+        const { userId, uid } = req.body;
+        const currentUser = await User.findOne({ username: req.session.user.username });
+        
+        let recipientUser;
+        if (uid) {
+            recipientUser = await User.findOne({ uid: uid.trim() });
+        } else if (userId) {
+            const trimmedId = userId.toString().trim();
+            if (/^\d{10}$/.test(trimmedId)) {
+                recipientUser = await User.findOne({ uid: trimmedId });
+            } else if (mongoose.Types.ObjectId.isValid(trimmedId)) {
+                recipientUser = await User.findById(trimmedId);
+            }
+        }
+        
+        if (!recipientUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        if (recipientUser._id.equals(currentUser._id)) {
+            return res.status(400).json({ error: 'You cannot add yourself as a friend' });
+        }
+        
+        // Check if friendship already exists
+        const existingFriendship = await Friendship.findOne({
+            $or: [
+                { requester: currentUser._id, recipient: recipientUser._id },
+                { requester: recipientUser._id, recipient: currentUser._id }
+            ]
+        });
+        
+        if (existingFriendship) {
+            if (existingFriendship.status === 'accepted') {
+                return res.status(400).json({ error: 'You are already friends with this user' });
+            } else if (existingFriendship.status === 'pending') {
+                if (existingFriendship.requester.equals(currentUser._id)) {
+                    return res.status(400).json({ error: 'Friend request already sent' });
+                } else {
+                    existingFriendship.status = 'accepted';
+                    await existingFriendship.save();
+                    return res.json({ success: true, message: 'Friend request accepted!' });
+                }
+            }
+        }
+        
+        await Friendship.create({ requester: currentUser._id, recipient: recipientUser._id, status: 'pending' });
         res.json({ success: true, message: 'Friend request sent' });
-    } catch(err) {
+    } catch (err) {
+        console.error('Request friend error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
 app.post('/api/friends/accept', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        if (!dbConnected) return res.status(400).json({ error: 'DB disconnected' });
         const { userId } = req.body;
-        const currentUser = await User.findOne({ username: 'alexchen' });
+        const currentUser = await User.findOne({ username: req.session.user.username });
         await Friendship.findOneAndUpdate(
             { requester: userId, recipient: currentUser._id },
             { status: 'accepted' }
         );
         res.json({ success: true, message: 'Friend request accepted' });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });
 
 app.post('/api/friends/reject', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        if (!dbConnected) return res.status(400).json({ error: 'DB disconnected' });
         const { userId } = req.body;
-        const currentUser = await User.findOne({ username: 'alexchen' });
+        const currentUser = await User.findOne({ username: req.session.user.username });
         await Friendship.findOneAndDelete({
             $or: [
                 { requester: currentUser._id, recipient: userId },
@@ -670,16 +966,16 @@ app.post('/api/friends/reject', async (req, res) => {
             ]
         });
         res.json({ success: true, message: 'Request cancelled' });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });
 
 app.post('/api/friends/remove', async (req, res) => {
     try {
-        if (!dbConnected) return res.status(400).json({error: 'DB disconnected'});
+        if (!dbConnected) return res.status(400).json({ error: 'DB disconnected' });
         const { userId } = req.body;
-        const currentUser = await User.findOne({ username: 'alexchen' });
+        const currentUser = await User.findOne({ username: req.session.user.username });
         await Friendship.findOneAndDelete({
             $or: [
                 { requester: currentUser._id, recipient: userId, status: 'accepted' },
@@ -687,14 +983,14 @@ app.post('/api/friends/remove', async (req, res) => {
             ]
         });
         res.json({ success: true, message: 'Friend removed' });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });
 
 // ── Page Routes ──
 
-app.get('/', async (req, res) => {
+app.get('/', requireAuth, async (req, res) => {
     try {
         let activeContestsCount = 0;
         let totalParticipants = 0;
@@ -729,7 +1025,7 @@ app.get('/', async (req, res) => {
                 .sort({ timestamp: -1 })
                 .limit(10)
                 .populate('userId');
-            
+
             const solvers = globalActivity.map(a => ({
                 name: a.username,
                 problem: a.problemTitle,
@@ -749,31 +1045,32 @@ app.get('/', async (req, res) => {
             }));
 
             // Fetch Friends for Sidebar/Dashboard
-            const currentUser = await User.findOne({ username: 'alexchen' });
+            const currentUser = await User.findOne({ username: req.session.user.username });
             let friends = [];
             if (currentUser) {
                 const friendships = await Friendship.find({
                     $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
                     status: 'accepted'
                 }).populate('requester recipient');
-                
+
                 friends = friendships.map(f => {
                     const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                    const isOnline = global.isUserOnline(friend.username);
                     return {
                         name: friend.name,
                         avatar: friend.name.split(' ').map(n => n[0]).join(''),
-                        mode: 'online', // Mocked as online for now
-                        desc: 'Available',
-                        color: 'bg-[#515f74]'
+                        mode: isOnline ? 'online' : 'offline',
+                        desc: isOnline ? 'Available' : 'Offline',
+                        color: isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'
                     };
                 });
             }
 
-            res.render('index', { 
-                currentPath: '/', 
-                contests, 
-                recentProblems, 
-                activeContestsCount, 
+            res.render('index', {
+                currentPath: '/',
+                contests,
+                recentProblems,
+                activeContestsCount,
                 totalParticipants,
                 solvers: solvers || [],
                 topics: topics || [],
@@ -792,11 +1089,11 @@ app.get('/', async (req, res) => {
             activeContestsCount = enriched.filter(c => c.status === 'active').length;
             totalParticipants = mockContests.reduce((acc, c) => acc + c.participants.length, 0);
             contests = enriched.filter(c => c.status === 'active').slice(0, 6);
-            res.render('index', { 
-                currentPath: '/', 
-                contests, 
-                recentProblems: mockProblems.slice(0, 6), 
-                activeContestsCount, 
+            res.render('index', {
+                currentPath: '/',
+                contests,
+                recentProblems: mockProblems.slice(0, 6),
+                activeContestsCount,
                 totalParticipants,
                 solvers: [],
                 topics: [],
@@ -805,11 +1102,11 @@ app.get('/', async (req, res) => {
         }
     } catch (err) {
         console.error(err);
-        res.render('index', { 
-            currentPath: '/', 
-            contests: [], 
-            recentProblems: [], 
-            activeContestsCount: 0, 
+        res.render('index', {
+            currentPath: '/',
+            contests: [],
+            recentProblems: [],
+            activeContestsCount: 0,
             totalParticipants: 0,
             solvers: [],
             topics: [],
@@ -818,7 +1115,7 @@ app.get('/', async (req, res) => {
     }
 });
 
-app.get('/contests', async (req, res) => {
+app.get('/contests', requireAuth, async (req, res) => {
     try {
         let contests = [];
         let activeContestsCount = 0;
@@ -863,7 +1160,7 @@ app.get('/contests', async (req, res) => {
     }
 });
 
-app.get('/contest/:id', async (req, res) => {
+app.get('/contest/:id', requireAuth, async (req, res) => {
     try {
         let contest;
         if (dbConnected) {
@@ -901,7 +1198,7 @@ app.get('/contest/:id', async (req, res) => {
     }
 });
 
-app.get('/contest/:id/problems', async (req, res) => {
+app.get('/contest/:id/problems', requireAuth, async (req, res) => {
     try {
         let contest;
         let problems = [];
@@ -936,7 +1233,7 @@ app.get('/contest/:id/problems', async (req, res) => {
     }
 });
 
-app.get('/api/contest/:id/members', async (req, res) => {
+app.get('/api/contest/:id/members', requireAuth, async (req, res) => {
     try {
         let count = 0;
         if (dbConnected) {
@@ -954,7 +1251,7 @@ app.get('/api/contest/:id/members', async (req, res) => {
     }
 });
 
-app.get('/api/contest/:id/status', async (req, res) => {
+app.get('/api/contest/:id/status', requireAuth, async (req, res) => {
     try {
         const { userId } = req.query;
         let joined = false;
@@ -1028,7 +1325,7 @@ app.post('/api/contest/:id/leave', async (req, res) => {
     }
 });
 
-app.get('/practice', async (req, res) => {
+app.get('/practice', requireAuth, async (req, res) => {
     try {
         let categories = [
             { name: "Arrays", count: 0, icon: "📊", solved: 0 },
@@ -1040,7 +1337,7 @@ app.get('/practice', async (req, res) => {
         let stats = { solved: 0, streak: 0, submissions: 0, time: '0h' };
 
         if (dbConnected) {
-            const user = await User.findOne({ username: 'alexchen' });
+            const user = await User.findOne({ username: req.session.user.username });
             if (user) {
                 stats.solved = user.stats.solved || 0;
                 stats.streak = user.stats.streak || 0;
@@ -1051,9 +1348,9 @@ app.get('/practice', async (req, res) => {
             const agg = await Problem.aggregate([
                 { $group: { _id: "$category", count: { $sum: 1 } } }
             ]);
-            
+
             const icons = {
-                "Arrays": "📊", "Strings": "📝", "Linked Lists": "🔗", "Trees": "🌳", 
+                "Arrays": "📊", "Strings": "📝", "Linked Lists": "🔗", "Trees": "🌳",
                 "DP": "⚡", "Dynamic Programming": "⚡", "Math": "🔢", "Stacks": "📚", "Queues": "⏳"
             };
 
@@ -1067,14 +1364,14 @@ app.get('/practice', async (req, res) => {
             }
             problems = await Problem.find().sort({ createdAt: -1 });
         }
-        
+
         const totalProblems = problems.length;
-        
-        res.render('practice', { 
-            currentPath: '/practice', 
-            categories, 
-            problems, 
-            totalProblems, 
+
+        res.render('practice', {
+            currentPath: '/practice',
+            categories,
+            problems,
+            totalProblems,
             totalSolved: stats.solved,
             userStats: stats
         });
@@ -1099,7 +1396,14 @@ app.post('/api/compiler/run', async (req, res) => {
             const expectedVal = tc.expected || tc.output || '';
             const passed = (resp.data.output || '').trim() === expectedVal.trim();
             if (!passed) allPassed = false;
-            results.push({ input: tc.input, expected: expectedVal, output: resp.data.output, status: passed ? 'pass' : 'fail', time: resp.data.executionTime + 'ms' });
+            results.push({
+                input: tc.input,
+                expected: expectedVal,
+                output: resp.data.output,
+                error: resp.data.error,
+                status: passed ? 'pass' : 'fail',
+                time: (resp.data.executionTime || 0) + 'ms'
+            });
         }
         res.json({ success: allPassed, results });
     } catch (err) {
@@ -1112,12 +1416,12 @@ app.post('/api/compiler/submit', async (req, res) => {
         const { code, language, problemId } = req.body;
         let problem = dbConnected ? await Problem.findById(problemId) : mockProblems.find(p => p.id == problemId);
         if (!problem) return res.status(404).json({ error: 'Problem not found' });
-        
+
         // In real submit, we check ALL test cases including hidden ones
         const allCases = problem.testCases;
         const results = [];
         let allPassed = true;
-        
+
         for (const tc of allCases) {
             try {
                 const resp = await axios.post(COMPILER_URL, { code, language, input: tc.input }, { headers: { 'compiler-internal-key': 'secret' } });
@@ -1125,15 +1429,16 @@ app.post('/api/compiler/submit', async (req, res) => {
                 const expectedVal = tc.expected || tc.output || '';
                 const expectedOutput = expectedVal.trim();
                 const passed = actualOutput === expectedOutput;
-                
+
                 if (!passed) allPassed = false;
-                
-                results.push({ 
-                    input: tc.isHidden ? 'Hidden' : tc.input, 
-                    expected: tc.isHidden ? 'Hidden' : expectedVal, 
-                    output: tc.isHidden ? (passed ? 'Correct' : 'Incorrect') : resp.data.output, 
-                    status: passed ? 'pass' : 'fail', 
-                    time: resp.data.executionTime + 'ms',
+
+                results.push({
+                    input: tc.isHidden ? 'Hidden' : tc.input,
+                    expected: tc.isHidden ? 'Hidden' : expectedVal,
+                    output: tc.isHidden ? (passed ? 'Correct' : 'Incorrect') : resp.data.output,
+                    error: resp.data.error,
+                    status: passed ? 'pass' : 'fail',
+                    time: (resp.data.executionTime || 0) + 'ms',
                     isHidden: tc.isHidden
                 });
             } catch (compilerErr) {
@@ -1143,7 +1448,7 @@ app.post('/api/compiler/submit', async (req, res) => {
         }
 
         if (allPassed && dbConnected) {
-            const user = await User.findOne({ username: 'alexchen' });
+            const user = await User.findOne({ username: req.session.user.username });
             if (user) {
                 // Prevent duplicate activity for same problem if you want, but here we just record
                 await Activity.create({
@@ -1154,11 +1459,11 @@ app.post('/api/compiler/submit', async (req, res) => {
                     problemTitle: problem.title,
                     difficulty: problem.difficulty
                 });
-                
+
                 // Update user stats
-                await User.findByIdAndUpdate(user._id, { 
-                    $inc: { 'stats.solved': 1 }, 
-                    $push: { activity: { title: `Solved ${problem.title}` } } 
+                await User.findByIdAndUpdate(user._id, {
+                    $inc: { 'stats.solved': 1 },
+                    $push: { activity: { title: `Solved ${problem.title}` } }
                 });
             }
         }
@@ -1170,7 +1475,7 @@ app.post('/api/compiler/submit', async (req, res) => {
     }
 });
 
-app.get('/problem/:id', async (req, res) => {
+app.get('/problem/:id', requireAuth, async (req, res) => {
     try {
         let problem = dbConnected ? await Problem.findById(req.params.id) : mockProblems.find(p => p.id == req.params.id);
         if (!problem) return res.status(404).render('404', { currentPath: '' });
@@ -1181,11 +1486,11 @@ app.get('/problem/:id', async (req, res) => {
     }
 });
 
-app.get('/contest/:contestId/problem/:id', async (req, res) => {
+app.get('/contest/:contestId/problem/:id', requireAuth, async (req, res) => {
     try {
         let problem = dbConnected ? await Problem.findById(req.params.id) : mockProblems.find(p => p.id == req.params.id);
         if (!problem) return res.status(404).render('404', { currentPath: '' });
-        
+
         let contest = null;
         let contestProblems = [];
         if (dbConnected) {
@@ -1200,7 +1505,7 @@ app.get('/contest/:contestId/problem/:id', async (req, res) => {
             contest = mockContests.find(c => c.id == req.params.contestId);
             if (contest) contestProblems = mockProblems;
         }
-        
+
         res.render('code', { currentPath: `/contest/${req.params.contestId}`, problem, contest, contestProblems });
     } catch (err) {
         console.error(err);
@@ -1209,7 +1514,7 @@ app.get('/contest/:contestId/problem/:id', async (req, res) => {
 });
 
 // Admin routes
-app.get('/admin', async (req, res) => {
+app.get('/admin', requireAuth, async (req, res) => {
     try {
         let contests = [];
         if (dbConnected) {
@@ -1228,10 +1533,10 @@ app.get('/admin', async (req, res) => {
         }
 
         // Final Registry Assembly (Strict Order: Active > Upcoming > Past)
-        const activeList = contests.filter(c => c.status === 'active').sort((a,b) => new Date(b.startTime) - new Date(a.startTime));
-        const upcomingList = contests.filter(c => c.status === 'upcoming').sort((a,b) => new Date(a.startTime) - new Date(b.startTime));
-        const pastList = contests.filter(c => c.status === 'past').sort((a,b) => new Date(b.startTime) - new Date(a.startTime));
-        
+        const activeList = contests.filter(c => c.status === 'active').sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        const upcomingList = contests.filter(c => c.status === 'upcoming').sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+        const pastList = contests.filter(c => c.status === 'past').sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
         const finalizedContests = [...activeList, ...upcomingList, ...pastList];
 
         res.render('admin', { currentPath: '/admin', contests: finalizedContests });
@@ -1245,16 +1550,16 @@ app.post('/admin/contest', async (req, res) => {
     try {
         if (!dbConnected) return res.status(503).send('Database not connected');
         const { title, subtitle, description, prize, organizer, startTime, endTime, tags, rules, problemCount } = req.body;
-        
+
         const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
         const rulesArray = rules ? rules.split('\n').filter(rule => rule.trim() !== '') : ["Solve all problems", "No plagiarism"];
-        
+
         const start = parseIST(startTime);
         const end = parseIST(endTime);
         const pCount = parseInt(problemCount) || 3;
         const difficulty = req.body.difficulty || 'medium'; // Default if missing
         const allProblems = await Problem.find();
-        
+
         const shuffledProblems = [...allProblems].sort(() => 0.5 - Math.random());
         const selectedProblems = shuffledProblems.slice(0, Math.min(pCount, 20)).map(p => ({
             id: p._id.toString(),
@@ -1284,7 +1589,7 @@ app.post('/admin/contest', async (req, res) => {
     }
 });
 
-app.get('/admin/contest/:id', async (req, res) => {
+app.get('/admin/contest/:id', requireAuth, async (req, res) => {
     try {
         let contest;
         let availableProblems = [];
@@ -1297,7 +1602,7 @@ app.get('/admin/contest/:id', async (req, res) => {
         }
 
         if (!contest) return res.status(404).send('Contest not found');
-        
+
         const contestObj = dbConnected ? contest.toObject() : contest;
         const status = getContestStatus(contest.startTime, contest.endTime);
 
@@ -1381,7 +1686,7 @@ app.post('/admin/contest/:id/delete', async (req, res) => {
     }
 });
 
-app.get('/admin/problems', async (req, res) => {
+app.get('/admin/problems', requireAuth, async (req, res) => {
     try {
         const problems = dbConnected ? await Problem.find().sort({ createdAt: -1 }) : mockProblems;
         res.render('admin-problems', { currentPath: '/admin/problems', problems });
@@ -1395,17 +1700,17 @@ app.post('/admin/problems', async (req, res) => {
         const { title, difficulty, category, tags, description, constraints } = req.body;
         const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
         const constraintsArray = constraints ? constraints.split(',').map(c => c.trim()).filter(Boolean) : [];
-        
+
         if (dbConnected) {
             await Problem.create({ title, difficulty, category, tags: tagsArray, description, constraints: constraintsArray });
         } else {
             const newProblem = {
                 id: Date.now().toString(),
-                title, 
-                difficulty, 
-                category, 
-                tags: tagsArray, 
-                description, 
+                title,
+                difficulty,
+                category,
+                tags: tagsArray,
+                description,
                 constraints: constraintsArray,
                 testCases: [{ input: "1", expected: "1", isHidden: false }]
             };
@@ -1433,13 +1738,13 @@ app.post('/admin/problem/:id/delete', async (req, res) => {
 
 // ── Custom Rooms Routes ──
 const mockCustomRooms = [
-    { 
-        id: '101', 
-        name: 'Elite Coders 6v6', 
-        host: 'alexchen', 
-        size: '6vs6', 
-        map: 'Bermuda (Easy)', 
-        status: 'lobby', 
+    {
+        id: '101',
+        name: 'Elite Coders 6v6',
+        host: 'alexchen',
+        size: '6vs6',
+        map: 'Bermuda (Easy)',
+        status: 'lobby',
         players: 1,
         slots: {
             'team1-1': { username: 'alexchen', name: 'Alex Chen', role: 'Room Owner', avatar: 'AC', isHost: true }
@@ -1448,13 +1753,13 @@ const mockCustomRooms = [
             { name: 'System', content: 'Welcome to the battle lobby. Respect all players.', isSystem: true }
         ]
     },
-    { 
-        id: '102', 
-        name: '1v1 Pro Battle', 
-        host: 'sarahm', 
-        size: '1vs1', 
-        map: 'Purgatory (Hard)', 
-        status: 'lobby', 
+    {
+        id: '102',
+        name: '1v1 Pro Battle',
+        host: 'sarahm',
+        size: '1vs1',
+        map: 'Purgatory (Hard)',
+        status: 'lobby',
         players: 1,
         slots: {
             'team2-1': { username: 'sarahm', name: 'Sarah Miller', role: 'Room Owner', avatar: 'SM', isHost: true }
@@ -1465,14 +1770,14 @@ const mockCustomRooms = [
     }
 ];
 
-let customRoomInvites = [];
 
-app.get('/custom', async (req, res) => {
+
+app.get('/custom', requireAuth, async (req, res) => {
     try {
         // Fetch users for friends panel integration
         let friends = [];
         if (dbConnected) {
-            const currentUser = await User.findOne({ username: 'alexchen' });
+            const currentUser = await User.findOne({ username: req.session.user.username });
             if (currentUser) {
                 const friendships = await Friendship.find({
                     $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
@@ -1484,7 +1789,7 @@ app.get('/custom', async (req, res) => {
                 });
             }
         }
-        
+
         // ADD GUEST USER FOR TESTING
         friends.push({
             username: 'guest_user',
@@ -1495,162 +1800,312 @@ app.get('/custom', async (req, res) => {
             color: 'bg-emerald-500'
         });
 
-        res.render('custom', { currentPath: '/custom', rooms: mockCustomRooms, friends });
+        let rooms = [];
+        let totalOnline = 0;
+        let hotBattles = 0;
+        
+        if (dbConnected) {
+            rooms = await CustomRoom.find({}).lean();
+            
+            // Calculate dynamic stats
+            totalOnline = rooms.reduce((acc, room) => acc + (room.players || 0), 0);
+            hotBattles = rooms.filter(room => room.players >= Math.floor(parseInt(room.size.charAt(0)) * 0.75) || room.players > 1).length;
+        }
+        
+        // Add current user guest and friends online count
+        const friendsOnlineCount = friends.filter(f => f.mode === 'online').length;
+        totalOnline += friendsOnlineCount; // Baseline online users
+
+        res.render('custom', { currentPath: '/custom', rooms, friends, totalOnline, hotBattles });
     } catch (err) {
         res.status(500).send('Error');
     }
 });
 
-app.get('/custom/room/:id', async (req, res) => {
+app.post('/custom/create', requireAuth, async (req, res) => {
+    try {
+        const { roomName, teamFormat, environment } = req.body;
+        const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
+
+        // Check 3-minute cooldown
+        const lastLeft = roomCreateCooldowns.get(currentUsername);
+        if (lastLeft && Date.now() - lastLeft < 3 * 60 * 1000) {
+            const timeLeftSec = Math.ceil((3 * 60 * 1000 - (Date.now() - lastLeft)) / 1000);
+            const m = Math.floor(timeLeftSec / 60);
+            const s = timeLeftSec % 60;
+            return res.send(`<script>alert('Cooldown Active: You recently abandoned a room. Please wait ${m}m ${s}s before creating another room.'); window.location.href='/custom';</script>`);
+        }
+
+        const roomId = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+
+        const newRoomData = {
+            id: roomId,
+            name: roomName || 'Custom Battle-Unit',
+            host: currentUsername,
+            size: teamFormat || '6vs6',
+            map: environment || 'Bermuda',
+            status: 'lobby',
+            players: 1,
+            slots: {
+                'team1-1': {
+                    username: currentUsername,
+                    name: req.session.user ? req.session.user.name : 'Guest Player',
+                    role: 'Room Owner',
+                    avatar: req.session.user ? req.session.user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP',
+                    isHost: true
+                }
+            },
+            chat: [
+                { name: 'System', content: 'Welcome to the battle lobby. Respect all players.', isSystem: true }
+            ]
+        };
+
+        if (dbConnected) {
+            const newRoom = new CustomRoom(newRoomData);
+            await newRoom.save();
+        }
+
+        res.redirect(`/custom/room/${roomId}`);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error creating room');
+    }
+});
+
+app.get('/custom/room/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const currentUsername = req.query.guest ? 'guest_user' : 'alexchen';
-        
-        let room = mockCustomRooms.find(r => r.id === id);
-        
+        const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
+
+        let room = null;
+        if (dbConnected) {
+            room = await CustomRoom.findOne({ id }).lean();
+        }
+
         if (!room) {
-            room = { 
-                id, 
-                name: 'Custom Battle-Unit', 
-                host: currentUsername,
-                size: '6vs6', 
-                map: 'Bermuda', 
-                status: 'lobby',
-                players: 1,
-                slots: {
-                    'team1-1': { 
-                        username: currentUsername, 
-                        name: currentUsername === 'alexchen' ? 'Alex Chen' : 'Guest Player', 
-                        role: 'Room Owner', 
-                        avatar: currentUsername === 'alexchen' ? 'AC' : 'GP', 
-                        isHost: true 
-                    }
-                },
-                chat: [
-                    { name: 'System', content: 'Welcome to the battle lobby. Respect all players.', isSystem: true }
-                ]
+            return res.redirect('/custom?error=room_not_found');
+        }
+
+        // Ensure host is in slots if missing (e.g. data migration)
+        if (!room.slots || Object.keys(room.slots).length === 0) {
+            const hostUser = await User.findOne({ username: room.host });
+            const hostName = hostUser ? hostUser.name : 'Guest Player';
+            const hostAvatar = hostUser ? hostUser.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP';
+            room.slots = {
+                'team1-1': { username: room.host, name: hostName, role: 'Room Owner', avatar: hostAvatar, isHost: true }
             };
-            mockCustomRooms.push(room);
-        } else {
-            // Ensure host is in slots if missing
-            if (!room.slots || Object.keys(room.slots).length === 0) {
-                room.slots = {
-                    'team1-1': { username: room.host, name: room.host === 'alexchen' ? 'Alex Chen' : 'Guest Player', role: 'Room Owner', avatar: room.host === 'alexchen' ? 'AC' : 'GP', isHost: true }
+        }
+
+        // Check if the current user is already in any slot
+        const isUserInRoom = Object.values(room.slots).some(p => p && p.username === currentUsername);
+
+        if (!isUserInRoom && currentUsername !== room.host) {
+            // Only add NON-host users as new players
+            const teamSizeMatch = room.size.match(/^(\d+)/);
+            const teamSize = teamSizeMatch ? parseInt(teamSizeMatch[1]) : 6;
+            const allSlotIds = [
+                ...Array.from({ length: teamSize }, (_, i) => `team1-${i + 1}`),
+                ...Array.from({ length: teamSize }, (_, i) => `team2-${i + 1}`)
+            ];
+            const emptySlotId = allSlotIds.find(sid => !room.slots[sid]);
+            if (emptySlotId) {
+                room.slots[emptySlotId] = {
+                    username: currentUsername,
+                    name: req.session.user ? req.session.user.name : 'Guest Player',
+                    role: 'Player',
+                    avatar: req.session.user ? req.session.user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP',
+                    isHost: false
+                };
+                room.players++;
+            }
+        } else if (!isUserInRoom && currentUsername === room.host) {
+            // Host re-entering their own room — restore them as Owner
+            const teamSizeMatch = room.size.match(/^(\d+)/);
+            const teamSize = teamSizeMatch ? parseInt(teamSizeMatch[1]) : 6;
+            const allSlotIds = [
+                ...Array.from({ length: teamSize }, (_, i) => `team1-${i + 1}`),
+                ...Array.from({ length: teamSize }, (_, i) => `team2-${i + 1}`)
+            ];
+            const emptySlotId = allSlotIds.find(sid => !room.slots[sid]);
+            if (emptySlotId) {
+                room.slots[emptySlotId] = {
+                    username: currentUsername,
+                    name: req.session.user ? req.session.user.name : 'Guest Player',
+                    role: 'Room Owner',
+                    avatar: req.session.user ? req.session.user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP',
+                    isHost: true
                 };
             }
-            
-            const isUserInRoom = Object.values(room.slots).some(p => p.username === currentUsername);
-            if (!isUserInRoom) {
-                const allSlotIds = [
-                    ...Array.from({length: 6}, (_, i) => `team1-${i+1}`),
-                    ...Array.from({length: 6}, (_, i) => `team2-${i+1}`)
-                ];
-                const emptySlotId = allSlotIds.find(sid => !room.slots[sid]);
-                if (emptySlotId) {
-                    room.slots[emptySlotId] = { 
-                        username: currentUsername, 
-                        name: currentUsername === 'alexchen' ? 'Alex Chen' : 'Guest Player', 
-                        role: 'Player', 
-                        avatar: currentUsername === 'alexchen' ? 'AC' : 'GP', 
-                        isHost: false 
-                    };
-                    room.players++;
-                }
-            }
         }
-        
-        let friends = [];
+        // Persist slot changes
         if (dbConnected) {
-            const currentUser = await User.findOne({ username: 'alexchen' });
+            await CustomRoom.updateOne({ id }, { $set: { slots: room.slots, players: Object.values(room.slots).filter(Boolean).length } });
+        }
+        // Update players count to reflect reality
+        room.players = Object.values(room.slots).filter(Boolean).length;
+
+        let friends = [];
+        let offlineFriends = [];
+        if (dbConnected) {
+            const currentUser = await User.findOne({ username: req.session.user.username });
             if (currentUser) {
                 const friendships = await Friendship.find({
                     $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
                     status: 'accepted'
                 }).populate('requester recipient');
-                friends = friendships.map(f => {
+                
+                friendships.forEach(f => {
                     const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
-                    return { username: friend.username, name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
+                    if (friend) {
+                        const isOnline = global.isUserOnline(friend.username);
+                        const fData = {
+                            username: friend.username,
+                            name: friend.name,
+                            avatar: friend.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+                            mode: isOnline ? 'online' : 'offline',
+                            desc: isOnline ? 'Available' : 'Offline',
+                            color: isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'
+                        };
+                        if (isOnline) {
+                            friends.push(fData);
+                        } else {
+                            offlineFriends.push(fData);
+                        }
+                    }
                 });
             }
         }
-        
-        // ADD GUEST USER FOR TESTING
-        friends.push({
-            username: 'guest_user',
-            name: 'Guest Player',
-            avatar: 'GP',
-            mode: 'online',
-            desc: 'Available',
-            color: 'bg-emerald-500'
-        });
 
-        res.render('custom-room', { currentPath: '/custom', room, friends, currentUsername });
+        // ADD GUEST USER FOR TESTING (if online)
+        if (global.isUserOnline('guest_user')) {
+            friends.push({
+                username: 'guest_user',
+                name: 'Guest Player',
+                avatar: 'GP',
+                mode: 'online',
+                desc: 'Available',
+                color: 'bg-emerald-500'
+            });
+        } else {
+            offlineFriends.push({
+                username: 'guest_user',
+                name: 'Guest Player',
+                avatar: 'GP',
+                mode: 'offline',
+                desc: 'Offline',
+                color: 'bg-[#515f74]'
+            });
+        }
+
+        res.render('custom-room', { currentPath: '/custom', room, friends, offlineFriends, currentUsername });
     } catch (err) {
         res.status(500).send('Error');
     }
 });
 
-app.post('/api/custom/room/:id/settings', async (req, res) => {
+app.post('/api/custom/room/:id/settings', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, map, size } = req.body;
-        const roomIndex = mockCustomRooms.findIndex(r => r.id === id);
-        
-        if (roomIndex !== -1) {
-            mockCustomRooms[roomIndex].name = name;
-            mockCustomRooms[roomIndex].map = map;
-            mockCustomRooms[roomIndex].size = size;
-            res.json({ success: true, room: mockCustomRooms[roomIndex] });
-        } else {
-            // If it's the demo room not in mock list
-            const updatedRoom = { id, name, map, size, host: 'alexchen', status: 'lobby', players: 1, slots: {}, chat: [] };
-            res.json({ success: true, room: updatedRoom });
+
+        if (dbConnected) {
+            const updatedRoom = await CustomRoom.findOneAndUpdate(
+                { id },
+                { name, map, size },
+                { new: true }
+            );
+            if (updatedRoom) return res.json({ success: true, room: updatedRoom });
         }
+        res.json({ success: false, error: 'Room not found or DB not connected' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to update settings' });
     }
 });
 
-app.get('/api/custom/room/:id/state', (req, res) => {
-    const room = mockCustomRooms.find(r => r.id === req.params.id);
-    if (!room) return res.status(404).json({ error: 'Room not found' });
-    res.json(room);
+app.get('/api/custom/room/:id/state', requireAuth, async (req, res) => {
+    if (dbConnected) {
+        const room = await CustomRoom.findOne({ id: req.params.id }).lean();
+        if (room) return res.json(room);
+    }
+    res.status(404).json({ error: 'Room not found' });
 });
 
-app.post('/api/custom/room/:id/action', (req, res) => {
-    const { action, payload } = req.body;
-    const room = mockCustomRooms.find(r => r.id === req.params.id);
-    if (!room) return res.status(404).json({ error: 'Room not found' });
+app.post('/api/custom/room/:id/action', requireAuth, async (req, res) => {
+    try {
+        // Handle sendBeacon which sends as text/plain
+        let body = req.body;
+        if (typeof body === 'string') {
+            try { body = JSON.parse(body); } catch(e) { return res.status(400).json({ error: 'Invalid JSON' }); }
+        }
+        const { action, payload } = body;
+        const { id } = req.params;
 
-    if (action === 'move') {
-        const { from, to, player } = payload;
-        if (from) delete room.slots[from];
-        room.slots[to] = player;
-        res.json({ success: true });
-    } else if (action === 'chat') {
-        room.chat.push(payload);
-        if (room.chat.length > 50) room.chat.shift(); // Keep last 50
-        res.json({ success: true });
-    } else {
-        res.status(400).json({ error: 'Invalid action' });
+        if (!dbConnected) return res.status(500).json({ error: 'DB not connected' });
+
+        const room = await CustomRoom.findOne({ id });
+        if (!room) return res.status(404).json({ error: 'Room not found' });
+
+        if (action === 'move') {
+            const { from, to, player } = payload;
+
+            // Because slots is Mixed, we might need to copy it to trigger change detection
+            const newSlots = { ...room.slots };
+            if (from) delete newSlots[from];
+            newSlots[to] = player;
+            room.slots = newSlots;
+            room.markModified('slots');
+            await room.save();
+            res.json({ success: true });
+        } else if (action === 'leave') {
+            console.log(`[LEAVE ACTION] User ${payload.username} leaving room ${id} (Host: ${room.host})`);
+            const { username } = payload;
+            if (room.host === username) {
+                // Host left, delete room
+                const delRes = await CustomRoom.deleteOne({ id });
+                roomCreateCooldowns.set(username, Date.now()); // Apply 3-minute penalty
+                console.log(`[LEAVE ACTION] Deleted room ${id}, applied cooldown to ${username}. result:`, delRes);
+            } else {
+                // Regular player left
+                console.log(`[LEAVE ACTION] Regular player leaving ${id}`);
+                const slotKey = Object.keys(room.slots).find(k => room.slots[k] && room.slots[k].username === username);
+                if (slotKey) {
+                    const newSlots = { ...room.slots };
+                    delete newSlots[slotKey];
+                    room.slots = newSlots;
+                    room.players = Math.max(1, room.players - 1);
+                    room.markModified('slots');
+                    await room.save();
+                }
+            }
+            res.json({ success: true });
+        } else if (action === 'chat') {
+            room.chat.push(payload);
+            if (room.chat.length > 50) room.chat.shift();
+            await room.save();
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ error: 'Invalid action' });
+        }
+    } catch (err) {
+        res.status(500).json({ error: 'Action failed' });
     }
 });
 
-app.get('/api/invites', (req, res) => {
-    const currentUsername = req.query.guest ? 'guest_user' : 'alexchen';
+app.get('/api/invites', requireAuth, (req, res) => {
+    const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
     // Return invites where to == currentUsername
     const userInvites = customRoomInvites.filter(i => i.to === currentUsername);
     res.json(userInvites);
 });
 
-app.post('/api/invites', (req, res) => {
+app.post('/api/invites', requireAuth, (req, res) => {
     const { roomId, roomName, to, from } = req.body;
     if (!roomId || !to || !from) return res.status(400).json({ error: 'Missing fields' });
-    
+
     // Prevent duplicate active invites for the same room to the same person
     if (!customRoomInvites.find(i => i.roomId === roomId && i.to === to)) {
         customRoomInvites.push({
-            id: Date.now().toString() + Math.floor(Math.random()*1000),
+            id: Date.now().toString() + Math.floor(Math.random() * 1000),
             roomId,
             roomName: roomName || `Room #${roomId}`,
             to,
@@ -1661,7 +2116,7 @@ app.post('/api/invites', (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/invites/respond', (req, res) => {
+app.post('/api/invites/respond', requireAuth, (req, res) => {
     const { inviteId, action } = req.body;
     const inviteIndex = customRoomInvites.findIndex(i => i.id === inviteId);
     if (inviteIndex > -1) {
@@ -1672,10 +2127,30 @@ app.post('/api/invites/respond', (req, res) => {
     }
 });
 
-app.get('/settings', (req, res) => res.render('settings', { currentPath: '/settings' }));
-app.get('/profile', (req, res) => res.render('profile', { currentPath: '/profile' }));
-app.get('/friends', (req, res) => res.render('friends', { currentPath: '/friends' }));
+app.get('/settings', requireAuth, (req, res) => res.render('settings', { currentPath: '/settings' }));
+app.get('/profile', requireAuth, (req, res) => res.render('profile', { currentPath: '/profile' }));
+app.get('/friends', requireAuth, (req, res) => res.render('friends', { currentPath: '/friends' }));
 
 app.use((req, res) => res.status(404).render('404', { currentPath: '' }));
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`🚀 CodeWith Server running on port ${PORT}`);
+});
+
+// Periodic Cleanup for 20-min inactive rooms
+setInterval(async () => {
+    if (dbConnected) {
+        try {
+            const twentyMinsAgo = new Date(Date.now() - 20 * 60 * 1000);
+            const result = await CustomRoom.deleteMany({
+                status: 'lobby',
+                createdAt: { $lt: twentyMinsAgo }
+            });
+            if (result.deletedCount > 0) {
+                console.log(`🧹 Cleaned up ${result.deletedCount} inactive rooms older than 20 minutes.`);
+            }
+        } catch (err) {
+            console.error('Room cleanup error:', err);
+        }
+    }
+}, 60 * 1000); // Check every minute

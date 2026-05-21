@@ -3,6 +3,11 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs').promises;
 const path = require('path');
 const { CompilationLog } = require('../config/mongodb');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
+const os = require('os');
+const { execSync } = require('child_process');
 
 const dockerOptions = process.platform === 'win32' ? { socketPath: '//./pipe/docker_engine' } : { socketPath: '/var/run/docker.sock' };
 const docker = new Docker(dockerOptions);
@@ -196,9 +201,71 @@ class Compiler {
     return this.dockerAvailable;
   }
 
-  // Main entry point - Uses local Docker compilation
+  // Main entry point - Uses local Docker compilation with bare-metal fallback
   static async compile(code, language, input = '', userId = null) {
-    return this.localCompile(code, language, input, userId);
+    const isDockerAvailable = await this.checkDocker();
+    
+    if (isDockerAvailable) {
+      return this.localCompile(code, language, input, userId);
+    } else {
+      console.warn(`[Compiler] Docker not available. Using local fallback for ${language}...`);
+      return this.bareMetalCompile(code, language, input, userId);
+    }
+  }
+
+  // Bare metal fallback (NO DOCKER)
+  static async bareMetalCompile(code, language, input = '', userId = null) {
+    const startTime = Date.now();
+    const sessionId = uuidv4();
+    const config = languageConfigs[language];
+    if (!config) throw new Error('Unsupported language');
+    
+    const fileName = `fallback_${sessionId}${config.extension}`;
+    const filePath = path.join(os.tmpdir(), fileName);
+    const inputFileName = input ? `fallback_${sessionId}_input.txt` : null;
+    const inputFilePath = input ? path.join(os.tmpdir(), inputFileName) : null;
+
+    try {
+      await fs.writeFile(filePath, code);
+      if (input) await fs.writeFile(inputFilePath, input);
+
+      let cmd = '';
+      if (language === 'javascript') {
+        cmd = input ? `node "${filePath}" < "${inputFilePath}"` : `node "${filePath}"`;
+      } else if (language === 'python') {
+        const pyCmd = process.platform === 'win32' ? 'python' : 'python3';
+        cmd = input ? `${pyCmd} "${filePath}" < "${inputFilePath}"` : `${pyCmd} "${filePath}"`;
+      } else {
+        throw new Error(`Docker is required for ${language} compilation. Fallback only supports Node/Python.`);
+      }
+
+      console.log(`[Compiler-Fallback] Executing: ${cmd}`);
+      
+      const { stdout, stderr } = await execAsync(cmd, { 
+        timeout: (config.timeout || 15) * 1000,
+        maxBuffer: 1024 * 1024 // 1MB
+      });
+
+      const executionTime = Date.now() - startTime;
+      return {
+        output: stdout,
+        error: stderr,
+        exitCode: 0,
+        executionTime
+      };
+    } catch (err) {
+      console.error('[Compiler-Fallback] Error:', err.message);
+      return {
+        output: err.stdout || '',
+        error: err.stderr || err.message,
+        exitCode: err.code || 1,
+        executionTime: Date.now() - startTime
+      };
+    } finally {
+      // Cleanup
+      try { await fs.unlink(filePath); } catch(e) {}
+      if (inputFilePath) { try { await fs.unlink(inputFilePath); } catch(e) {} }
+    }
   }
 
 

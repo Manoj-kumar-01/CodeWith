@@ -27,7 +27,7 @@ services:
     container_name: compiler-redis
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -51,6 +51,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - SESSION_SECRET=${SESSION_SECRET}
       - JWT_SECRET=${JWT_SECRET}
+      - IN_DOCKER=true
     ports:
       - "3001:3001"
     volumes:

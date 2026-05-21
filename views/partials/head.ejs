@@ -34,12 +34,22 @@
     };
   </script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
   <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-umd.js"></script>
   <script>
-    document.addEventListener('turbo:load', () => {
+    function initIcons() {
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
       }
+    }
+
+    document.addEventListener('turbo:load', initIcons);
+    document.addEventListener('turbo:render', initIcons);
+    document.addEventListener('DOMContentLoaded', initIcons);
+    
+    // Fallback for initial load
+    setTimeout(initIcons, 100);
+    setTimeout(initIcons, 500); 
       
       // Global Invite Polling
       if (!window.globalInvitePoller) {
@@ -104,6 +114,5 @@
             console.error('Error responding to invite', err);
         }
       };
-    });
   </script>
 </head>

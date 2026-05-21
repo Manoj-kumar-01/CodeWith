@@ -1,5 +1,4 @@
 <%- include('partials/head') %>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
 
 
     <style>
@@ -490,19 +489,28 @@
         </div>
 
         <script>
-            let editor;
-            let starterCode = <%- JSON.stringify(problem.starterCode || {}) %>;
-            const testCases = <%- JSON.stringify(problem.testCases || []) %>;
-            const problemId = "<%= problem._id || problem.id || '' %>";
-            const contestId = "<%= (typeof contest !== 'undefined' && contest) ? (contest._id || contest.id) : '' %>";
+            // Use var to allow re-declaration by Turbo
+            var editor;
+            var starterCode = <%- JSON.stringify(problem.starterCode || {}) %>;
+            var testCases = <%- JSON.stringify(problem.testCases || []) %>;
+            var problemId = "<%= problem._id || problem.id || '' %>";
+            var contestId = "<%= (typeof contest !== 'undefined' && contest) ? (contest._id || contest.id) : '' %>";
             
             function toggleDrawer() {
-                const drawer = document.getElementById('problem-drawer');
-                drawer.classList.toggle('closed');
+                var drawer = document.getElementById('problem-drawer');
+                if (drawer) drawer.classList.toggle('closed');
             }
                         
             // Monaco Loader
             function initMonacoEditor() {
+                const container = document.getElementById('monaco-editor');
+                if (!container) return;
+
+                // Dispose of previous models to prevent "Duplicate definition" and memory leaks
+                if (typeof monaco !== 'undefined' && monaco.editor) {
+                    monaco.editor.getModels().forEach(m => m.dispose());
+                }
+
                 // Register a grayish-black premium theme
                 monaco.editor.defineTheme('premium-dark', {
                     base: 'vs-dark',
@@ -525,13 +533,12 @@
                     }
                 });
 
-                // Clear previous editor instance if it exists
-                const container = document.getElementById('monaco-editor');
-                if (container) container.innerHTML = '';
+                container.innerHTML = '';
+                const lang = document.getElementById('lang-select')?.value || 'javascript';
 
                 editor = monaco.editor.create(container, {
-                    value: starterCode['javascript'] || '',
-                    language: 'javascript',
+                    value: starterCode[lang] || starterCode['js'] || defaultStarters[lang] || '',
+                    language: monacoLangMap[lang] || lang,
                     theme: 'premium-dark',
                     automaticLayout: true,
                     fontSize: 14,
@@ -553,22 +560,35 @@
                     wordWrap: 'on'
                 });
                 
-                // Sync Lucide icons
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                setTimeout(() => { if (editor) editor.layout(); }, 100);
             }
 
-            if (typeof monaco !== 'undefined') {
-                initMonacoEditor();
-            } else {
-                if (!window.requirePathsConfigured) {
-                    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
-                    window.requirePathsConfigured = true;
-                }
-                
-                require(['vs/editor/editor.main'], function() {
+            function setupMonaco() {
+                if (typeof monaco !== 'undefined') {
                     initMonacoEditor();
-                });
+                } else {
+                    if (typeof require !== 'undefined') {
+                        if (!window.requirePathsConfigured) {
+                            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+                            window.requirePathsConfigured = true;
+                        }
+                        require(['vs/editor/editor.main'], initMonacoEditor);
+                    }
+                }
             }
+
+            // Initial load
+            setupMonaco();
+
+            // Turbo compatibility
+            document.addEventListener('turbo:load', setupMonaco);
+            document.addEventListener('turbo:before-cache', () => {
+                if (editor) {
+                    editor.dispose();
+                    editor = null;
+                }
+            });
 
             // Monaco language mode mapping
             const monacoLangMap = {
@@ -934,51 +954,65 @@
             const editorContainer = document.getElementById('editor-container');
             const terminalContainer = document.getElementById('terminal-container');
 
-            let isResizingX = false;
-            let isResizingY = false;
+            // Global Resize State to avoid re-adding listeners if possible
+            // But with Turbo, it's safer to use a single set of listeners on document
+            if (!window.resizersInitialized) {
+                window.isResizingX = false;
+                window.isResizingY = false;
 
-            resizerX.addEventListener('mousedown', (e) => {
-                isResizingX = true;
-                document.body.style.cursor = 'col-resize';
-                e.preventDefault();
-            });
-
-            resizerY.addEventListener('mousedown', (e) => {
-                isResizingY = true;
-                document.body.style.cursor = 'row-resize';
-                e.preventDefault();
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (isResizingX) {
-                    const containerWidth = document.getElementById('main-content').offsetWidth;
-                    // Compute percentage
-                    const newLeftWidth = (e.clientX / containerWidth) * 100;
-                    if (newLeftWidth > 20 && newLeftWidth < 80) {
-                        leftPanel.style.width = newLeftWidth + '%';
-                        editorContainer.style.width = '100%';
-                        if (editor) editor.layout();
+                document.addEventListener('mousedown', (e) => {
+                    if (e.target.id === 'resizer-x') {
+                        window.isResizingX = true;
+                        document.body.style.cursor = 'col-resize';
+                        e.preventDefault();
+                    } else if (e.target.id === 'resizer-y') {
+                        window.isResizingY = true;
+                        document.body.style.cursor = 'row-resize';
+                        e.preventDefault();
                     }
-                }
+                });
 
-                if (isResizingY) {
-                    const rightPanelRect = rightPanel.getBoundingClientRect();
-                    const newTopHeight = ((e.clientY - rightPanelRect.top) / rightPanelRect.height) * 100;
-                    if (newTopHeight > 20 && newTopHeight < 90) {
-                        editorContainer.style.height = newTopHeight + '%';
-                        editorContainer.style.flex = 'none';
-                        terminalContainer.style.height = (100 - newTopHeight) + '%';
-                        terminalContainer.style.flex = 'none';
-                        if (editor) editor.layout();
+                document.addEventListener('mousemove', (e) => {
+                    if (window.isResizingX) {
+                        const mainContent = document.getElementById('main-content');
+                        const leftPanel = document.getElementById('left-panel');
+                        const editorContainer = document.getElementById('editor-container');
+                        if (!mainContent || !leftPanel) return;
+
+                        const containerWidth = mainContent.offsetWidth;
+                        const newLeftWidth = (e.clientX / containerWidth) * 100;
+                        if (newLeftWidth > 20 && newLeftWidth < 80) {
+                            leftPanel.style.width = newLeftWidth + '%';
+                            if (editor) editor.layout();
+                        }
                     }
-                }
-            });
 
-            document.addEventListener('mouseup', () => {
-                isResizingX = false;
-                isResizingY = false;
-                document.body.style.cursor = 'default';
-            });
+                    if (window.isResizingY) {
+                        const rightPanel = document.getElementById('right-panel');
+                        const editorContainer = document.getElementById('editor-container');
+                        const terminalContainer = document.getElementById('terminal-container');
+                        if (!rightPanel || !editorContainer || !terminalContainer) return;
+
+                        const rightPanelRect = rightPanel.getBoundingClientRect();
+                        const newTopHeight = ((e.clientY - rightPanelRect.top) / rightPanelRect.height) * 100;
+                        if (newTopHeight > 20 && newTopHeight < 90) {
+                            editorContainer.style.height = newTopHeight + '%';
+                            editorContainer.style.flex = 'none';
+                            terminalContainer.style.height = (100 - newTopHeight) + '%';
+                            terminalContainer.style.flex = 'none';
+                            if (editor) editor.layout();
+                        }
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    window.isResizingX = false;
+                    window.isResizingY = false;
+                    document.body.style.cursor = 'default';
+                });
+
+                window.resizersInitialized = true;
+            }
             
             // Re-layout monaco on window resize
             window.addEventListener('resize', () => {

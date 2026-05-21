@@ -65,31 +65,15 @@
         position: relative;
     }
 
-    .pulse-dot::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 9999px;
-        background: inherit;
-        opacity: 0.5;
-        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
 
-    @keyframes ping {
 
-        75%,
-        100% {
-            transform: scale(2);
-            opacity: 0;
-        }
-    }
+
 </style>
 
 <div id="friends-panel" class="friends-panel hidden">
     <!-- Header -->
     <div class="flex items-center justify-between p-4 border-b border-border/30">
         <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full bg-[#515f74] animate-pulse"></div>
             <h2 class="text-lg font-semibold text-foreground">Friends</h2>
             <span class="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full"><%= ((typeof friends !== 'undefined' && friends) ? friends.length : 0) %> online</span>
         </div>
@@ -114,9 +98,6 @@
                             <div
                                 class="w-11 h-11 rounded-full bg-gradient-to-br from-[#2e3c50] to-[#515f74] flex items-center justify-center text-sm font-semibold text-[#d5e3fd] shadow-lg group-hover:shadow-[#2e3c50]/20 transition-shadow">
                                 <%= friend.avatar %>
-                            </div>
-                            <div
-                                class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full <%= friend.color || 'bg-[#515f74]' %> ring-2 ring-card shadow-sm pulse-dot">
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
@@ -158,9 +139,6 @@
                             <div
                                 class="w-11 h-11 rounded-full bg-muted/50 flex items-center justify-center text-sm font-semibold text-muted-foreground">
                                 <%= friend.avatar %>
-                            </div>
-                            <div
-                                class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-muted-foreground/40 ring-2 ring-card">
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">

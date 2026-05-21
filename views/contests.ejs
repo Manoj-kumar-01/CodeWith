@@ -260,8 +260,7 @@
                                     });
                                 }
 
-                                // Run on load and handle query params (Turbo-aware)
-                                document.addEventListener('turbo:load', () => {
+                                function initFilters() {
                                     const urlParams = new URLSearchParams(window.location.search);
                                     const filterParam = urlParams.get('filter');
                                     if (filterParam) {
@@ -271,12 +270,13 @@
                                         }
                                     }
                                     filterContests();
+                                }
+                                
+                                // Run immediately on page load / turbo script evaluation
+                                initFilters();
 
-                                    // Initialize Lucide icons on every turbo load
-                                    if (typeof lucide !== 'undefined') {
-                                        lucide.createIcons();
-                                    }
-                                });
+                                // Also bind to turbo:load just in case
+                                document.addEventListener('turbo:load', initFilters);
                             </script>
                             <script src="/js/card-effects.js"></script>
     </body>

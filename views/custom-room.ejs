@@ -70,20 +70,26 @@
         }
 
         .start-btn-glow {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-            animation: pulse-glow 2s infinite;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
         }
 
-        @keyframes pulse-glow {
+        .monitor-screen {
+            background: radial-gradient(circle at 50% 50%, #0d1527 0%, #050811 100%) !important;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
 
-            0%,
-            100% {
-                box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-            }
-
-            50% {
-                box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
-            }
+        .monitor-screen::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center;
+            pointer-events: none;
+            z-index: 1;
         }
 
         /* Chat Styling */
@@ -270,7 +276,7 @@
         }
 
         /* Sidebar hiding in full-screen */
-        #lobby-container.full-screen-mode aside {
+        #lobby-container.full-screen-mode aside:not(#friends-aside) {
             display: none !important;
         }
 
@@ -287,7 +293,7 @@
         }
     </style>
 
-    <body class="bg-background text-foreground">
+    <body class="dark bg-[#0f172a] text-slate-200">
         <div id="fs-overlay" onclick="enterLobby()">
             <div class="text-center">
                 <div class="relative w-24 h-24 mb-6 mx-auto">
@@ -311,18 +317,18 @@
                     <div class="monitor-bezel">
                         <div class="monitor-screen">
                             <div class="flex h-full relative" id="lobby-container">
-                                <%- include('partials/sidebar') %>
+
 
                                     <main
-                                        class="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-secondary/30 backdrop-blur-3xl text-foreground">
+                                        class="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-transparent text-slate-200">
                                         <!-- Room Header -->
                                         <div
-                                            class="h-16 border-b border-border/40 glass-panel flex items-center justify-between px-6 shrink-0 z-30">
+                                            class="h-16 border-b border-white/5 bg-[#090d16]/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 z-30">
                                             <div class="flex items-center gap-4">
-                                                <a href="/custom"
-                                                    class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                                                <button onclick="leaveRoom()"
+                                                    class="p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
                                                     <i data-lucide="chevron-left" class="w-5 h-5 text-slate-400"></i>
-                                                </a>
+                                                </button>
                                                 <div class="h-8 w-[1px] bg-white/10"></div>
                                                 <div>
                                                     <div class="flex items-center gap-2">
@@ -380,17 +386,19 @@
                                                             <div
                                                                 class="team-badge py-1.5 px-8 text-white font-black italic tracking-widest text-sm">
                                                                 TEAM 01</div>
-                                                            <span
-                                                                class="text-xs font-black text-white/30 tabular-nums"><span
-                                                                    id="team1-count" class="text-blue-400">1</span> /
-                                                                6</span>
+                                                                <span
+                                                                 class="text-xs font-black text-white/30 tabular-nums"><span
+                                                                     id="team1-count" class="text-blue-400">1</span> /
+                                                                 <%- parseInt(room.size.charAt(0)) || 6 %></span>
                                                         </div>
                                                     </div>
 
                                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="team1-slots">
-                                                        <% for(let i=1; i<=6; i++) { const sid=`team1-${i}`; const
-                                                            playerData=room.slots[sid]; const isLocal=playerData &&
-                                                            playerData.username===(locals.currentUsername || '' ); %>
+                                                        <% const teamSize = parseInt(room.size.charAt(0)) || 6; 
+                                                           for(let i=1; i<=teamSize; i++) { 
+                                                            const sid=`team1-${i}`; 
+                                                            const playerData=room.slots[sid]; 
+                                                            const isLocal=playerData && playerData.username===(locals.currentUsername || '' ); %>
                                                             <div id="slot-<%= sid %>"
                                                                 class="slot-card p-4 rounded-xl flex <%= playerData ? 'occupied justify-between' : 'justify-center cursor-pointer' %> <%= isLocal ? 'local-player' : '' %> group"
                                                                 onclick="handleSlotClick(this, '<%= sid %>', 1, <%= i %>)"
@@ -431,6 +439,7 @@
                                                                                                 <i data-lucide="crown"
                                                                                                     class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>
                                                                                                 <% } %>
+                                                                                                    <% } else { %>
                                                                                                     <% } %>
                                                                                                         <span
                                                                                                             class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">S
@@ -449,17 +458,18 @@
                                                             <div
                                                                 class="team-badge-red py-1.5 px-8 text-white font-black italic tracking-widest text-sm">
                                                                 TEAM 02</div>
-                                                            <span
-                                                                class="text-xs font-black text-white/30 tabular-nums"><span
-                                                                    id="team2-count" class="text-red-400">0</span> /
-                                                                6</span>
+                                                                <span
+                                                                 class="text-xs font-black text-white/30 tabular-nums"><span
+                                                                     id="team2-count" class="text-red-400">0</span> /
+                                                                 <%- parseInt(room.size.charAt(0)) || 6 %></span>
                                                         </div>
                                                     </div>
 
                                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="team2-slots">
-                                                        <% for(let i=1; i<=6; i++) { const sid=`team2-${i}`; const
-                                                            playerData=room.slots[sid]; const isLocal=playerData &&
-                                                            playerData.username===(locals.currentUsername || '' ); %>
+                                                        <% for(let i=1; i<=teamSize; i++) { 
+                                                            const sid=`team2-${i}`; 
+                                                            const playerData=room.slots[sid]; 
+                                                            const isLocal=playerData && playerData.username===(locals.currentUsername || '' ); %>
                                                             <div id="slot-<%= sid %>"
                                                                 class="slot-card p-4 rounded-xl flex <%= playerData ? 'occupied justify-between' : 'justify-center cursor-pointer' %> <%= isLocal ? 'local-player' : '' %> group"
                                                                 onclick="handleSlotClick(this, '<%= sid %>', 2, <%= i %>)"
@@ -500,6 +510,7 @@
                                                                                                 <i data-lucide="crown"
                                                                                                     class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>
                                                                                                 <% } %>
+                                                                                                    <% } else { %>
                                                                                                     <% } %>
                                                                                                         <span
                                                                                                             class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">S
@@ -533,9 +544,9 @@
 
                                         <!-- Footer Controls -->
                                         <div
-                                            class="h-24 glass-panel shrink-0 z-40 flex items-center justify-between px-8 relative overflow-hidden">
+                                            class="h-24 bg-[#090d16]/90 border-t border-white/10 backdrop-blur-2xl shrink-0 z-40 flex items-center justify-between px-8 relative overflow-hidden">
                                             <div
-                                                class="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent">
+                                                class="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent">
                                             </div>
 
                                             <div
@@ -553,16 +564,10 @@
 
                                             <div class="flex items-center gap-4 relative z-10 flex-1 justify-center">
                                                 <% if (room.host===(locals.currentUsername || '' )) { %>
-                                                    <button onclick="openSettings()" id="footer-settings-btn"
-                                                        class="h-12 px-10 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 font-black text-xs uppercase tracking-widest transition-all">Settings</button>
                                                     <button onclick="startMatch()" id="footer-start-btn"
-                                                        class="h-14 px-16 rounded-xl bg-blue-600 text-white font-black italic text-sm uppercase tracking-[0.3em] start-btn-glow hover:scale-105 active:scale-95 transition-all">Start
+                                                        class="h-14 px-16 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black italic text-sm uppercase tracking-[0.3em] start-btn-glow hover:scale-105 active:scale-95 transition-all">Start
                                                         Match</button>
                                                     <% } %>
-                                                        <button onclick="toggleFriends()"
-                                                            class="h-12 w-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all">
-                                                            <i data-lucide="user-plus" class="w-5 h-5"></i>
-                                                        </button>
                                             </div>
 
                                             <div
@@ -591,8 +596,10 @@
 
                                     <aside id="friends-aside"
                                         class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-[0_0_50px_rgba(0,0,0,0.5)] hidden">
-                                        <%- include('partials/friends-panel', { friends: typeof friends !=='undefined' ?
-                                            friends : [] }) %>
+                                        <%- include('partials/friends-panel', { 
+                                            friends: typeof friends !== 'undefined' ? friends : [], 
+                                            offlineFriends: typeof offlineFriends !== 'undefined' ? offlineFriends : [] 
+                                        }) %>
                                     </aside>
                             </div>
                         </div>
@@ -691,7 +698,7 @@
         <script>
             const ROOM_ID = '<%= room.id %>';
             const ROOM_HOST = '<%= room.host %>';
-            const USERNAME = window.location.search.includes('guest') ? 'guest_user' : 'alexchen';
+            const USERNAME = '<%= currentUsername %>';
             const IS_HOST = (USERNAME === ROOM_HOST);
             let lastChatCount = 0;
 
@@ -705,6 +712,11 @@
             async function fetchRoomState() {
                 try {
                     const response = await fetch(`/api/custom/room/${ROOM_ID}/state`);
+                    if (response.status === 404) {
+                        alert('This room has been closed by the host or due to inactivity.');
+                        window.location.href = '/custom';
+                        return;
+                    }
                     const room = await response.json();
                     updateUI(room);
                 } catch (err) {
@@ -753,8 +765,10 @@
                     `;
                     } else {
                         slot.classList.remove('occupied', 'local-player', 'justify-between');
-                        slot.classList.add('justify-center', 'cursor-pointer');
-                        slot.innerHTML = `<span class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">${slotIdx}</span>`;
+                        slot.classList.add('justify-center', 'cursor-pointer', 'group', 'hover:bg-white/5', 'border-dashed', 'border-white/20');
+                        slot.innerHTML = `
+                            <span class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">${slotIdx}</span>
+                        `;
                         delete slot.dataset.username;
                         delete slot.dataset.isHost;
                     }
@@ -806,7 +820,10 @@
                 }
 
                 const currentPlayerSlot = document.querySelector('.slot-card.occupied.local-player');
-                if (!currentPlayerSlot) return;
+                if (!currentPlayerSlot) {
+                    toggleFriends();
+                    return;
+                }
 
                 showConfirm(`Switch Position?`, `Move to Team ${team} - Slot ${slotIndex}?`, async () => {
                     const fromId = currentPlayerSlot.id.replace('slot-', '');
@@ -859,14 +876,47 @@
             function addFriend() { alert('Friend Request Sent!'); }
             function kickPlayer() { if (confirm('Are you sure you want to kick this elite?')) alert('Player kicked.'); }
 
+            let hasLeft = false;
+            let isIntentionalLeave = false;
+            
+            function sendLeaveSignal() {
+                if (hasLeft) return;
+                hasLeft = true;
+                const data = JSON.stringify({ action: 'leave', payload: { username: USERNAME } });
+                // sendBeacon is the most reliable for tab-close scenarios
+                const blob = new Blob([data], { type: 'application/json' });
+                navigator.sendBeacon(`/api/custom/room/${ROOM_ID}/action`, blob);
+            }
+
             function leaveRoom() {
                 showConfirm('Leave Room?', 'Are you sure you want to abandon the battle lobby?', async () => {
                     if (document.fullscreenElement) {
                         await document.exitFullscreen();
                     }
+                    isIntentionalLeave = true;
+                    
+                    // Use a proper fetch so we can wait for completion
+                    try {
+                        await fetch(`/api/custom/room/${ROOM_ID}/action`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'leave', payload: { username: USERNAME } }),
+                            keepalive: true
+                        });
+                    } catch(e) {
+                        sendLeaveSignal(); // fallback to beacon
+                    }
+                    hasLeft = true;
                     window.location.href = '/custom';
                 });
             }
+
+            // Only fire on actual browser/tab close — NOT on in-app navigation
+            window.addEventListener('beforeunload', (e) => {
+                // If user clicked Leave Room button, the fetch already handled it
+                if (hasLeft) return;
+                sendLeaveSignal();
+            });
 
             // Settings Modal logic
             function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); }
@@ -922,6 +972,7 @@
             async function enterLobby() {
                 const container = document.getElementById('lobby-container');
                 const overlay = document.getElementById('fs-overlay');
+                if (!overlay || overlay.classList.contains('fade-out')) return;
 
                 try {
                     if (!document.fullscreenElement) {
@@ -948,6 +999,9 @@
                 fetchRoomState();
                 setInterval(fetchRoomState, 2000);
                 if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                // Automatically enter lobby without forcing user click
+                enterLobby();
 
                 // Failsafe resize handler
                 window.addEventListener('resize', () => {
