@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeWith? - Terms of Service</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: 'hsl(var(--background))',
+            foreground: 'hsl(var(--foreground))',
+            card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+            popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
+            primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+            secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+            muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+            accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+            border: 'hsl(var(--border))',
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-minimal-clean min-h-screen flex flex-col antialiased select-none overflow-x-hidden text-slate-700">
+
+  <!-- Ambient Blurred blobs -->
+  <div class="absolute top-[10%] left-[-10%] w-[350px] h-[350px] bg-slate-200/20 rounded-full blur-[80px] pointer-events-none"></div>
+
+  <!-- FIXED GLASS HEADER NAVBAR -->
+  <nav class="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-slate-200/50 px-6 md:px-12 py-4 flex items-center justify-between transition-all duration-300">
+    <div class="flex items-center gap-12">
+      <a href="/" class="hover:opacity-95 transition-opacity">
+        <%- include('partials/logo') %>
+      </a>
+      <div class="hidden lg:flex items-center gap-8">
+        <a href="/" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">Home</a>
+        <a href="/about" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">About</a>
+        <a href="/features" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">Features</a>
+        <a href="/contact" class="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors">Contact</a>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/login" class="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">Log In</a>
+      <a href="/register" class="px-5 py-2.5 rounded-xl text-sm font-black text-white bg-slate-800 hover:bg-slate-700 border border-slate-800 shadow-md">Sign Up</a>
+    </div>
+  </nav>
+
+  <!-- TERMS DOCUMENT WRAPPER -->
+  <main class="flex-1 max-w-4xl mx-auto w-full px-6 py-16">
+    <div class="bg-white rounded-3xl border border-slate-200/60 p-8 md:p-12 shadow-xl shadow-slate-100/50 space-y-10 relative">
+      <div class="space-y-4 border-b border-slate-100 pb-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 w-fit">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+          <span class="text-[9px] font-extrabold tracking-widest text-slate-600 uppercase">Effective May 22, 2026</span>
+        </div>
+        <h1 class="text-3xl md:text-4xl font-black text-slate-800 uppercase tracking-tight">Terms of Service</h1>
+        <p class="text-sm text-slate-400 leading-relaxed font-semibold">Please read these Terms of Service carefully before utilizing the CodeWith? collaborative development playground.</p>
+      </div>
+
+      <!-- SECTION 1 -->
+      <section class="space-y-4">
+        <h2 class="text-base font-extrabold text-slate-800 uppercase tracking-wider">1. Platform Scope and Accounts</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          CodeWith? provides a sandboxed multiplayer program compilation environment and competitive challenge arena. By creating an account or joining public/private rooms, you guarantee that all credentials supplied are accurate and agree to utilize the system in complete compliance with local laws.
+        </p>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section class="space-y-4">
+        <h2 class="text-base font-extrabold text-slate-800 uppercase tracking-wider">2. Code Sandbox &amp; Compiler Resources</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Programs executed inside the sandbox are subjected to strictly controlled quotas (maximum run times of 3-5 seconds and memory thresholds of 512MB). You agree not to distribute malicious binaries, write resource leaks designed to impair our execution layer, or circumvent our isolated compilation fallback mechanics.
+        </p>
+      </section>
+
+      <!-- SECTION 3 -->
+      <section class="space-y-4">
+        <h2 class="text-base font-extrabold text-slate-800 uppercase tracking-wider">3. Multiplayer WebSocket Rooms &amp; Content</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Room creators are solely responsible for interactions within their sessions. Shared workspace buffers, WebSocket cursor paths, code snippets, and invitational actions must not breach ethical standards, include proprietary materials belonging to external groups, or host dangerous activities.
+        </p>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section class="space-y-4">
+        <h2 class="text-base font-extrabold text-slate-800 uppercase tracking-wider">4. Service Limitations &amp; Disclaimers</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          CodeWith? is provided on an "as-is" and "as-available" basis. We reserve the absolute right to suspend compiler interfaces, reset custom room histories, modify problem difficulties, or adjust system quotas at any time to preserve core backend reliability and Atlas database connection integrity.
+        </p>
+      </section>
+
+      <!-- Back button -->
+      <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
+        <a href="/" class="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          Back to Home
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- STYLISH COMPACT FOOTER -->
+  <footer class="w-full bg-[#f8fafc] border-t border-slate-200/50 py-10 px-6">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-400">
+      <div>&copy; 2026 CodeWith? Platform. All rights reserved.</div>
+      <div class="flex gap-6">
+        <a href="/terms" class="hover:text-slate-700">Terms</a>
+        <a href="/privacy" class="hover:text-slate-700">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if(typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

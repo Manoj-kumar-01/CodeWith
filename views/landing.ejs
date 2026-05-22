@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeWith? - Premier Real-Time Collaborative Coding &amp; Tournament Platform</title>
+  <meta name="description" content="Host multiplayer programming rooms, compete in global contests, and run 14+ languages in a sandboxed, high-performance editor." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: 'hsl(var(--background))',
+            foreground: 'hsl(var(--foreground))',
+            card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+            popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
+            primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+            secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+            muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+            accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+            destructive: { DEFAULT: 'hsl(var(--destructive))', foreground: 'hsl(var(--destructive-foreground))' },
+            success: { DEFAULT: 'hsl(var(--success))', foreground: 'hsl(var(--success-foreground))' },
+            warning: { DEFAULT: 'hsl(var(--warning))', foreground: 'hsl(var(--warning-foreground))' },
+            border: 'hsl(var(--border))',
+            input: 'hsl(var(--input))',
+            ring: 'hsl(var(--ring))',
+          },
+          borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)' },
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    /* Premium Shifting Background Blobs */
+    @keyframes slow-drift-1 {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(50px, -40px) scale(1.1); }
+      66% { transform: translate(-30px, 50px) scale(0.9); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    @keyframes slow-drift-2 {
+      0% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(-40px, 60px) scale(1.15); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    .animate-drift-1 {
+      animation: slow-drift-1 20s infinite alternate ease-in-out;
+    }
+    .animate-drift-2 {
+      animation: slow-drift-2 25s infinite alternate ease-in-out;
+    }
+    
+    /* Glimmer / Glass card effects */
+    .premium-glass-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 
+        0 4px 30px rgba(0, 0, 0, 0.02),
+        0 1px 3px rgba(0, 0, 0, 0.01);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .premium-glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 
+        0 20px 40px -15px rgba(15, 23, 42, 0.08),
+        0 4px 6px -2px rgba(15, 23, 42, 0.02);
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+
+    /* Gradient typography */
+    .gradient-text {
+      background: linear-gradient(135deg, #1e293b 20%, #475569 50%, #0f172a 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Accordion items active transitions */
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+    }
+    .accordion-active .accordion-content {
+      max-height: 150px;
+    }
+  </style>
+</head>
+<body class="bg-minimal-clean min-h-screen flex flex-col antialiased select-none overflow-x-hidden">
+
+  <!-- STUNNING AMBIENT BLOB SHAPES -->
+  <div class="absolute top-[8%] left-[-5%] w-[500px] h-[500px] bg-sky-200/20 rounded-full blur-[100px] pointer-events-none animate-drift-1"></div>
+  <div class="absolute top-[35%] right-[-5%] w-[450px] h-[450px] bg-slate-300/30 rounded-full blur-[120px] pointer-events-none animate-drift-2"></div>
+  <div class="absolute bottom-[15%] left-[8%] w-[400px] h-[400px] bg-indigo-100/20 rounded-full blur-[100px] pointer-events-none animate-drift-1"></div>
+
+  <!-- FIXED GLASS HEADER NAVBAR -->
+  <nav class="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-slate-200/50 px-4 md:px-12 py-4 flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300">
+    <div class="flex flex-col sm:flex-row items-center gap-4 md:gap-12">
+      <a href="/" class="hover:opacity-95 transition-opacity">
+        <%- include('partials/logo') %>
+      </a>
+      
+      <!-- Central Nav Links (Always Visible & Self-Wrapping) -->
+      <div class="flex items-center flex-wrap justify-center gap-x-6 gap-y-2 text-xs md:text-sm font-bold text-slate-500">
+        <a href="#mission-sec" class="hover:text-slate-900 transition-colors">Our Mission</a>
+        <a href="/about" class="hover:text-slate-900 transition-colors">About Us</a>
+        <a href="/features" class="hover:text-slate-900 transition-colors">Platform Specs</a>
+        <a href="/contact" class="hover:text-slate-900 transition-colors">Contact Support</a>
+        <a href="#faq" class="hover:text-slate-900 transition-colors">FAQ</a>
+      </div>
+    </div>
+
+    <!-- Auth Buttons -->
+    <div class="flex items-center gap-4">
+      <a href="/login" class="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
+        Log In
+      </a>
+      <a href="/register" class="px-5 py-2.5 rounded-xl text-sm font-black text-white bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-800 shadow-md shadow-slate-800/10">
+        Sign Up
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO HEADER SECTION -->
+  <header class="max-w-7xl mx-auto w-full px-6 md:px-12 pt-16 pb-16 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+    
+    <!-- Hero Text (6 Cols) -->
+    <div class="lg:col-span-6 space-y-8 flex flex-col justify-center">
+
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-800 uppercase leading-none">
+        The Collaborative <br>
+        <span class="gradient-text">
+          Programming Playground
+        </span>
+      </h1>
+
+      <p class="text-base md:text-lg text-slate-500 font-medium leading-relaxed">
+        CodeWith? is the premier platform built exclusively to showcase collaborative programming. Participate in weekly tournaments, spin up real-time custom rooms with companions, and run complex algorithms instantly in a high-fidelity environment.
+      </p>
+
+      <!-- CTA Buttons and Real-Time Counters -->
+      <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row gap-4 pt-2">
+          <a href="/register" class="px-8 py-4 rounded-xl text-center text-sm font-black tracking-wide uppercase text-white bg-slate-800 hover:bg-slate-700 hover:translate-y-[-1px] active:translate-y-[1px] transition-all shadow-lg shadow-slate-800/10">
+            Get Started For Free
+          </a>
+          <a href="#playground-demo" class="px-8 py-4 rounded-xl text-center text-sm font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:translate-y-[-1px] transition-all">
+            Explore Editor
+          </a>
+        </div>
+        <p class="text-[11px] font-semibold text-slate-400 flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-500 animate-pulse"></i>
+          <span>Join over 24,000+ developers competing in tournaments today.</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Hero Stunning Collaborative Multiplayer Image (6 Cols) -->
+    <div class="lg:col-span-6 relative w-full flex items-center justify-center">
+      <div class="absolute -inset-4 rounded-3xl bg-gradient-to-br from-indigo-100/40 via-purple-100/30 to-sky-100/40 blur-2xl opacity-60"></div>
+      
+      <div class="relative w-full rounded-2xl p-2 hover:scale-[1.01] transition-all duration-300">
+        <img src="/images/multiplayer_coding_hero.png" alt="Multiplayer Co-Coding in Action" class="w-full h-auto rounded-xl object-cover mix-blend-multiply opacity-95" />
+      </div>
+    </div>
+  </header>
+
+  <!-- VALUE PROPOSITION STRIP -->
+  <section class="max-w-5xl mx-auto w-full px-6 md:px-12 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+          <i data-lucide="code-2" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="text-sm font-black text-slate-800">Code Together, Live</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">Invite friends into real-time coding rooms. Every keystroke syncs instantly.</p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="text-sm font-black text-slate-800">Get Help Anytime</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">Stuck on a problem? Send a doubt request to any online mentor or peer.</p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+          <i data-lucide="trophy" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="text-sm font-black text-slate-800">Compete & Climb</h4>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">Weekly algorithmic tournaments with live leaderboards and rankings.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SPECIAL MISSION SECTION: BRIDGING THE COMPETITIVE GAP -->
+  <section id="mission-sec" class="max-w-7xl mx-auto w-full px-6 md:px-12 py-24 border-t border-slate-200/30">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+      
+      <!-- Majestic Interactive Co-Coding Mockup (6 Cols) -->
+      <div class="lg:col-span-6 relative w-full">
+        <div class="absolute -inset-1.5 rounded-3xl bg-gradient-to-br from-rose-100/30 to-indigo-100/30 blur-2xl opacity-40"></div>
+        
+        <!-- Monaco Editor Styled Doubt Mockup -->
+        <div class="relative w-full bg-slate-900 rounded-2xl border border-slate-850 shadow-2xl p-6 space-y-5 select-none font-mono text-[11px]">
+          
+          <!-- Editor Title Header Bar -->
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 text-slate-400">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span class="text-[10px] font-bold text-slate-400 ml-2">binary_search_optimization.py</span>
+            </div>
+            <span class="text-[9px] font-black uppercase text-indigo-400 tracking-wider">Live Pair Session</span>
+          </div>
+
+          <!-- Code Editor Body -->
+          <div class="space-y-2.5 text-slate-300">
+            <div><span class="text-indigo-400">def</span> <span class="text-blue-400">findPeakElement</span>(nums):</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;left, right = 0, len(nums) - 1</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-slate-500"># Online peer Manoj is stuck here (Memory Quota Limit)</span></div>
+            <div class="bg-rose-950/40 border-l-2 border-rose-500/80 py-1 px-2 text-rose-200 flex items-center justify-between">
+              <span>&nbsp;&nbsp;&nbsp;&nbsp;while left &lt; right:</span>
+              <span class="text-[9px] font-bold text-rose-400">⚠️ Heap Error (Test Case 48/50)</span>
+            </div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mid = (left + right) // 2</div>
+            <div class="bg-indigo-950/40 border-l-2 border-indigo-500/80 py-1 px-2 text-indigo-200">
+              <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-indigo-400 font-bold"># Expert Companion Alex optimized allocation:</span></span>
+            </div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if nums[mid] &gt; nums[mid + 1]:</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;right = mid</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else: left = mid + 1</div>
+          </div>
+
+          <!-- Active matching thread panel overlay -->
+          <div class="bg-slate-850 rounded-xl p-4 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-[10px] text-slate-300 font-black">Alex_Grandmaster (Mentor)</span>
+              </div>
+              <span class="text-[8px] text-slate-500 font-bold">Joined Room #4092</span>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-relaxed italic">
+              "Hey Manoj! The heap issue happens because index mid calculation exceeds boundaries. Try dividing nums using bits instead. Fixed it in line 6!"
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Core Mission Statement Text (6 Cols) -->
+      <div class="lg:col-span-6 space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <span>Bridge The Programming Skill Gap</span>
+        </div>
+        
+        <h3 class="text-3xl md:text-4xl font-black text-slate-800 uppercase leading-none">Don't Code Alone.<br>Solve Together.</h3>
+        
+        <p class="text-sm text-slate-500 leading-relaxed font-semibold">
+          Standard programming contests are highly intimidating. Beginners and intermediate coders are forced to compete against the elite rank #1s without having a pre-existing circle of expert friends to ask for help when they are stuck.
+        </p>
+
+        <!-- Dynamic Steppers showing resolution flow -->
+        <div class="space-y-4 pt-2">
+          
+          <div class="flex gap-4">
+            <div class="w-6 h-6 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-[10px] font-black text-rose-500 shrink-0">1</div>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase">Spawn Sandbox Workspace</h5>
+              <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">Spin up a custom collaborative challenge room right from your dashboard in one click.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-500 shrink-0">2</div>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase">Broadcast Doubt Request</h5>
+              <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">Stuck on complex algorithmic limits? Tap "Request Help" to notify active online mentors.</p>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[10px] font-black text-emerald-500 shrink-0">3</div>
+            <div>
+              <h5 class="text-xs font-black text-slate-800 uppercase">Conquer The Tournaments</h5>
+              <p class="text-[11px] text-slate-400 leading-relaxed mt-0.5">Optimize code lines together, beat the test cases, and climb up the leaderboard ranks.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS STEP TIMELINE -->
+  <section id="stepper-timeline" class="max-w-7xl mx-auto w-full px-6 md:px-12 py-24 border-t border-slate-200/30">
+    <div class="text-center max-w-2xl mx-auto mb-20 space-y-4">
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Simple &amp; Fast</h2>
+      <h3 class="text-3xl font-black text-slate-800 uppercase leading-none">Spin Up Multiplayer In Seconds</h3>
+      <p class="text-sm text-slate-500 leading-relaxed">
+        We designed CodeWith? to focus entirely on developer velocity. Zero local environment setup, zero container conflicts, just real-time pair programming.
+      </p>
+    </div>
+
+    <!-- Stepper layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 relative">
+      <!-- Background Connecting Line -->
+      <div class="hidden lg:block absolute top-[40px] left-[15%] right-[15%] h-[2px] bg-slate-200/50 -z-10"></div>
+      
+      <!-- Step 1 -->
+      <div class="text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-white border border-slate-200/80 shadow-md shadow-slate-100 flex items-center justify-center text-slate-800 font-black text-lg mx-auto relative hover:scale-105 transition-transform duration-300">
+          01
+        </div>
+        <h4 class="text-base font-black text-slate-800 uppercase">Create Custom Rooms</h4>
+        <p class="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+          Spin up isolated workspaces right from the dashboard. Customize room types, challenge modes, guidelines, or languages.
+        </p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-white border border-slate-200/80 shadow-md shadow-slate-100 flex items-center justify-center text-slate-800 font-black text-lg mx-auto relative hover:scale-105 transition-transform duration-300">
+          02
+        </div>
+        <h4 class="text-base font-black text-slate-800 uppercase">Invite Companions</h4>
+        <p class="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+          Send click-invitations directly to online friends. They accept over persistent socket triggers and join your console immediately.
+        </p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-white border border-slate-200/80 shadow-md shadow-slate-100 flex items-center justify-center text-slate-800 font-black text-lg mx-auto relative hover:scale-105 transition-transform duration-300">
+          03
+        </div>
+        <h4 class="text-base font-black text-slate-800 uppercase">Code &amp; Compile</h4>
+        <p class="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+          Share coordinates, edit lines collaboratively, and run unit tests. In case Docker clusters are busy, native system fallbacks process scripts.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREMIUM BENTO FEATURE SHOWCASE -->
+  <section id="features-grid" class="max-w-7xl mx-auto w-full px-6 md:px-12 py-20 border-t border-slate-200/30">
+    <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Why CodeWith?</h2>
+      <h3 class="text-3xl font-black text-slate-800 uppercase leading-none">Everything You Need To Code Better</h3>
+      <p class="text-sm text-slate-500 leading-relaxed">
+        A complete collaborative development environment — from real-time pair coding to sandboxed compilation and peer mentoring.
+      </p>
+    </div>
+
+    <!-- Bento Grid: 2 rows, asymmetric -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+      
+      <!-- Large Feature (Span 7) -->
+      <div class="md:col-span-7 bg-white/70 border border-slate-200/50 rounded-3xl p-8 space-y-5 shadow-sm hover:shadow-md transition-shadow group">
+        <div class="w-11 h-11 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+          <i data-lucide="users-2" class="w-5 h-5"></i>
+        </div>
+        <h4 class="text-lg font-black text-slate-800 uppercase">Multiplayer Pair Programming</h4>
+        <p class="text-sm text-slate-500 leading-relaxed">
+          Create live coding rooms and invite anyone — friends, classmates, or online mentors. Every keystroke syncs instantly across all participants with zero configuration needed. Share cursors, co-edit files, and watch each other's changes appear in real-time.
+        </p>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <span class="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">WebSocket Rooms</span>
+          <span class="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">Live Cursors</span>
+          <span class="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">Delta Sync</span>
+        </div>
+      </div>
+
+      <!-- Small Feature (Span 5) -->
+      <div class="md:col-span-5 bg-white/70 border border-slate-200/50 rounded-3xl p-8 space-y-5 shadow-sm hover:shadow-md transition-shadow group">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <h4 class="text-lg font-black text-slate-800 uppercase">Sandboxed Execution</h4>
+        <p class="text-sm text-slate-500 leading-relaxed">
+          Every code submission runs inside isolated containers. When Docker is unavailable, a transparent bare-metal fallback kicks in — you never notice the difference.
+        </p>
+      </div>
+
+      <!-- Small Feature (Span 5) -->
+      <div class="md:col-span-5 bg-white/70 border border-slate-200/50 rounded-3xl p-8 space-y-5 shadow-sm hover:shadow-md transition-shadow group">
+        <div class="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+          <i data-lucide="message-circle-question" class="w-5 h-5"></i>
+        </div>
+        <h4 class="text-lg font-black text-slate-800 uppercase">Instant Doubt Clearing</h4>
+        <p class="text-sm text-slate-500 leading-relaxed">
+          Stuck on a problem? Broadcast a help request to active peers online. When someone accepts, they join your live workspace and debug alongside you.
+        </p>
+      </div>
+
+      <!-- Large Feature (Span 7) -->
+      <div class="md:col-span-7 bg-white/70 border border-slate-200/50 rounded-3xl p-8 space-y-5 shadow-sm hover:shadow-md transition-shadow group">
+        <div class="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+          <i data-lucide="trophy" class="w-5 h-5"></i>
+        </div>
+        <h4 class="text-lg font-black text-slate-800 uppercase">Weekly Algorithmic Tournaments</h4>
+        <p class="text-sm text-slate-500 leading-relaxed">
+          Compete in structured weekly contests with timed challenges, live leaderboards, and detailed performance breakdowns. Track your ranking over time, compare solutions, and level up your problem-solving skills consistently.
+        </p>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <span class="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">Live Leaderboards</span>
+          <span class="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">Timed Rounds</span>
+          <span class="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500">Performance Stats</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- DYNAMIC LANGUAGE PILL GRID -->
+  <section id="languages-sec" class="max-w-7xl mx-auto w-full px-6 md:px-12 py-20 border-t border-slate-200/30">
+    <div class="text-center max-w-2xl mx-auto mb-16 space-y-4">
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Multi-Language Sandbox</h2>
+      <h3 class="text-3xl font-black text-slate-800 uppercase leading-none">14+ Coding Environments</h3>
+      <p class="text-sm text-slate-500 leading-relaxed">
+        Run core algorithms or test library integrations across a wide collection of programming environments with full support for syntax highlights.
+      </p>
+    </div>
+
+    <!-- Pills grid -->
+    <div class="flex flex-wrap gap-3.5 justify-center max-w-5xl mx-auto">
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span> Javascript
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Python
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-600"></span> Go Lang
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Rust
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> C++ (GCC)
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Java
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Ruby
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> PHP
+      </span>
+      <span class="px-5 py-2.5 rounded-xl bg-white border border-slate-200/60 shadow-sm text-xs font-extrabold text-slate-600 hover:border-slate-400 transition-colors cursor-default flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Shell/Bash
+      </span>
+    </div>
+  </section>
+
+  <!-- MULTIPLAYER SHOWCASE AREA -->
+  <section id="collaboration" class="max-w-7xl mx-auto w-full px-6 md:px-12 py-20 bg-slate-50 border border-slate-200/50 rounded-3xl grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+    
+    <!-- Visual graphic / Bento elements -->
+    <div class="space-y-6">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100">
+        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+        <span class="text-[9px] font-black tracking-widest text-indigo-700 uppercase">Live WebSocket Sync</span>
+      </div>
+      
+      <h3 class="text-3xl font-black text-slate-800 uppercase leading-none">Instant Companion Invitation</h3>
+      <p class="text-sm text-slate-500 leading-relaxed">
+        Say goodbye to copying and pasting files. Send invitations directly to companions in your active friend panel. They can accept with a single click and join your custom coding room immediately.
+      </p>
+
+      <div class="space-y-3.5 pt-2">
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-600 font-bold"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-700"></i></div>
+          <span class="text-xs font-semibold text-slate-600">Zero latency real-time cursor indicators.</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-600 font-bold"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-700"></i></div>
+          <span class="text-xs font-semibold text-slate-600">Automated session backup and local storage restore.</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-600 font-bold"><i data-lucide="check" class="w-3.5 h-3.5 text-slate-700"></i></div>
+          <span class="text-xs font-semibold text-slate-600">Support for interactive challenge templates.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live invite mockup cards -->
+    <div class="relative flex flex-col gap-4">
+      <div class="absolute -inset-4 bg-gradient-to-br from-indigo-100 to-sky-100 blur-xl opacity-30"></div>
+      
+      <!-- Mock invitation card 1 -->
+      <div class="relative bg-white rounded-2xl border border-slate-200 p-5 shadow-lg shadow-slate-100 flex items-center gap-4 hover:scale-[1.02] transition-transform duration-300">
+        <div class="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 font-bold text-sm">
+          SP
+        </div>
+        <div class="flex-1">
+          <p class="text-xs text-slate-400 font-mono tracking-wider uppercase">Active Request</p>
+          <p class="text-sm font-bold text-slate-800">Sarah Parker <span class="font-normal text-slate-500">sent an invite</span></p>
+          <p class="text-[10px] font-mono text-slate-400 uppercase mt-0.5">Room: Dynamic Graphs Challenge</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="px-3 py-1.5 rounded-lg text-[10px] font-extrabold bg-slate-100 text-slate-500 hover:bg-slate-200 uppercase transition-all">Decline</button>
+          <button onclick="window.location.href='/login'" class="px-3 py-1.5 rounded-lg text-[10px] font-black bg-indigo-600 hover:bg-indigo-500 text-white uppercase tracking-wider transition-all shadow-md shadow-indigo-600/10">Accept</button>
+        </div>
+      </div>
+
+      <!-- Mock invitation card 2 -->
+      <div class="relative bg-white rounded-2xl border border-slate-200 p-5 shadow-lg shadow-slate-100 flex items-center gap-4 opacity-75 hover:opacity-100 transition-opacity">
+        <div class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 font-bold text-sm">
+          JD
+        </div>
+        <div class="flex-1">
+          <p class="text-xs text-slate-400 font-mono tracking-wider uppercase">Session Joined</p>
+          <p class="text-sm font-bold text-slate-800">John Doe <span class="font-normal text-slate-500">joined your room</span></p>
+          <p class="text-[10px] font-mono text-slate-400 uppercase mt-0.5">Room: Binary Tree Search</p>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-500">
+          <i data-lucide="check" class="w-4 h-4"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE TESTIMONIAL CAROUSEL -->
+  <section id="testimonials" class="max-w-7xl mx-auto w-full px-6 md:px-12 py-24 border-t border-slate-200/30">
+    <div class="text-center max-w-2xl mx-auto mb-20 space-y-4">
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Loved by Developers</h2>
+      <h3 class="text-3xl font-black text-slate-800 uppercase leading-none">What Our Users Are Saying</h3>
+    </div>
+
+    <!-- Review Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <!-- Review 1 -->
+      <div class="premium-glass-card p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-slate-100 font-mono text-slate-700 font-black text-sm flex items-center justify-center border border-slate-200">
+            M
+          </div>
+          <div>
+            <h5 class="text-sm font-black text-slate-800 uppercase">Manoj Kumar</h5>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Competitive Coder</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed italic">
+          "The WebSocket sync on CodeWith? is incredibly fast! Typing and running algorithms collaboratively with my AI companion has completely streamlined my competitive coding workflows."
+        </p>
+      </div>
+
+      <!-- Review 2 -->
+      <div class="premium-glass-card p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-slate-100 font-mono text-slate-700 font-black text-sm flex items-center justify-center border border-slate-200">
+            S
+          </div>
+          <div>
+            <h5 class="text-sm font-black text-slate-800 uppercase">Sarah Parker</h5>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Software Architect</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed italic">
+          "The bare-metal isolation backup is a lifesaver. We spun up a Python sandbox to review binary tree traversals, and test cases resolved instantly with zero manual infrastructure dependencies."
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ACCORDION FAQ SECTION -->
+  <section id="faq" class="max-w-4xl mx-auto w-full px-6 py-20 border-t border-slate-200/30">
+    <div class="text-center mb-16 space-y-3">
+      <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Frequently Asked Questions</h2>
+      <h3 class="text-3xl font-black text-slate-800 uppercase leading-none">Got Questions? We Have Answers.</h3>
+    </div>
+
+    <!-- Accordion Wrapper -->
+    <div class="space-y-4">
+      
+      <!-- Accordion item 1 -->
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all" id="accordion-1">
+        <button onclick="toggleAccordion('accordion-1')" class="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none">
+          <span class="text-sm font-bold text-slate-800 uppercase">How does the sandboxed compiler work?</span>
+          <span class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform duration-300" id="arrow-accordion-1">
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </span>
+        </button>
+        <div class="accordion-content border-t border-slate-50 bg-[#fafafa]">
+          <p class="p-6 text-xs text-slate-500 leading-relaxed">
+            The platform submits code execution requests to our compiler microservice which coordinates virtual sandboxed engines. In case the host Docker containers are heavily loaded, the backend seamlessly triggers a high-speed bare-metal native fallback, guaranteeing response times in milliseconds under any status.
+          </p>
+        </div>
+      </div>
+
+      <!-- Accordion item 2 -->
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all" id="accordion-2">
+        <button onclick="toggleAccordion('accordion-2')" class="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none">
+          <span class="text-sm font-bold text-slate-800 uppercase">Is the collaborative room session synchronized?</span>
+          <span class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform duration-300" id="arrow-accordion-2">
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </span>
+        </button>
+        <div class="accordion-content border-t border-slate-50 bg-[#fafafa]">
+          <p class="p-6 text-xs text-slate-500 leading-relaxed">
+            Yes, our custom rooms run on persistent WebSocket layers powered by Socket.io. Code changes, file selections, console compilations, and friend invitations are synchronized immediately in near real-time across all session participants.
+          </p>
+        </div>
+      </div>
+
+      <!-- Accordion item 3 -->
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all" id="accordion-3">
+        <button onclick="toggleAccordion('accordion-3')" class="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none">
+          <span class="text-sm font-bold text-slate-800 uppercase">Is the platform free to explore?</span>
+          <span class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform duration-300" id="arrow-accordion-3">
+            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+          </span>
+        </button>
+        <div class="accordion-content border-t border-slate-50 bg-[#fafafa]">
+          <p class="p-6 text-xs text-slate-500 leading-relaxed">
+            Absolutely! You can register in seconds to compile programs in 14+ languages, join competitive tournaments, custom solve practice tasks, and add friends to co-coding groups with zero pricing layers.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMPREHENSIVE PREMIUM MULTI-COLUMN FORMATTABLE FOOTER WITH NEWSLETTER -->
+  <footer id="footer" class="w-full bg-[#f8fafc] border-t border-slate-200/50 pt-20 pb-12 px-6 md:px-12 select-none">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 pb-16 border-b border-slate-200/50">
+      
+      <!-- Logo column & Newsletter Subscribe -->
+      <div class="lg:col-span-4 space-y-6">
+        <%- include('partials/logo') %>
+        <p class="text-xs text-slate-400 font-medium leading-relaxed max-w-sm">
+          A high-performance real-time environment built to help competitive developers learn, compile, and progress together. Built on sandboxed architectures with full operational fallbacks.
+        </p>
+
+        <!-- Dynamic Newsletter Form -->
+        <div class="space-y-2.5 pt-2">
+          <h6 class="text-[10px] font-black text-slate-700 tracking-widest uppercase">Subscribe to Sandbox Tech Blog</h6>
+          <form onsubmit="event.preventDefault(); alert('Subscribed successfully!');" class="flex gap-2 max-w-sm">
+            <input type="email" placeholder="you@domain.com" required class="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-slate-400 transition-colors" />
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-black text-white bg-slate-800 hover:bg-slate-700 transition-colors uppercase tracking-wider border border-slate-800 shadow-md">Subscribe</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Links Column 1: Product Features -->
+      <div class="lg:col-span-2 space-y-4">
+        <h5 class="text-[10px] font-black text-slate-700 tracking-widest uppercase">Features</h5>
+        <ul class="space-y-2.5 text-xs font-semibold text-slate-400">
+          <li><a href="#playground-demo" class="hover:text-slate-700 transition-colors">Sandboxed Sandbox</a></li>
+          <li><a href="#collaboration" class="hover:text-slate-700 transition-colors">Co-Coding Rooms</a></li>
+          <li><a href="/login" class="hover:text-slate-700 transition-colors">Weekly Tournaments</a></li>
+          <li><a href="/login" class="hover:text-slate-700 transition-colors">Progress Analytics</a></li>
+        </ul>
+      </div>
+
+      <!-- Links Column 2: Resources -->
+      <div class="lg:col-span-2 space-y-4">
+        <h5 class="text-[10px] font-black text-slate-700 tracking-widest uppercase">Resources</h5>
+        <ul class="space-y-2.5 text-xs font-semibold text-slate-400">
+          <li><a href="#" class="hover:text-slate-700 transition-colors">Developer Forum</a></li>
+          <li><a href="#" class="hover:text-slate-700 transition-colors">CodeWith Discord</a></li>
+          <li><a href="#" class="hover:text-slate-700 transition-colors">Open Source Hub</a></li>
+          <li><a href="#" class="hover:text-slate-700 transition-colors">Partner Programs</a></li>
+        </ul>
+      </div>
+
+      <!-- Links Column 3: Company info -->
+      <div class="lg:col-span-2 space-y-4">
+        <h5 class="text-[10px] font-black text-slate-700 tracking-widest uppercase">Company</h5>
+        <ul class="space-y-2.5 text-xs font-semibold text-slate-400">
+          <li><a href="/about" class="hover:text-slate-700 transition-colors">About Us</a></li>
+          <li><a href="/features" class="hover:text-slate-700 transition-colors">Security Specs</a></li>
+          <li><a href="/about" class="hover:text-slate-700 transition-colors">Our Vision</a></li>
+          <li><a href="/contact" class="hover:text-slate-700 transition-colors">Contact Support</a></li>
+        </ul>
+      </div>
+
+      <!-- Links Column 4: Legal & Security -->
+      <div class="lg:col-span-2 space-y-4">
+        <h5 class="text-[10px] font-black text-slate-700 tracking-widest uppercase">Legal</h5>
+        <ul class="space-y-2.5 text-xs font-semibold text-slate-400">
+          <li><a href="/terms" class="hover:text-slate-700 transition-colors">Terms of Service</a></li>
+          <li><a href="/privacy" class="hover:text-slate-700 transition-colors">Privacy Policy</a></li>
+          <li><a href="#" class="hover:text-slate-700 transition-colors">Cookie Preferences</a></li>
+          <li><a href="#" class="hover:text-slate-700 transition-colors">Security Standards</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Footer base -->
+    <div class="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-400">
+      <div class="flex items-center gap-4">
+        <span>&copy; 2026 CodeWith? Hub. All rights reserved.</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+        <a href="/terms" class="hover:text-slate-700 transition-colors">Terms</a>
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+        <a href="/privacy" class="hover:text-slate-700 transition-colors">Privacy</a>
+      </div>
+      <div class="flex gap-4">
+        <span class="flex items-center gap-1.5 text-emerald-600">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          All Services Operational
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Toggle Accordions (FAQ section)
+    function toggleAccordion(id) {
+      const items = ['accordion-1', 'accordion-2', 'accordion-3'];
+      items.forEach(itemId => {
+        const elem = document.getElementById(itemId);
+        const arrow = document.getElementById('arrow-' + itemId);
+        if(itemId === id) {
+          elem.classList.toggle('accordion-active');
+          arrow.classList.toggle('rotate-180');
+        } else {
+          elem.classList.remove('accordion-active');
+          arrow.classList.remove('rotate-180');
+        }
+      });
+    }
+
+    // Toggle Workspace Demo modes (Sandbox vs Live Multiplayer)
+    let currentDemoMode = 'sandbox';
+    let collabSimulationActive = false;
+    let collabIntervalId = null;
+
+    function changeDemoMode(mode) {
+      if(currentDemoMode === mode) return;
+      currentDemoMode = mode;
+      
+      const btnSandbox = document.getElementById('demo-btn-sandbox');
+      const btnCollab = document.getElementById('demo-btn-collab');
+      
+      const sandboxWork = document.getElementById('sandbox-workspace');
+      const collabWork = document.getElementById('collab-workspace');
+      
+      const filenameLabel = document.getElementById('editor-filename');
+      const actionTriggerBtn = document.getElementById('action-trigger-btn');
+      const consoleLog = document.getElementById('demo-console-log');
+      
+      // Stop running collaboration simulator if active
+      if(collabIntervalId) {
+        clearInterval(collabIntervalId);
+        collabIntervalId = null;
+      }
+      collabSimulationActive = false;
+      
+      if(mode === 'sandbox') {
+        btnSandbox.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        btnSandbox.classList.remove('text-slate-500');
+        btnCollab.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+        btnCollab.classList.add('text-slate-500');
+        
+        sandboxWork.classList.remove('hidden');
+        sandboxWork.classList.add('block');
+        collabWork.classList.add('hidden');
+        collabWork.classList.remove('block');
+        
+        filenameLabel.textContent = 'sandbox_compiler.js';
+        actionTriggerBtn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> Compile Program`;
+        consoleLog.innerHTML = `<span class="text-slate-500 italic">Click compile to run code...</span>`;
+      } else {
+        btnCollab.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        btnCollab.classList.remove('text-slate-500');
+        btnSandbox.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+        btnSandbox.classList.add('text-slate-500');
+        
+        collabWork.classList.remove('hidden');
+        collabWork.classList.add('block');
+        sandboxWork.classList.add('hidden');
+        sandboxWork.classList.remove('block');
+        
+        filenameLabel.textContent = 'multiplayer_session.py';
+        actionTriggerBtn.innerHTML = `<i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Start Multiplayer Replay`;
+        collabWork.innerHTML = `<span class="text-slate-400">// Click 'Start Multiplayer Replay' to simulate live pair-programming...</span>`;
+        consoleLog.innerHTML = `<span class="text-slate-500 italic">Simulate co-coding replay session...</span>`;
+      }
+      
+      if(typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // Trigger action based on Mode
+    function triggerWorkspaceExecution() {
+      if(currentDemoMode === 'sandbox') {
+        runSandboxCompile();
+      } else {
+        runCollaborationSimulation();
+      }
+    }
+
+    // Standard Sandbox compiler simulator
+    function runSandboxCompile() {
+      const loader = document.getElementById('demo-loader');
+      const consoleLog = document.getElementById('demo-console-log');
+      const triggerBtn = document.getElementById('action-trigger-btn');
+      
+      loader.classList.remove('hidden');
+      triggerBtn.disabled = true;
+      triggerBtn.classList.add('opacity-55', 'cursor-not-allowed');
+
+      setTimeout(() => {
+        loader.classList.add('hidden');
+        triggerBtn.disabled = false;
+        triggerBtn.classList.remove('opacity-55', 'cursor-not-allowed');
+        
+        consoleLog.innerHTML = `
+          <div class="text-emerald-400">⏳ Connecting to Database fallbacks...</div>
+          <div class="text-slate-300">Initializing dynamic sandbox on CodeWith?...</div>
+          <div class="text-slate-400">[Sandbox] Executing node layer 1...</div>
+          <div class="text-slate-400">[Sandbox] Executing node layer 2...</div>
+          <div class="text-slate-400">[Sandbox] Executing node layer 3...</div>
+          <div class="text-slate-500 text-[10px] mt-1 pt-1 border-t border-white/5">Process exited successfully in 12ms</div>
+        `;
+      }, 900);
+    }
+
+    // Advanced Co-coding replay simulator
+    function runCollaborationSimulation() {
+      if(collabSimulationActive) return;
+      collabSimulationActive = true;
+      
+      const collabWork = document.getElementById('demo-workspace');
+      const consoleLog = document.getElementById('demo-console-log');
+      const triggerBtn = document.getElementById('action-trigger-btn');
+      
+      triggerBtn.disabled = true;
+      triggerBtn.classList.add('opacity-55', 'cursor-not-allowed');
+      
+      consoleLog.innerHTML = `<div class="text-indigo-400">[System] Opening WebSocket session 'multiplayer_session'...</div>`;
+      
+      const steps = [
+        {
+          code: `<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">calculateSum</span>(a, b):`,
+          log: `<div class="text-slate-400">[Room] User 'Manoj' connected. Mode: Read/Write</div>`
+        },
+        {
+          code: `<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">calculateSum</span>(a, b):\n    <span class="text-slate-400"># Typing binary sum calculation...</span>`,
+          log: `<div class="text-slate-300">[Manoj] Typing helper functions...</div>`
+        },
+        {
+          code: `<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">calculateSum</span>(a, b):\n    <span class="text-slate-400"># Typing binary sum calculation...</span>\n    <span class="text-indigo-500 font-bold">return</span> a + b`,
+          log: `<div class="text-indigo-400">[Room] User 'AI-Companion' connected. Mode: Suggest</div>`
+        },
+        {
+          code: `<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">calculateSum</span>(a, b):\n    <span class="text-slate-400"># Typing binary sum calculation...</span>\n    <span class="text-indigo-500 font-bold">return</span> a + b\n\n<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">binaryAdd</span>(x, y):\n    <span class="text-slate-400"># AI-Companion optimized suggestion:</span>\n    <span class="text-indigo-500 font-bold">return</span> bin(x + y)`,
+          log: `<div class="text-emerald-400">[AI-Companion] Injected Sieve calculation helper!</div>`
+        },
+        {
+          code: `<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">calculateSum</span>(a, b):\n    <span class="text-slate-400"># Typing binary sum calculation...</span>\n    <span class="text-indigo-500 font-bold">return</span> a + b\n\n<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">binaryAdd</span>(x, y):\n    <span class="text-slate-400"># AI-Companion optimized suggestion:</span>\n    <span class="text-indigo-500 font-bold">return</span> bin(x + y)\n\n<span class="text-blue-500 font-bold">print</span>(binaryAdd(10, 5))`,
+          log: `<div class="text-slate-300">[Manoj] Running remote compile request...</div>`
+        },
+        {
+          code: `<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">calculateSum</span>(a, b):\n    <span class="text-slate-400"># Typing binary sum calculation...</span>\n    <span class="text-indigo-500 font-bold">return</span> a + b\n\n<span class="text-indigo-500 font-bold">def</span> <span class="text-violet-600 font-semibold">binaryAdd</span>(x, y):\n    <span class="text-slate-400"># AI-Companion optimized suggestion:</span>\n    <span class="text-indigo-500 font-bold">return</span> bin(x + y)\n\n<span class="text-blue-500 font-bold">print</span>(binaryAdd(10, 5))`,
+          log: `
+            <div class="text-emerald-400">🐍 Starting sandboxed Python engine fallback...</div>
+            <div class="text-slate-100 font-bold">0b1111</div>
+            <div class="text-slate-500 text-[10px] mt-1 pt-1 border-t border-white/5">Session synchronized successfully (Test passed: 10/10)</div>
+          `
+        }
+      ];
+      
+      let stepIndex = 0;
+      
+      collabIntervalId = setInterval(() => {
+        if(stepIndex < steps.length) {
+          const step = steps[stepIndex];
+          collabWork.innerHTML = `<pre class="whitespace-pre text-slate-700">${step.code}</pre>`;
+          consoleLog.innerHTML += step.log;
+          consoleLog.scrollTop = consoleLog.scrollHeight;
+          stepIndex++;
+        } else {
+          clearInterval(collabIntervalId);
+          collabIntervalId = null;
+          triggerBtn.disabled = false;
+          triggerBtn.classList.remove('opacity-55', 'cursor-not-allowed');
+          collabSimulationActive = false;
+        }
+      }, 1000);
+    }
+
+    // Initialize Lucide icons on load
+    document.addEventListener('DOMContentLoaded', () => {
+      if(typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

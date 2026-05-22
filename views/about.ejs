@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeWith? - About Our Mission</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: 'hsl(var(--background))',
+            foreground: 'hsl(var(--foreground))',
+            card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+            primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+            border: 'hsl(var(--border))',
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+        },
+      },
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-minimal-clean min-h-screen flex flex-col antialiased select-none overflow-x-hidden text-slate-700">
+
+  <!-- Ambient Blurred blobs -->
+  <div class="absolute top-[10%] left-[-10%] w-[350px] h-[350px] bg-slate-200/20 rounded-full blur-[80px] pointer-events-none"></div>
+  <div class="absolute bottom-[20%] right-[-10%] w-[400px] h-[400px] bg-indigo-100/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-slate-200/50 px-6 md:px-12 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-12">
+      <a href="/" class="hover:opacity-95 transition-opacity">
+        <%- include('partials/logo') %>
+      </a>
+      <div class="hidden lg:flex items-center gap-8 text-sm font-semibold text-slate-500">
+        <a href="/" class="hover:text-slate-900 transition-colors">Home</a>
+        <a href="/about" class="text-slate-950 font-bold">About</a>
+        <a href="/features" class="hover:text-slate-900 transition-colors">Features</a>
+        <a href="/contact" class="hover:text-slate-900 transition-colors">Contact</a>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/login" class="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">Log In</a>
+      <a href="/register" class="px-5 py-2.5 rounded-xl text-sm font-black text-white bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-800 shadow-md">Sign Up</a>
+    </div>
+  </nav>
+
+  <!-- Main Hero Context -->
+  <main class="max-w-4xl mx-auto w-full px-6 py-20 flex-1 space-y-16">
+    <div class="space-y-6 text-center">
+      <div class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-black tracking-widest text-slate-500 uppercase mx-auto">
+        <span>Our Vision</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-black tracking-tight text-slate-800 uppercase leading-none">
+        Bridging the Programming <br />
+        <span class="bg-gradient-to-r from-slate-800 to-indigo-900 bg-clip-text text-transparent">Skill Gap</span>
+      </h1>
+      <p class="text-base md:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
+        Competitive coding should be about learning, progress, and mentorship. We built CodeWith? to make collaborative programming universally accessible to every level.
+      </p>
+    </div>
+
+    <!-- Details Bento -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="bg-white/70 border border-slate-200/80 rounded-2xl p-8 space-y-4 shadow-sm shadow-slate-100">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+          <i data-lucide="compass" class="w-5 h-5"></i>
+        </div>
+        <h3 class="text-lg font-black text-slate-800 uppercase">The Problem</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Standard programming sites focus strictly on ranking metrics and single-player execution. Beginners and intermediate coders are often intimidated, with no peer groups or active expert friends to consult when they get stuck on algorithmic limits.
+        </p>
+      </div>
+
+      <div class="bg-white/70 border border-slate-200/80 rounded-2xl p-8 space-y-4 shadow-sm shadow-slate-100">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <h3 class="text-lg font-black text-slate-800 uppercase">The CodeWith? Solution</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          We designed a unified collaborative hub where unauthenticated guests can explore runtimes, and registered coders can instantly spawn custom multiplayer rooms. Send help requests to active online companions to resolve binary search or dynamic problems side-by-side.
+        </p>
+      </div>
+    </div>
+
+    <!-- Core Team / Pillars -->
+    <div class="space-y-8 pt-8">
+      <div class="text-center space-y-2">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Our Core Commitments</h2>
+        <h3 class="text-2xl font-black text-slate-800 uppercase">Built On High Standards</h3>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white/50 border border-slate-200/60 rounded-xl p-6 text-center space-y-2.5">
+          <h4 class="text-sm font-black text-slate-800 uppercase">Primacy of Safety</h4>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            All code compilation runs in isolated sandbox clusters to ensure system security.
+          </p>
+        </div>
+        <div class="bg-white/50 border border-slate-200/60 rounded-xl p-6 text-center space-y-2.5">
+          <h4 class="text-sm font-black text-slate-800 uppercase">Transparent Backups</h4>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Local bare-metal processes take over code compiling instantly when Docker clusters are busy.
+          </p>
+        </div>
+        <div class="bg-white/50 border border-slate-200/60 rounded-xl p-6 text-center space-y-2.5">
+          <h4 class="text-sm font-black text-slate-800 uppercase">Zero Configuration</h4>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Real-time rooms spin up on Socket.io layers without requiring any environment setup.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full bg-[#f8fafc] border-t border-slate-200/50 py-10 px-6 select-none mt-auto">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-400">
+      <span>&copy; 2026 CodeWith? Hub. All rights reserved.</span>
+      <div class="flex gap-4">
+        <a href="/" class="hover:text-slate-700 transition-colors">Home</a>
+        <a href="/terms" class="hover:text-slate-700 transition-colors">Terms</a>
+        <a href="/privacy" class="hover:text-slate-700 transition-colors">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if(typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

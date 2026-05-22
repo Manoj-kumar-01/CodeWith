@@ -990,129 +990,199 @@ app.post('/api/friends/remove', async (req, res) => {
 
 // ── Page Routes ──
 
-app.get('/', requireAuth, async (req, res) => {
+app.get('/', async (req, res) => {
     try {
-        let activeContestsCount = 0;
-        let totalParticipants = 0;
-        let contests = [];
+        // If user is logged in, show their dashboard
+        if (req.session && req.session.user) {
+            let activeContestsCount = 0;
+            let totalParticipants = 0;
+            let contests = [];
 
-        if (dbConnected) {
-            const allDocs = await Contest.find().sort({ startTime: -1 });
-            const enriched = allDocs.map(c => {
-                const status = getContestStatus(c.startTime, c.endTime);
-                return {
-                    ...c.toObject(),
-                    id: c._id,
-                    status: status,
+            if (dbConnected) {
+                const allDocs = await Contest.find().sort({ startTime: -1 });
+                const enriched = allDocs.map(c => {
+                    const status = getContestStatus(c.startTime, c.endTime);
+                    return {
+                        ...c.toObject(),
+                        id: c._id,
+                        status: status,
+                        timeLeft: formatTimeLeft(c.endTime),
+                        timeUntilStart: formatTimeUntilStart(c.startTime),
+                        participantCount: c.participants.length,
+                        problems: c.problemsList.length,
+                        rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."]
+                    };
+                });
+                activeContestsCount = enriched.filter(c => c.status === 'active').length;
+                const stats = await Contest.aggregate([
+                    { $project: { count: { $size: { $ifNull: ['$participants', []] } } } },
+                    { $group: { _id: null, total: { $sum: '$count' } } }
+                ]);
+                totalParticipants = stats.length > 0 ? stats[0].total : 0;
+                contests = enriched.filter(c => c.status === 'active').slice(0, 6);
+                const recentProblems = await Problem.find().sort({ createdAt: -1 }).limit(6);
+
+                // Fetch Recent Activity (Global)
+                const globalActivity = await Activity.find()
+                    .sort({ timestamp: -1 })
+                    .limit(10)
+                    .populate('userId');
+
+                const solvers = globalActivity.map(a => ({
+                    name: a.username,
+                    problem: a.problemTitle,
+                    time: formatTimeUntilStart(a.timestamp).replace('Starting soon', 'Just now'), // basic hack for "2m ago" style
+                    difficulty: a.difficulty
+                }));
+
+                // Fetch Popular Topics (By Problem Categories)
+                const topicAgg = await Problem.aggregate([
+                    { $group: { _id: "$category", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } },
+                    { $limit: 6 }
+                ]);
+                const topics = topicAgg.map(t => ({
+                    name: t._id || "General",
+                    count: t.count
+                }));
+
+                // Fetch Friends for Sidebar/Dashboard
+                const currentUser = await User.findOne({ username: req.session.user.username });
+                let friends = [];
+                if (currentUser) {
+                    const friendships = await Friendship.find({
+                        $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
+                        status: 'accepted'
+                    }).populate('requester recipient');
+
+                    friends = friendships.map(f => {
+                        const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                        const isOnline = global.isUserOnline(friend.username);
+                        return {
+                            name: friend.name,
+                            avatar: friend.name.split(' ').map(n => n[0]).join(''),
+                            mode: isOnline ? 'online' : 'offline',
+                            desc: isOnline ? 'Available' : 'Offline',
+                            color: isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'
+                        };
+                    });
+                }
+
+                return res.render('index', {
+                    currentPath: '/',
+                    contests,
+                    recentProblems,
+                    activeContestsCount,
+                    totalParticipants,
+                    solvers: solvers || [],
+                    topics: topics || [],
+                    friends: friends || []
+                });
+            } else {
+                const enriched = mockContests.map(c => ({
+                    ...c,
+                    status: getContestStatus(c.startTime, c.endTime),
                     timeLeft: formatTimeLeft(c.endTime),
                     timeUntilStart: formatTimeUntilStart(c.startTime),
                     participantCount: c.participants.length,
-                    problems: c.problemsList.length,
+                    problems: c.problemsList ? c.problemsList.length : 0,
                     rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."]
-                };
-            });
-            activeContestsCount = enriched.filter(c => c.status === 'active').length;
-            const stats = await Contest.aggregate([
-                { $project: { count: { $size: { $ifNull: ['$participants', []] } } } },
-                { $group: { _id: null, total: { $sum: '$count' } } }
-            ]);
-            totalParticipants = stats.length > 0 ? stats[0].total : 0;
-            contests = enriched.filter(c => c.status === 'active').slice(0, 6);
-            const recentProblems = await Problem.find().sort({ createdAt: -1 }).limit(6);
-
-            // Fetch Recent Activity (Global)
-            const globalActivity = await Activity.find()
-                .sort({ timestamp: -1 })
-                .limit(10)
-                .populate('userId');
-
-            const solvers = globalActivity.map(a => ({
-                name: a.username,
-                problem: a.problemTitle,
-                time: formatTimeUntilStart(a.timestamp).replace('Starting soon', 'Just now'), // basic hack for "2m ago" style
-                difficulty: a.difficulty
-            }));
-
-            // Fetch Popular Topics (By Problem Categories)
-            const topicAgg = await Problem.aggregate([
-                { $group: { _id: "$category", count: { $sum: 1 } } },
-                { $sort: { count: -1 } },
-                { $limit: 6 }
-            ]);
-            const topics = topicAgg.map(t => ({
-                name: t._id || "General",
-                count: t.count
-            }));
-
-            // Fetch Friends for Sidebar/Dashboard
-            const currentUser = await User.findOne({ username: req.session.user.username });
-            let friends = [];
-            if (currentUser) {
-                const friendships = await Friendship.find({
-                    $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
-                    status: 'accepted'
-                }).populate('requester recipient');
-
-                friends = friendships.map(f => {
-                    const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
-                    const isOnline = global.isUserOnline(friend.username);
-                    return {
-                        name: friend.name,
-                        avatar: friend.name.split(' ').map(n => n[0]).join(''),
-                        mode: isOnline ? 'online' : 'offline',
-                        desc: isOnline ? 'Available' : 'Offline',
-                        color: isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'
-                    };
+                }));
+                activeContestsCount = enriched.filter(c => c.status === 'active').length;
+                totalParticipants = mockContests.reduce((acc, c) => acc + c.participants.length, 0);
+                contests = enriched.filter(c => c.status === 'active').slice(0, 6);
+                return res.render('index', {
+                    currentPath: '/',
+                    contests,
+                    recentProblems: mockProblems.slice(0, 6),
+                    activeContestsCount,
+                    totalParticipants,
+                    solvers: [],
+                    topics: [],
+                    friends: []
                 });
             }
+        }
 
-            res.render('index', {
-                currentPath: '/',
-                contests,
-                recentProblems,
-                activeContestsCount,
-                totalParticipants,
-                solvers: solvers || [],
-                topics: topics || [],
-                friends: friends || []
-            });
+        // If user is NOT logged in (Guest), render landing page with dynamic stats
+        let activeContestsCount = 0;
+        let totalParticipants = 0;
+        let totalProblemsCount = 130;
+
+        if (dbConnected) {
+            try {
+                const allDocs = await Contest.find();
+                const enriched = allDocs.map(c => ({
+                    status: getContestStatus(c.startTime, c.endTime)
+                }));
+                activeContestsCount = enriched.filter(c => c.status === 'active').length;
+
+                const stats = await Contest.aggregate([
+                    { $project: { count: { $size: { $ifNull: ['$participants', []] } } } },
+                    { $group: { _id: null, total: { $sum: '$count' } } }
+                ]);
+                totalParticipants = stats.length > 0 ? stats[0].total : 0;
+
+                const problemCount = await Problem.countDocuments();
+                if (problemCount > 0) {
+                    totalProblemsCount = problemCount + 124;
+                }
+            } catch (e) {
+                console.error("Error fetching stats for landing:", e);
+            }
         } else {
-            const enriched = mockContests.map(c => ({
-                ...c,
-                status: getContestStatus(c.startTime, c.endTime),
-                timeLeft: formatTimeLeft(c.endTime),
-                timeUntilStart: formatTimeUntilStart(c.startTime),
-                participantCount: c.participants.length,
-                problems: c.problemsList ? c.problemsList.length : 0,
-                rules: c.rules ? c.rules.slice(0, 2) : ["Standard contest rules apply."]
-            }));
-            activeContestsCount = enriched.filter(c => c.status === 'active').length;
+            activeContestsCount = mockContests.filter(c => getContestStatus(c.startTime, c.endTime) === 'active').length;
             totalParticipants = mockContests.reduce((acc, c) => acc + c.participants.length, 0);
-            contests = enriched.filter(c => c.status === 'active').slice(0, 6);
+            totalProblemsCount = mockProblems.length + 124;
+        }
+
+        res.render('landing', {
+            activeContestsCount,
+            totalParticipants,
+            totalProblemsCount
+        });
+
+    } catch (err) {
+        console.error(err);
+        if (req.session && req.session.user) {
             res.render('index', {
                 currentPath: '/',
-                contests,
-                recentProblems: mockProblems.slice(0, 6),
-                activeContestsCount,
-                totalParticipants,
+                contests: [],
+                recentProblems: [],
+                activeContestsCount: 0,
+                totalParticipants: 0,
                 solvers: [],
                 topics: [],
                 friends: []
             });
+        } else {
+            res.render('landing', {
+                activeContestsCount: 0,
+                totalParticipants: 0,
+                totalProblemsCount: 130
+            });
         }
-    } catch (err) {
-        console.error(err);
-        res.render('index', {
-            currentPath: '/',
-            contests: [],
-            recentProblems: [],
-            activeContestsCount: 0,
-            totalParticipants: 0,
-            solvers: [],
-            topics: [],
-            friends: []
-        });
     }
+});
+
+app.get('/terms', (req, res) => {
+    res.render('terms');
+});
+
+app.get('/privacy', (req, res) => {
+    res.render('privacy');
+});
+
+app.get('/about', (req, res) => {
+    res.render('about');
+});
+
+app.get('/features', (req, res) => {
+    res.render('features');
+});
+
+app.get('/contact', (req, res) => {
+    res.render('contact');
 });
 
 app.get('/contests', requireAuth, async (req, res) => {
