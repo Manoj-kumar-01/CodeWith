@@ -7,6 +7,19 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     bio: String,
+    settings: {
+        language: { type: String, default: 'en' },
+        autoSave: { type: Boolean, default: true },
+        fontScale: { type: String, default: 'medium' },
+        pushNotifications: { type: Boolean, default: true },
+        emailNotifications: { type: Boolean, default: false },
+        soundEffects: { type: Boolean, default: true },
+        showOnlineStatus: { type: Boolean, default: true },
+        privateProfile: { type: Boolean, default: false },
+        codeFont: { type: String, default: 'jetbrains' },
+        showLineNumbers: { type: Boolean, default: true },
+        tabSize: { type: String, default: '4' }
+    },
     stats: {
         solved: { type: Number, default: 0 },
         streak: { type: Number, default: 0 },

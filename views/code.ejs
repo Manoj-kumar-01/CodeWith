@@ -536,14 +536,26 @@
                 container.innerHTML = '';
                 const lang = document.getElementById('lang-select')?.value || 'javascript';
 
+                const userSettings = <%- user && user.settings ? JSON.stringify(user.settings) : 'null' %>;
+                const fontMap = {
+                    'jetbrains': "'JetBrains Mono', monospace",
+                    'fira': "'Fira Code', monospace",
+                    'consolas': "'Consolas', monospace",
+                    'monaco': "'Monaco', monospace"
+                };
+                const fontFamily = userSettings && userSettings.codeFont ? fontMap[userSettings.codeFont] : "'Fira Code', monospace";
+                const showLines = userSettings && userSettings.showLineNumbers === false ? 'off' : 'on';
+                const tabSizeVal = userSettings && userSettings.tabSize ? parseInt(userSettings.tabSize) : 4;
+
                 editor = monaco.editor.create(container, {
                     value: starterCode[lang] || starterCode['js'] || defaultStarters[lang] || '',
                     language: monacoLangMap[lang] || lang,
                     theme: 'premium-dark',
                     automaticLayout: true,
                     fontSize: 14,
-                    fontFamily: "'Fira Code', monospace",
-                    lineNumbers: 'on',
+                    fontFamily: fontFamily,
+                    lineNumbers: showLines,
+                    tabSize: tabSizeVal,
                     roundedSelection: true,
                     scrollBeyondLastLine: false,
                     readOnly: false,

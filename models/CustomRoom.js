@@ -7,6 +7,7 @@ const customRoomSchema = new mongoose.Schema({
     size: { type: String, required: true, default: '6vs6' },
     map: { type: String, required: true, default: 'Bermuda' },
     status: { type: String, default: 'lobby' },
+    password: { type: String, default: '' },
     players: { type: Number, default: 1 },
     slots: { type: Object, default: {} },
     chat: [{

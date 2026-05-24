@@ -337,6 +337,9 @@
                                 <% } %>
                             </div>
                             <div class="flex items-center gap-2">
+                                <% if (room.password) { %>
+                                    <i data-lucide="lock" class="w-3.5 h-3.5 text-muted-foreground/60 mr-0.5 animate-pulse" title="Password Protected"></i>
+                                <% } %>
                                 <span class="flex items-center gap-1 text-[9px] text-success font-semibold">
                                     <div class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
                                     Live

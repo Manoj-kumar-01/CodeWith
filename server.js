@@ -38,7 +38,7 @@ const sessionMiddleware = session({
     resave: false,
     saveUninitialized: false,
     store: process.env.MONGO_URI ? MongoStore.create({ mongoUrl: process.env.MONGO_URI }) : new session.MemoryStore(),
-    cookie: { secure: false, maxAge: 1000 * 60 * 60 * 24 } // 1 day
+    cookie: { secure: false } // Session cookie: expires when browser closes
 });
 app.use(sessionMiddleware);
 
@@ -49,8 +49,19 @@ io.engine.use(sessionMiddleware);
 io.on('connection', (socket) => {
     const session = socket.request.session;
     if (session && session.user) {
-        socket.join('user_' + session.user.username); // Join personal room for invites
-        console.log('Socket connected for user:', session.user.username);
+        const username = session.user.username;
+        socket.join('user_' + username); // Join personal room for invites
+        console.log('Socket connected for user:', username);
+
+        // Track socket connection for online status
+        global.activeUserSockets = global.activeUserSockets || new Map();
+        if (!global.activeUserSockets.has(username)) {
+            global.activeUserSockets.set(username, new Set());
+        }
+        global.activeUserSockets.get(username).add(socket.id);
+        
+        // Update HTTP fallback timestamp
+        global.onlineUsers.set(username, Date.now());
     }
 
     socket.on('invite_friend', (data) => {
@@ -64,7 +75,18 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // Handle disconnect
+        if (session && session.user) {
+            const username = session.user.username;
+            const userSockets = global.activeUserSockets?.get(username);
+            if (userSockets) {
+                userSockets.delete(socket.id);
+                if (userSockets.size === 0) {
+                    global.activeUserSockets.delete(username);
+                    global.onlineUsers.delete(username);
+                    console.log('User went offline:', username);
+                }
+            }
+        }
     });
 });
 
@@ -73,17 +95,72 @@ global.onlineUsers = global.onlineUsers || new Map();
 
 // Helper function to check if a user is online
 global.isUserOnline = (username) => {
-    if (!global.onlineUsers) return false;
-    const lastActive = global.onlineUsers.get(username);
-    if (!lastActive) return false;
-    return (Date.now() - lastActive) < 10000; // 10 seconds threshold for responsiveness
+    if (global.activeUserSockets && global.activeUserSockets.has(username)) {
+        const sockets = global.activeUserSockets.get(username);
+        if (sockets && sockets.size > 0) return true;
+    }
+    if (global.onlineUsers) {
+        const lastActive = global.onlineUsers.get(username);
+        if (lastActive) {
+            return (Date.now() - lastActive) < 15000; // 15 seconds threshold for responsiveness
+        }
+    }
+    return false;
+};
+
+// Helper function to check if a user is in an active custom room lobby
+const getUserActiveRoom = async (username) => {
+    if (!dbConnected) return null;
+    try {
+        const rooms = await CustomRoom.find({ status: 'lobby' }).lean();
+        for (const r of rooms) {
+            if (r.slots) {
+                const inRoom = Object.values(r.slots).some(p => p && p.username === username);
+                if (inRoom) return r;
+            }
+        }
+    } catch (e) {
+        console.error('Error in getUserActiveRoom:', e);
+    }
+    return null;
 };
 
 // Middleware to inject user into views and track active online status
-app.use((req, res, next) => {
-    res.locals.user = req.session.user || null;
-    if (req.session && req.session.user) {
-        global.onlineUsers.set(req.session.user.username, Date.now());
+app.use(async (req, res, next) => {
+    try {
+        // Auto-login as guest_user for testing if guest=true query parameter is present and no user is logged in
+        if (req.query && req.query.guest === 'true' && (!req.session || !req.session.user)) {
+            if (dbConnected) {
+                let gUser = await User.findOne({ username: 'guest_user' });
+                if (!gUser) {
+                    const salt = await bcrypt.genSalt(10);
+                    const hashedGuestPassword = await bcrypt.hash('guest_secret_password', salt);
+                    gUser = new User({
+                        username: 'guest_user',
+                        name: 'Guest Player',
+                        email: 'guest@codewith.dev',
+                        password: hashedGuestPassword,
+                        uid: '9999999999'
+                    });
+                    await gUser.save();
+                }
+                req.session.user = gUser.toObject();
+            } else {
+                req.session.user = {
+                    username: 'guest_user',
+                    name: 'Guest Player',
+                    email: 'guest@codewith.dev',
+                    uid: '9999999999'
+                };
+            }
+        }
+
+        res.locals.user = req.session.user || null;
+        if (req.session && req.session.user) {
+            global.onlineUsers.set(req.session.user.username, Date.now());
+        }
+    } catch(err) {
+        console.error('Guest middleware login error:', err);
     }
     next();
 });
@@ -113,10 +190,10 @@ app.post('/login', async (req, res) => {
         const { username, password } = req.body;
         const user = await User.findOne({ username });
         if (!user) return res.render('login', { error: 'Invalid credentials' });
-        
+
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.render('login', { error: 'Invalid credentials' });
-        
+
         // Ensure user has a permanent 10-digit UID on login
         if (!user.uid) {
             let unique = false;
@@ -134,8 +211,9 @@ app.post('/login', async (req, res) => {
             user.uid = uid;
             await user.save();
         }
-        
+
         req.session.user = user;
+        res.cookie('fresh_login', 'true', { maxAge: 10000 });
         res.redirect('/');
     } catch (err) {
         console.error('Login error:', err);
@@ -153,10 +231,10 @@ app.post('/register', async (req, res) => {
         const { username, name, email, password } = req.body;
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) return res.render('register', { error: 'Email or username already exists' });
-        
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        
+
         const user = new User({
             username,
             name,
@@ -164,8 +242,9 @@ app.post('/register', async (req, res) => {
             password: hashedPassword
         });
         await user.save();
-        
+
         req.session.user = user;
+        res.cookie('fresh_login', 'true', { maxAge: 10000 });
         res.redirect('/');
     } catch (err) {
         console.error('Register error:', err);
@@ -620,7 +699,7 @@ const seedData = async () => {
         const userCount = await User.countDocuments();
         if (userCount === 0) {
             console.log('Seeding initial users...');
-            const mainUser = await User.create({ username: (req.session.user ? req.session.user.username : 'alexchen'), name: 'Alex Chen', email: 'alex@codewith.dev', stats: { rating: 1847, solved: 247 } });
+            const mainUser = await User.create({ username: 'alexchen', name: 'Alex Chen', email: 'alex@codewith.dev', stats: { rating: 1847, solved: 247 } });
             const dummy1 = await User.create({ username: 'sarahm', name: 'Sarah Miller', email: 'sarah@example.com', stats: { rating: 1650, solved: 189 } });
             const dummy2 = await User.create({ username: 'jordanl', name: 'Jordan Lee', email: 'jordan@example.com', stats: { rating: 1920, solved: 312 } });
             const dummy3 = await User.create({ username: 'priyas', name: 'Priya Sharma', email: 'priya@example.com', stats: { rating: 1780, solved: 256 } });
@@ -712,9 +791,12 @@ const getContestStatus = (startTime, endTime) => {
 app.get('/api/user/profile', requireAuth, async (req, res) => {
     try {
         let user;
+        const targetUsername = req.query.username || req.session.user.username;
+        const isOwnProfile = targetUsername === req.session.user.username;
+
         if (dbConnected) {
-            user = await User.findOne({ username: req.session.user.username });
-            if (user && !user.uid) {
+            user = await User.findOne({ username: targetUsername });
+            if (user && !user.uid && isOwnProfile) {
                 let unique = false;
                 let uid = '';
                 while (!unique) {
@@ -735,12 +817,21 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
 
         // Fallback or Mock data
         if (!user) {
+            if (req.query.username) {
+                return res.status(404).json({ error: 'User not found' });
+            }
             return res.json({
+                isOwnProfile: true,
                 user: { username: 'guest', name: 'Guest Coder', email: 'guest@codewith.dev', stats: { rating: 1200, solved: 0 } },
                 activity: [],
                 achievements: [],
                 heatmap: []
             });
+        }
+
+        // Private profile guard
+        if (!isOwnProfile && user.settings && user.settings.privateProfile === true) {
+            return res.status(403).json({ error: 'This profile is private' });
         }
 
         const heatmap = [];
@@ -755,8 +846,8 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
         let customRooms = [];
         if (dbConnected) {
             const allRooms = await CustomRoom.find({}).lean();
-            customRooms = allRooms.filter(r => 
-                r.host === user.username || 
+            customRooms = allRooms.filter(r =>
+                r.host === user.username ||
                 (r.slots && Object.values(r.slots).some(s => s.username === user.username))
             );
         }
@@ -774,10 +865,11 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
         ];
 
         res.json({
-            user: { 
-                ...user.toObject(), 
+            isOwnProfile,
+            user: {
+                ...user.toObject(),
                 joinedAt: user.createdAt || new Date(),
-                languages: user.languages || fallbackLanguages 
+                languages: user.languages || fallbackLanguages
             },
             activity: user.activity || [],
             achievements: fallbackAchievements,
@@ -790,11 +882,76 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
     }
 });
 
+// Get User Settings API
+app.get('/api/user/settings', requireAuth, async (req, res) => {
+    try {
+        if (!dbConnected) {
+            return res.json({
+                settings: {
+                    language: 'en',
+                    autoSave: true,
+                    fontScale: 'medium',
+                    pushNotifications: true,
+                    emailNotifications: false,
+                    soundEffects: true,
+                    showOnlineStatus: true,
+                    privateProfile: false,
+                    codeFont: 'jetbrains',
+                    showLineNumbers: true,
+                    tabSize: '4'
+                }
+            });
+        }
+        const user = await User.findOne({ username: req.session.user.username });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        // Initialize default settings if missing
+        const settings = user.settings || {
+            language: 'en',
+            autoSave: true,
+            fontScale: 'medium',
+            pushNotifications: true,
+            emailNotifications: false,
+            soundEffects: true,
+            showOnlineStatus: true,
+            privateProfile: false,
+            codeFont: 'jetbrains',
+            showLineNumbers: true,
+            tabSize: '4'
+        };
+        res.json({ settings });
+    } catch (err) {
+        console.error('Settings GET API error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Update User Settings API
+app.post('/api/user/settings', requireAuth, async (req, res) => {
+    try {
+        if (!dbConnected) return res.status(500).json({ error: 'DB not connected' });
+        const user = await User.findOne({ username: req.session.user.username });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Update settings fields safely
+        user.settings = {
+            ...user.settings,
+            ...req.body
+        };
+        await user.save();
+        req.session.user = user; // Sync session state
+        res.json({ success: true, settings: user.settings });
+    } catch (err) {
+        console.error('Settings Update Error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 app.post('/api/user/profile', requireAuth, async (req, res) => {
     try {
         if (!dbConnected) return res.status(500).json({ error: 'DB not connected' });
         const { name, bio, social, skills } = req.body;
-        
+
         const updateData = {};
         if (name !== undefined) updateData.name = name;
         if (bio !== undefined) updateData.bio = bio;
@@ -846,28 +1003,51 @@ app.get('/api/friends', requireAuth, async (req, res) => {
         let pendingReceived = [];
         let pendingSent = [];
         const relatedUserIds = new Set();
-        friendships.forEach(f => {
+        const currentUserActiveRoom = await getUserActiveRoom(currentUser.username);
+
+        await Promise.all(friendships.map(async f => {
             if (f.status === 'accepted') {
-                const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
+                const requesterId = f.requester?._id || f.requester;
+                const friend = (requesterId && requesterId.toString() === currentUser._id.toString()) ? f.recipient : f.requester;
                 if (friend) {
-                    const isOnline = global.isUserOnline(friend.username);
-                    friends.push({ id: friend._id, name: friend.name, username: friend.username, status: isOnline ? 'online' : 'offline', rating: friend.stats?.rating || 1200, solved: friend.stats?.solved || 0 });
+                    const showOnline = friend.settings && friend.settings.showOnlineStatus !== false;
+                    const isOnline = showOnline ? global.isUserOnline(friend.username) : false;
+                    const activeRoom = await getUserActiveRoom(friend.username);
+                    const inSameRoom = activeRoom && currentUserActiveRoom && (activeRoom.id === currentUserActiveRoom.id);
+                    const statusDesc = activeRoom ? "In Room" : (isOnline ? "Available" : "Offline");
+                    
+                    friends.push({
+                        id: friend._id,
+                        name: friend.name,
+                        username: friend.username,
+                        status: isOnline ? 'online' : 'offline',
+                        rating: friend.stats?.rating || 1200,
+                        solved: friend.stats?.solved || 0,
+                        inRoom: !!activeRoom,
+                        inSameRoom: !!inSameRoom,
+                        roomId: activeRoom ? activeRoom.id : null,
+                        desc: statusDesc,
+                        color: activeRoom ? 'bg-blue-500' : (isOnline ? 'bg-emerald-500' : 'bg-[#515f74]')
+                    });
                     relatedUserIds.add(friend._id.toString());
                 }
             } else if (f.status === 'pending') {
-                if (f.requester._id.equals(currentUser._id)) {
+                const requesterId = f.requester?._id || f.requester;
+                const recipientId = f.recipient?._id || f.recipient;
+
+                if (requesterId && currentUser._id && requesterId.toString() === currentUser._id.toString()) {
                     if (f.recipient) {
-                        pendingSent.push({ id: f.recipient._id, name: f.recipient.name, username: f.recipient.username, rating: f.recipient.stats?.rating || 1200 });
-                        relatedUserIds.add(f.recipient._id.toString());
+                        pendingSent.push({ id: recipientId, name: f.recipient.name, username: f.recipient.username, rating: f.recipient.stats?.rating || 1200 });
+                        relatedUserIds.add(recipientId.toString());
                     }
                 } else {
                     if (f.requester) {
-                        pendingReceived.push({ id: f.requester._id, name: f.requester.name, username: f.requester.username, rating: f.requester.stats?.rating || 1200 });
-                        relatedUserIds.add(f.requester._id.toString());
+                        pendingReceived.push({ id: requesterId, name: f.requester.name, username: f.requester.username, rating: f.requester.stats?.rating || 1200 });
+                        relatedUserIds.add(requesterId.toString());
                     }
                 }
             }
-        });
+        }));
 
         let suggestions = allUsers.filter(u => !relatedUserIds.has(u._id.toString())).map(u => ({
             id: u._id, name: u.name, username: u.username, rating: u.stats?.rating || 1200, solved: u.stats?.solved || 0
@@ -888,7 +1068,7 @@ app.post('/api/friends/request', async (req, res) => {
         if (!dbConnected) return res.status(400).json({ error: 'DB disconnected' });
         const { userId, uid } = req.body;
         const currentUser = await User.findOne({ username: req.session.user.username });
-        
+
         let recipientUser;
         if (uid) {
             recipientUser = await User.findOne({ uid: uid.trim() });
@@ -900,15 +1080,15 @@ app.post('/api/friends/request', async (req, res) => {
                 recipientUser = await User.findById(trimmedId);
             }
         }
-        
+
         if (!recipientUser) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
+
         if (recipientUser._id.equals(currentUser._id)) {
             return res.status(400).json({ error: 'You cannot add yourself as a friend' });
         }
-        
+
         // Check if friendship already exists
         const existingFriendship = await Friendship.findOne({
             $or: [
@@ -916,7 +1096,7 @@ app.post('/api/friends/request', async (req, res) => {
                 { requester: recipientUser._id, recipient: currentUser._id }
             ]
         });
-        
+
         if (existingFriendship) {
             if (existingFriendship.status === 'accepted') {
                 return res.status(400).json({ error: 'You are already friends with this user' });
@@ -930,7 +1110,7 @@ app.post('/api/friends/request', async (req, res) => {
                 }
             }
         }
-        
+
         await Friendship.create({ requester: currentUser._id, recipient: recipientUser._id, status: 'pending' });
         res.json({ success: true, message: 'Friend request sent' });
     } catch (err) {
@@ -1049,22 +1229,61 @@ app.get('/', async (req, res) => {
                 // Fetch Friends for Sidebar/Dashboard
                 const currentUser = await User.findOne({ username: req.session.user.username });
                 let friends = [];
+                let offlineFriends = [];
                 if (currentUser) {
                     const friendships = await Friendship.find({
                         $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
                         status: 'accepted'
                     }).populate('requester recipient');
 
-                    friends = friendships.map(f => {
+                    const currentUserActiveRoom = await getUserActiveRoom(currentUser.username);
+
+                    await Promise.all(friendships.map(async f => {
                         const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
-                        const isOnline = global.isUserOnline(friend.username);
-                        return {
-                            name: friend.name,
-                            avatar: friend.name.split(' ').map(n => n[0]).join(''),
-                            mode: isOnline ? 'online' : 'offline',
-                            desc: isOnline ? 'Available' : 'Offline',
-                            color: isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'
-                        };
+                        if (friend) {
+                            const showOnline = friend.settings && friend.settings.showOnlineStatus !== false;
+                            const isOnline = showOnline ? global.isUserOnline(friend.username) : false;
+                            const activeRoom = await getUserActiveRoom(friend.username);
+                            const inSameRoom = activeRoom && currentUserActiveRoom && (activeRoom.id === currentUserActiveRoom.id);
+                            const statusDesc = activeRoom ? "In Room" : (isOnline ? "Available" : "Offline");
+                            const fData = {
+                                username: friend.username,
+                                name: friend.name,
+                                avatar: friend.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
+                                mode: isOnline ? 'online' : 'offline',
+                                desc: statusDesc,
+                                color: activeRoom ? 'bg-blue-500' : (isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'),
+                                inRoom: !!activeRoom,
+                                inSameRoom: !!inSameRoom,
+                                roomId: activeRoom ? activeRoom.id : null
+                            };
+                            if (isOnline || activeRoom) {
+                                friends.push(fData);
+                            } else {
+                                offlineFriends.push(fData);
+                            }
+                        }
+                    }));
+                }
+
+                // ADD GUEST USER FOR TESTING (if online)
+                if (global.isUserOnline('guest_user')) {
+                    friends.push({
+                        username: 'guest_user',
+                        name: 'Guest Player',
+                        avatar: 'GP',
+                        mode: 'online',
+                        desc: 'Available',
+                        color: 'bg-emerald-500'
+                    });
+                } else {
+                    offlineFriends.push({
+                        username: 'guest_user',
+                        name: 'Guest Player',
+                        avatar: 'GP',
+                        mode: 'offline',
+                        desc: 'Offline',
+                        color: 'bg-[#515f74]'
                     });
                 }
 
@@ -1076,7 +1295,8 @@ app.get('/', async (req, res) => {
                     totalParticipants,
                     solvers: solvers || [],
                     topics: topics || [],
-                    friends: friends || []
+                    friends: friends || [],
+                    offlineFriends: offlineFriends || []
                 });
             } else {
                 const enriched = mockContests.map(c => ({
@@ -1855,7 +2075,8 @@ app.get('/custom', requireAuth, async (req, res) => {
                 }).populate('requester recipient');
                 friends = friendships.map(f => {
                     const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
-                    return { username: friend.username, name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: 'online', desc: 'Available', color: 'bg-[#515f74]' };
+                    const showOnline = friend.settings && friend.settings.showOnlineStatus !== false;
+                    return { username: friend.username, name: friend.name, avatar: friend.name.split(' ').map(n => n[0]).join(''), mode: showOnline ? 'online' : 'offline', desc: 'Available', color: 'bg-[#515f74]' };
                 });
             }
         }
@@ -1873,15 +2094,15 @@ app.get('/custom', requireAuth, async (req, res) => {
         let rooms = [];
         let totalOnline = 0;
         let hotBattles = 0;
-        
+
         if (dbConnected) {
             rooms = await CustomRoom.find({}).lean();
-            
+
             // Calculate dynamic stats
             totalOnline = rooms.reduce((acc, room) => acc + (room.players || 0), 0);
             hotBattles = rooms.filter(room => room.players >= Math.floor(parseInt(room.size.charAt(0)) * 0.75) || room.players > 1).length;
         }
-        
+
         // Add current user guest and friends online count
         const friendsOnlineCount = friends.filter(f => f.mode === 'online').length;
         totalOnline += friendsOnlineCount; // Baseline online users
@@ -1894,7 +2115,7 @@ app.get('/custom', requireAuth, async (req, res) => {
 
 app.post('/custom/create', requireAuth, async (req, res) => {
     try {
-        const { roomName, teamFormat, environment } = req.body;
+        const { roomName, teamFormat, environment, password } = req.body;
         const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
 
         // Check 3-minute cooldown
@@ -1916,12 +2137,13 @@ app.post('/custom/create', requireAuth, async (req, res) => {
             map: environment || 'Bermuda',
             status: 'lobby',
             players: 1,
+            password: password || '',
             slots: {
                 'team1-1': {
                     username: currentUsername,
                     name: req.session.user ? req.session.user.name : 'Guest Player',
                     role: 'Room Owner',
-                    avatar: req.session.user ? req.session.user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP',
+                    avatar: req.session.user ? req.session.user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'GP',
                     isHost: true
                 }
             },
@@ -1960,7 +2182,7 @@ app.get('/custom/room/:id', requireAuth, async (req, res) => {
         if (!room.slots || Object.keys(room.slots).length === 0) {
             const hostUser = await User.findOne({ username: room.host });
             const hostName = hostUser ? hostUser.name : 'Guest Player';
-            const hostAvatar = hostUser ? hostUser.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP';
+            const hostAvatar = hostUser ? hostUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'GP';
             room.slots = {
                 'team1-1': { username: room.host, name: hostName, role: 'Room Owner', avatar: hostAvatar, isHost: true }
             };
@@ -1968,6 +2190,14 @@ app.get('/custom/room/:id', requireAuth, async (req, res) => {
 
         // Check if the current user is already in any slot
         const isUserInRoom = Object.values(room.slots).some(p => p && p.username === currentUsername);
+
+        // Security check: If room is password-protected, verify the user has authorization
+        if (room.password && !isUserInRoom && currentUsername !== room.host) {
+            const isVerified = req.session.verifiedRooms && req.session.verifiedRooms[id];
+            if (!isVerified) {
+                return res.render('custom-room-password', { room });
+            }
+        }
 
         if (!isUserInRoom && currentUsername !== room.host) {
             // Only add NON-host users as new players
@@ -1983,7 +2213,7 @@ app.get('/custom/room/:id', requireAuth, async (req, res) => {
                     username: currentUsername,
                     name: req.session.user ? req.session.user.name : 'Guest Player',
                     role: 'Player',
-                    avatar: req.session.user ? req.session.user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP',
+                    avatar: req.session.user ? req.session.user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'GP',
                     isHost: false
                 };
                 room.players++;
@@ -2002,7 +2232,7 @@ app.get('/custom/room/:id', requireAuth, async (req, res) => {
                     username: currentUsername,
                     name: req.session.user ? req.session.user.name : 'Guest Player',
                     role: 'Room Owner',
-                    avatar: req.session.user ? req.session.user.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'GP',
+                    avatar: req.session.user ? req.session.user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'GP',
                     isHost: true
                 };
             }
@@ -2023,26 +2253,35 @@ app.get('/custom/room/:id', requireAuth, async (req, res) => {
                     $or: [{ requester: currentUser._id }, { recipient: currentUser._id }],
                     status: 'accepted'
                 }).populate('requester recipient');
-                
-                friendships.forEach(f => {
+
+                const currentUserActiveRoom = await getUserActiveRoom(currentUser.username);
+
+                await Promise.all(friendships.map(async f => {
                     const friend = f.requester._id.equals(currentUser._id) ? f.recipient : f.requester;
                     if (friend) {
-                        const isOnline = global.isUserOnline(friend.username);
+                        const showOnline = friend.settings && friend.settings.showOnlineStatus !== false;
+                        const isOnline = showOnline ? global.isUserOnline(friend.username) : false;
+                        const activeRoom = await getUserActiveRoom(friend.username);
+                        const inSameRoom = activeRoom && currentUserActiveRoom && (activeRoom.id === currentUserActiveRoom.id);
+                        const statusDesc = activeRoom ? "In Room" : (isOnline ? "Available" : "Offline");
                         const fData = {
                             username: friend.username,
                             name: friend.name,
                             avatar: friend.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
                             mode: isOnline ? 'online' : 'offline',
-                            desc: isOnline ? 'Available' : 'Offline',
-                            color: isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'
+                            desc: statusDesc,
+                            color: activeRoom ? 'bg-blue-500' : (isOnline ? 'bg-emerald-500' : 'bg-[#515f74]'),
+                            inRoom: !!activeRoom,
+                            inSameRoom: !!inSameRoom,
+                            roomId: activeRoom ? activeRoom.id : null
                         };
-                        if (isOnline) {
+                        if (isOnline || activeRoom) {
                             friends.push(fData);
                         } else {
                             offlineFriends.push(fData);
                         }
                     }
-                });
+                }));
             }
         }
 
@@ -2073,20 +2312,53 @@ app.get('/custom/room/:id', requireAuth, async (req, res) => {
     }
 });
 
+app.post('/custom/room/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+
+        let room = null;
+        if (dbConnected) {
+            room = await CustomRoom.findOne({ id }).lean();
+        }
+
+        if (!room) {
+            return res.redirect('/custom?error=room_not_found');
+        }
+
+        if (room.password && room.password === password) {
+            req.session.verifiedRooms = req.session.verifiedRooms || {};
+            req.session.verifiedRooms[id] = true;
+            return res.redirect(`/custom/room/${id}`);
+        } else {
+            return res.render('custom-room-password', { room, error: 'Incorrect Security Code. Please try again.' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error validating room password');
+    }
+});
+
 app.post('/api/custom/room/:id/settings', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, map, size } = req.body;
+        const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
 
         if (dbConnected) {
-            const updatedRoom = await CustomRoom.findOneAndUpdate(
-                { id },
-                { name, map, size },
-                { new: true }
-            );
-            if (updatedRoom) return res.json({ success: true, room: updatedRoom });
+            const room = await CustomRoom.findOne({ id });
+            if (!room) return res.json({ success: false, error: 'Room not found' });
+            if (room.host !== currentUsername) {
+                return res.status(403).json({ success: false, error: 'Only the host can modify settings' });
+            }
+
+            room.name = name;
+            room.map = map;
+            room.size = size;
+            await room.save();
+            return res.json({ success: true, room });
         }
-        res.json({ success: false, error: 'Room not found or DB not connected' });
+        res.json({ success: false, error: 'DB not connected' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to update settings' });
     }
@@ -2095,7 +2367,18 @@ app.post('/api/custom/room/:id/settings', requireAuth, async (req, res) => {
 app.get('/api/custom/room/:id/state', requireAuth, async (req, res) => {
     if (dbConnected) {
         const room = await CustomRoom.findOne({ id: req.params.id }).lean();
-        if (room) return res.json(room);
+        if (room) {
+            const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
+            const isUserInRoom = Object.values(room.slots).some(p => p && p.username === currentUsername);
+            const isHost = room.host === currentUsername;
+
+            if (!isUserInRoom && !isHost) {
+                return res.status(403).json({ error: 'Access denied: You are not a member of this room' });
+            }
+
+            delete room.password; // Ensure password is never leaked
+            return res.json(room);
+        }
     }
     res.status(404).json({ error: 'Room not found' });
 });
@@ -2105,7 +2388,7 @@ app.post('/api/custom/room/:id/action', requireAuth, async (req, res) => {
         // Handle sendBeacon which sends as text/plain
         let body = req.body;
         if (typeof body === 'string') {
-            try { body = JSON.parse(body); } catch(e) { return res.status(400).json({ error: 'Invalid JSON' }); }
+            try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); }
         }
         const { action, payload } = body;
         const { id } = req.params;
@@ -2114,6 +2397,14 @@ app.post('/api/custom/room/:id/action', requireAuth, async (req, res) => {
 
         const room = await CustomRoom.findOne({ id });
         if (!room) return res.status(404).json({ error: 'Room not found' });
+
+        const currentUsername = req.session.user ? req.session.user.username : 'guest_user';
+        const isUserInRoom = Object.values(room.slots).some(p => p && p.username === currentUsername);
+        const isHost = room.host === currentUsername;
+
+        if (!isUserInRoom && !isHost) {
+            return res.status(403).json({ error: 'Access denied: You are not a member of this room' });
+        }
 
         if (action === 'move') {
             const { from, to, player } = payload;

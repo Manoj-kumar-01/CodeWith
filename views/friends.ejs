@@ -138,18 +138,22 @@
             setInterval(() => {
                 const searchInput = document.getElementById('friends-search');
                 const searchVal = searchInput ? searchInput.value : '';
-                fetchFriends(searchVal || undefined);
+                fetchFriends(searchVal || undefined, true);
             }, 4000);
 
-            function fetchFriends(search) {
+            function fetchFriends(search, isPolling = false) {
                 const params = new URLSearchParams();
                 if (search) params.set('search', search);
                 fetch('/api/friends?' + params.toString())
                     .then(r => r.json())
                     .then(data => {
+                        // Deep comparison to skip re-rendering if data is structurally identical
+                        if (isPolling && friendsData && JSON.stringify(data) === JSON.stringify(friendsData)) {
+                            return;
+                        }
                         friendsData = data;
                         updateCounts(data.counts);
-                        renderTab();
+                        renderTab(isPolling);
                     });
             }
 
@@ -184,7 +188,7 @@
                         badge.classList.add('bg-primary/20');
                     }
                 }
-                renderTab();
+                renderTab(false);
             }
 
             function handleSearch(val) {
@@ -192,22 +196,22 @@
                 searchTimeout = setTimeout(() => fetchFriends(val), 250);
             }
 
-            function renderTab() {
+            function renderTab(isPolling = false) {
                 if (!friendsData) return;
                 const content = document.getElementById('friends-content');
 
                 switch (currentTab) {
                     case 'online':
-                        renderFriendCards(friendsData.onlineFriends, 'Online', 'online');
+                        renderFriendCards(friendsData.onlineFriends, 'Online', 'online', isPolling);
                         break;
                     case 'all':
-                        renderFriendCards(friendsData.friends, 'All Friends', 'all');
+                        renderFriendCards(friendsData.friends, 'All Friends', 'all', isPolling);
                         break;
                     case 'pending':
-                        renderPending();
+                        renderPending(isPolling);
                         break;
                     case 'suggestions':
-                        renderSuggestions();
+                        renderSuggestions(isPolling);
                         break;
                 }
                 lucide.createIcons();
@@ -222,7 +226,7 @@
                 return '<div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full ' + cls + ' ring-2 ring-[hsl(var(--card))]"></div>';
             }
 
-            function renderFriendCards(friends, label, type) {
+            function renderFriendCards(friends, label, type, isPolling = false) {
                 const content = document.getElementById('friends-content');
                 if (!friends || friends.length === 0) {
                     content.innerHTML =
@@ -245,8 +249,11 @@
                     const statusColor = isOnline ? 'text-emerald-400' : 'text-muted-foreground/50';
                     const statusDot = isOnline ? '<div class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>' : '<div class="w-1.5 h-1.5 rounded-full bg-white/10"></div>';
                     
+                    const animClass = isPolling ? '' : 'card-animate';
+                    const animDelay = isPolling ? '' : 'style="animation-delay:' + (i * 0.04) + 's"';
+                    
                     html +=
-                        '<div class="friend-row group card-animate bg-transparent hover:bg-white/[0.02] transition-all overflow-hidden" style="animation-delay:' + (i * 0.04) + 's">' +
+                        '<div class="friend-row group ' + animClass + ' bg-transparent hover:bg-white/[0.02] transition-all overflow-hidden" ' + animDelay + '>' +
                             '<div class="flex items-center justify-between p-3.5 cursor-pointer select-none" onclick="toggleFriendActions(\'' + f.id + '\')">' +
                                 '<div class="flex items-center gap-3">' +
                                     statusDot +
@@ -293,7 +300,7 @@
                 }
             }
 
-            function renderPending() {
+            function renderPending(isPolling = false) {
                 const content = document.getElementById('friends-content');
                 const received = friendsData.pendingReceived || [];
                 const sent = friendsData.pendingSent || [];
@@ -314,8 +321,10 @@
                     html += '<h2 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 border-b border-white/5 pb-2">Incoming Requests • ' + received.length + '</h2>';
                     html += '<div class="space-y-1.5 mb-10">';
                     received.forEach((f, i) => {
+                        const animClass = isPolling ? '' : 'card-animate';
+                        const animDelay = isPolling ? '' : 'style="animation-delay:' + (i * 0.04) + 's"';
                         html +=
-                            '<div class="friend-row group card-animate bg-white/[0.02] border border-white/5 rounded-xl transition-all" style="animation-delay:' + (i * 0.04) + 's">' +
+                            '<div class="friend-row group ' + animClass + ' bg-white/[0.02] border border-white/5 rounded-xl transition-all" ' + animDelay + '>' +
                                 '<div class="flex items-center justify-between p-3.5">' +
                                     '<div class="flex items-center gap-3">' +
                                         '<div class="w-2 h-2 rounded-full bg-amber-400"></div>' +
@@ -336,8 +345,10 @@
                     html += '<h2 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 border-b border-white/5 pb-2">Sent Requests • ' + sent.length + '</h2>';
                     html += '<div class="space-y-1.5">';
                     sent.forEach((f, i) => {
+                        const animClass = isPolling ? '' : 'card-animate';
+                        const animDelay = isPolling ? '' : 'style="animation-delay:' + (i * 0.04) + 's"';
                         html +=
-                            '<div class="friend-row group card-animate bg-white/[0.02] border border-white/5 rounded-xl transition-all" style="animation-delay:' + (i * 0.04) + 's">' +
+                            '<div class="friend-row group ' + animClass + ' bg-white/[0.02] border border-white/5 rounded-xl transition-all" ' + animDelay + '>' +
                                 '<div class="flex items-center justify-between p-3.5">' +
                                     '<div class="flex items-center gap-3">' +
                                         '<div class="w-2 h-2 rounded-full bg-white/10"></div>' +
@@ -355,12 +366,15 @@
                 lucide.createIcons();
             }
 
-            function renderSuggestions() {
+            function renderSuggestions(isPolling = false) {
                 const content = document.getElementById('friends-content');
                 const suggestions = friendsData.suggestions || [];
 
+                const animClass = isPolling ? '' : 'card-animate';
+                const animDelay = isPolling ? '' : 'style="animation-delay:0s"';
+
                 let html = `
-                    <div class="glass-card p-5 mb-6 border border-primary/20 bg-primary/5 hover:border-primary/30 transition-all card-animate" style="animation-delay:0s">
+                    <div class="glass-card p-5 mb-6 border border-primary/20 bg-primary/5 hover:border-primary/30 transition-all ${animClass}" ${animDelay}>
                         <h3 class="text-xs font-bold text-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
                             <i data-lucide="user-plus" class="w-4 h-4 text-primary animate-pulse"></i> Add Friend by 10-Digit ID
                         </h3>
@@ -389,8 +403,10 @@
                     html += '<div class="space-y-1.5">';
 
                     suggestions.forEach((f, i) => {
+                        const itemAnimClass = isPolling ? '' : 'card-animate';
+                        const itemAnimDelay = isPolling ? '' : 'style="animation-delay:' + ((i + 1) * 0.04) + 's"';
                         html +=
-                            '<div class="friend-row group card-animate bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl transition-all" style="animation-delay:' + ((i + 1) * 0.04) + 's">' +
+                            '<div class="friend-row group ' + itemAnimClass + ' bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl transition-all" ' + itemAnimDelay + '>' +
                                 '<div class="flex items-center justify-between p-3.5">' +
                                     '<div class="flex items-center gap-3">' +
                                         '<div class="w-2 h-2 rounded-full bg-primary/40"></div>' +

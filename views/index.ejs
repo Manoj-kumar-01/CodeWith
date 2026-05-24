@@ -256,7 +256,10 @@
                             <!-- Friends Panel Overlay -->
                             <aside id="friends-aside"
                                 class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-2xl hidden">
-                                <%- include('partials/friends-panel', { friends: typeof friends !== 'undefined' ? friends : [] }) %>
+                                <%- include('partials/friends-panel', { 
+                                    friends: typeof friends !== 'undefined' ? friends : [], 
+                                    offlineFriends: typeof offlineFriends !== 'undefined' ? offlineFriends : [] 
+                                }) %>
                             </aside>
                         </div>
                     </div>

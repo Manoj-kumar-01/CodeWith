@@ -61,7 +61,7 @@
     <% } %>
 
     <!-- Register Form -->
-    <form action="/register" method="POST" class="space-y-4">
+    <form action="/register" method="POST" onsubmit="sessionStorage.setItem('active_session', 'true')" class="space-y-4">
       
       <!-- Full Name Field -->
       <div class="space-y-1.5">

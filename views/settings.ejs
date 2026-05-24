@@ -84,7 +84,7 @@
                                                 <div class="text-sm text-muted-foreground">Select your preferred
                                                     language</div>
                                             </div>
-                                            <select
+                                            <select id="settings-language"
                                                 class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
                                                 <option value="en">English</option>
                                                 <option value="es">Spanish</option>
@@ -100,7 +100,7 @@
                                                 <div class="text-sm text-muted-foreground">Automatically save your
                                                     coding progress</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-auto-save" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
@@ -120,7 +120,7 @@
                                         <div class="flex items-center justify-between p-4 rounded-lg bg-card/50">
                                             <div class="flex-1 min-w-0 mr-4">
                                                 <div class="font-medium text-foreground flex items-center gap-2">Dark
-                                                    Mode</div>
+                                                     Mode</div>
                                                 <div class="text-sm text-muted-foreground">Dark theme is always active
                                                 </div>
                                             </div>
@@ -133,9 +133,9 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="font-medium text-foreground">Font Size</div>
                                                 <div class="text-sm text-muted-foreground">Adjust the interface font
-                                                    size</div>
+                                                     size</div>
                                             </div>
-                                            <select
+                                            <select id="settings-font-scale"
                                                 class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
                                                 <option value="small">Small</option>
                                                 <option value="medium" selected>Medium</option>
@@ -159,7 +159,7 @@
                                                 <div class="text-sm text-muted-foreground">Receive push notifications
                                                     for contests and updates</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-push" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
@@ -173,7 +173,7 @@
                                                 <div class="text-sm text-muted-foreground">Receive email updates about
                                                     your progress</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-email" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-secondary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-1">
@@ -187,7 +187,7 @@
                                                 <div class="text-sm text-muted-foreground">Play sounds for achievements
                                                     and notifications</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-sound" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
@@ -210,7 +210,7 @@
                                                 <div class="text-sm text-muted-foreground">Let others see when you're
                                                     online</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-show-online" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
@@ -224,7 +224,7 @@
                                                 <div class="text-sm text-muted-foreground">Hide your profile from other
                                                     users</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-private-profile" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-secondary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-1">
@@ -247,7 +247,7 @@
                                                 <div class="text-sm text-muted-foreground">Choose your preferred coding
                                                     font</div>
                                             </div>
-                                            <select
+                                            <select id="settings-code-font"
                                                 class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
                                                 <option value="jetbrains">JetBrains Mono</option>
                                                 <option value="fira">Fira Code</option>
@@ -262,7 +262,7 @@
                                                 <div class="text-sm text-muted-foreground">Display line numbers in the
                                                     editor</div>
                                             </div>
-                                            <button onclick="toggleSwitch(this)"
+                                            <button id="settings-show-lines" onclick="toggleSwitch(this)"
                                                 class="relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 bg-primary">
                                                 <div
                                                     class="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 translate-x-8">
@@ -276,7 +276,7 @@
                                                 <div class="text-sm text-muted-foreground">Number of spaces per tab
                                                 </div>
                                             </div>
-                                            <select
+                                            <select id="settings-tab-size"
                                                 class="bg-secondary text-foreground px-3 py-2 rounded-lg border border-border/30 outline-none flex-shrink-0">
                                                 <option value="2">2 spaces</option>
                                                 <option value="4" selected>4 spaces</option>
@@ -288,52 +288,161 @@
 
                                 <!-- Save -->
                                 <div class="mt-8 pt-6 border-t border-border/30">
-                                    <button
+                                    <button id="save-settings-btn" onclick="saveUserSettings()"
                                         class="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
                                         <i data-lucide="save" class="w-5 h-5"></i> Save Changes
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
+    </div>
+</div>
 
-        <script>
-            function showTab(id) {
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                document.getElementById('tab-' + id).classList.remove('hidden');
-                document.querySelectorAll('.settings-tab').forEach(btn => {
-                    btn.classList.remove('bg-primary/20', 'text-primary');
-                    btn.classList.add('text-muted-foreground', 'hover:bg-secondary/50', 'hover:text-foreground');
-                });
-                const active = document.querySelector('.settings-tab[data-tab="' + id + '"]');
-                if (active) {
-                    active.classList.add('bg-primary/20', 'text-primary');
-                    active.classList.remove('text-muted-foreground', 'hover:bg-secondary/50', 'hover:text-foreground');
-                }
+<script>
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('tab-' + id).classList.remove('hidden');
+        document.querySelectorAll('.settings-tab').forEach(btn => {
+            btn.classList.remove('bg-primary/20', 'text-primary');
+            btn.classList.add('text-muted-foreground', 'hover:bg-secondary/50', 'hover:text-foreground');
+        });
+        const active = document.querySelector('.settings-tab[data-tab="' + id + '"]');
+        if (active) {
+            active.classList.add('bg-primary/20', 'text-primary');
+            active.classList.remove('text-muted-foreground', 'hover:bg-secondary/50', 'hover:text-foreground');
+        }
+    }
+
+    function toggleSwitch(btn) {
+        const dot = btn.querySelector('div');
+        const isOn = btn.classList.contains('bg-primary');
+        if (isOn) {
+            btn.classList.remove('bg-primary');
+            btn.classList.add('bg-secondary');
+            dot.classList.remove('translate-x-8');
+            dot.classList.add('translate-x-1');
+        } else {
+            btn.classList.remove('bg-secondary');
+            btn.classList.add('bg-primary');
+            dot.classList.remove('translate-x-1');
+            dot.classList.add('translate-x-8');
+        }
+    }
+
+    function setSwitchState(btn, isOn) {
+        if (!btn) return;
+        const dot = btn.querySelector('div');
+        if (isOn) {
+            btn.classList.remove('bg-secondary');
+            btn.classList.add('bg-primary');
+            if (dot) {
+                dot.classList.remove('translate-x-1');
+                dot.classList.add('translate-x-8');
             }
-
-            function toggleSwitch(btn) {
-                const dot = btn.querySelector('div');
-                const isOn = btn.classList.contains('bg-primary');
-                if (isOn) {
-                    btn.classList.remove('bg-primary');
-                    btn.classList.add('bg-secondary');
-                    dot.classList.remove('translate-x-8');
-                    dot.classList.add('translate-x-1');
-                } else {
-                    btn.classList.remove('bg-secondary');
-                    btn.classList.add('bg-primary');
-                    dot.classList.remove('translate-x-1');
-                    dot.classList.add('translate-x-8');
-                }
+        } else {
+            btn.classList.remove('bg-primary');
+            btn.classList.add('bg-secondary');
+            if (dot) {
+                dot.classList.remove('translate-x-8');
+                dot.classList.add('translate-x-1');
             }
+        }
+    }
 
-            document.addEventListener('turbo:load', () => {
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+    function getSwitchState(btn) {
+        if (!btn) return false;
+        return btn.classList.contains('bg-primary');
+    }
+
+    function loadSettings() {
+        fetch('/api/user/settings')
+            .then(r => r.json())
+            .then(data => {
+                const s = data.settings || {};
+                
+                const langSelect = document.getElementById('settings-language');
+                if (langSelect) langSelect.value = s.language || 'en';
+
+                const fontScaleSelect = document.getElementById('settings-font-scale');
+                if (fontScaleSelect) fontScaleSelect.value = s.fontScale || 'medium';
+
+                const codeFontSelect = document.getElementById('settings-code-font');
+                if (codeFontSelect) codeFontSelect.value = s.codeFont || 'jetbrains';
+
+                const tabSizeSelect = document.getElementById('settings-tab-size');
+                if (tabSizeSelect) tabSizeSelect.value = s.tabSize || '4';
+
+                setSwitchState(document.getElementById('settings-auto-save'), s.autoSave !== false);
+                setSwitchState(document.getElementById('settings-push'), s.pushNotifications !== false);
+                setSwitchState(document.getElementById('settings-email'), s.emailNotifications === true);
+                setSwitchState(document.getElementById('settings-sound'), s.soundEffects !== false);
+                setSwitchState(document.getElementById('settings-show-online'), s.showOnlineStatus !== false);
+                setSwitchState(document.getElementById('settings-private-profile'), s.privateProfile === true);
+                setSwitchState(document.getElementById('settings-show-lines'), s.showLineNumbers !== false);
+            })
+            .catch(err => console.error('Error loading settings:', err));
+    }
+
+    async function saveUserSettings() {
+        const btn = document.getElementById('save-settings-btn');
+        if (!btn) return;
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Saving...';
+        btn.disabled = true;
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        const settings = {
+            language: document.getElementById('settings-language').value,
+            fontScale: document.getElementById('settings-font-scale').value,
+            codeFont: document.getElementById('settings-code-font').value,
+            tabSize: document.getElementById('settings-tab-size').value,
+            autoSave: getSwitchState(document.getElementById('settings-auto-save')),
+            pushNotifications: getSwitchState(document.getElementById('settings-push')),
+            emailNotifications: getSwitchState(document.getElementById('settings-email')),
+            soundEffects: getSwitchState(document.getElementById('settings-sound')),
+            showOnlineStatus: getSwitchState(document.getElementById('settings-show-online')),
+            privateProfile: getSwitchState(document.getElementById('settings-private-profile')),
+            showLineNumbers: getSwitchState(document.getElementById('settings-show-lines'))
+        };
+
+        try {
+            const r = await fetch('/api/user/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
             });
-        </script>
-    </body>
+            if (r.ok) {
+                alert('Settings saved successfully!');
+                window.location.reload();
+            } else {
+                throw new Error('Save failed');
+            }
+        } catch(err) {
+            console.error(err);
+            alert('Failed to save settings. Please try again.');
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
 
-    </html>
+    document.addEventListener('turbo:load', () => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        loadSettings();
+    });
+
+    // Initial load
+    loadSettings();
+</script>
+</body>
+</html>
