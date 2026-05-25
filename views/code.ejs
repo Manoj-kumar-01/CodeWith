@@ -7,16 +7,16 @@
         .code-editor {
             font-size: 14px;
             line-height: 1.6;
-            background: #1a1b26;
-            color: #d1d5db;
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
         }
 
         .line-numbers {
             font-family: 'Fira Code', monospace;
             font-size: 14px;
             line-height: 1.6;
-            background: #16161e;
-            color: #4b5563;
+            background: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
         }
 
         .output-success {
@@ -40,21 +40,21 @@
         }
 
         .tab-active {
-            background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.1));
-            border-bottom: 2px solid #3b82f6;
-            color: #ffffff;
+            background: linear-gradient(to bottom, transparent, hsl(var(--primary) / 0.05));
+            border-bottom: 2px solid hsl(var(--primary));
+            color: hsl(var(--foreground));
         }
 
         .glass-panel {
-            background: rgba(30, 41, 59, 0.5);
+            background: hsl(var(--card) / 0.75);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid hsl(var(--border) / 0.5);
         }
 
         /* Problem Switcher Drawer */
         #problem-drawer {
-            background: #16161e;
-            border-right: 1px solid #111111;
+            background: hsl(var(--card));
+            border-right: 1px solid hsl(var(--border));
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -63,21 +63,21 @@
         }
 
         .problem-item-active {
-            background: linear-gradient(to right, rgba(139, 92, 246, 0.15), transparent);
-            border-left: 4px solid #8b5cf6;
+            background: linear-gradient(to right, hsl(var(--primary) / 0.1), transparent);
+            border-left: 4px solid hsl(var(--primary));
         }
 
         .btn-premium {
             position: relative;
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid hsl(var(--border));
         }
 
         .btn-premium:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border-color: hsl(var(--primary) / 0.3);
         }
 
         .btn-premium:active {
@@ -91,7 +91,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            background: linear-gradient(45deg, transparent, hsl(var(--primary) / 0.05), transparent);
             transform: rotate(45deg);
             transition: 0.5s;
             opacity: 0;
@@ -103,17 +103,17 @@
         }
     </style>
 
-    <body class="bg-[#0f0f17] text-gray-200">
+    <body class="bg-background text-foreground min-h-screen">
         <!-- Problem Switcher Drawer -->
         <div id="problem-drawer" 
              class="fixed inset-y-0 left-0 w-80 glass-panel z-50 closed shadow-2xl transition-transform">
             <div class="p-6 h-full flex flex-col">
                 <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    <h2 class="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                         Contest Problems
                     </h2>
-                    <button onclick="toggleDrawer()" class="p-2 rounded-lg hover:bg-white/5 transition-colors">
-                        <i data-lucide="x" class="w-5 h-5 text-gray-400"></i>
+                    <button onclick="toggleDrawer()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-muted-foreground"></i>
                     </button>
                 </div>
 
@@ -126,17 +126,17 @@
                                 : `/problem/${p._id}`;
                         %>
                             <a href="<%= link %>" 
-                               class="flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-white/10 hover:bg-white/5 group
-                                      <%= isCurrent ? 'problem-item-active bg-white/5 border-purple-500/30' : '' %>">
-                                <div class="w-8 h-8 rounded-lg <%= isCurrent ? 'bg-purple-600' : 'bg-gray-800 group-hover:bg-gray-700' %> flex items-center justify-center text-sm font-bold shrink-0 transition-colors">
+                               class="flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border border-transparent hover:border-border hover:bg-secondary group
+                                      <%= isCurrent ? 'problem-item-active bg-secondary border-primary/20' : '' %>">
+                                <div class="w-8 h-8 rounded-lg <%= isCurrent ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground group-hover:bg-secondary' %> flex items-center justify-center text-sm font-bold shrink-0 transition-colors">
                                     <%= idx + 1 %>
                                 </div>
                                 <div class="min-w-0">
-                                    <h3 class="text-sm font-medium truncate <%= isCurrent ? 'text-white' : 'text-gray-400 group-hover:text-gray-200' %>">
+                                    <h3 class="text-sm font-medium truncate <%= isCurrent ? 'text-foreground font-semibold' : 'text-muted-foreground group-hover:text-foreground' %>">
                                         <%= p.title %>
                                     </h3>
                                     <span class="text-[10px] font-bold uppercase tracking-wider
-                                        <%= p.difficulty === 'easy' ? 'text-green-400' : p.difficulty === 'medium' ? 'text-yellow-400' : 'text-red-400' %>">
+                                        <%= p.difficulty === 'easy' ? 'text-green-600' : p.difficulty === 'medium' ? 'text-yellow-600' : 'text-red-600' %>">
                                         <%= p.difficulty %>
                                     </span>
                                 </div>
@@ -145,9 +145,9 @@
                     <% } %>
                 </div>
 
-                <div class="mt-auto pt-6 border-t border-white/5">
+                <div class="mt-auto pt-6 border-t border-border/50">
                     <a href="<%= (typeof contest !== 'undefined' && contest) ? '/contest/' + (contest._id || contest.id) : '/practice' %>" 
-                       class="flex items-center justify-center gap-2 p-3 rounded-xl border border-gray-700 hover:border-gray-500 hover:bg-white/5 transition-all text-sm text-gray-400 hover:text-white">
+                       class="flex items-center justify-center gap-2 p-3 rounded-xl border border-border hover:border-muted-foreground hover:bg-secondary transition-all text-sm text-muted-foreground hover:text-foreground">
                         <i data-lucide="<%= (typeof contest !== 'undefined' && contest) ? 'layout-dashboard' : 'layout-grid' %>" class="w-4 h-4"></i>
                         <%= (typeof contest !== 'undefined' && contest) ? 'Contest Dashboard' : 'View All Problems' %>
                     </a>
@@ -157,24 +157,24 @@
 
         <div class="h-screen flex flex-col overflow-hidden">
             <!-- Top Bar -->
-            <header class="border-b border-white/10 backdrop-blur-2xl bg-secondary/80 z-50 sticky top-0 transition-all duration-300 flex-shrink-0">
+            <header class="border-b border-border/50 backdrop-blur-2xl bg-card/85 z-50 sticky top-0 transition-all duration-300 flex-shrink-0">
                 <% 
                    const leftActions = `
-                        <button onclick="toggleDrawer()" class="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white" title="All Problems">
+                        <button onclick="toggleDrawer()" class="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground" title="All Problems">
                             <i data-lucide="menu" class="w-5 h-5"></i>
                         </button>
-                        <a href="${(typeof contest !== 'undefined' && contest) ? '/contest/' + (contest._id || contest.id) + '/problems' : '/practice'}" class="p-2 rounded-lg hover:bg-white/5 transition-colors group">
-                            <i data-lucide="chevron-left" class="w-5 h-5 text-gray-400 group-hover:text-white"></i>
+                        <a href="${(typeof contest !== 'undefined' && contest) ? '/contest/' + (contest._id || contest.id) + '/problems' : '/practice'}" class="p-2 rounded-lg hover:bg-secondary transition-colors group">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-muted-foreground group-hover:text-foreground"></i>
                         </a>
                    `;
                    const extraActions = `
                         <div class="hidden lg:flex flex-col items-start -mt-1 mr-4">
-                             <h1 class="text-sm font-semibold truncate max-w-[200px]">${problem.title}</h1>
-                             <p class="text-[10px] text-gray-400 uppercase tracking-wider">${(typeof contest !== 'undefined' && contest) ? contest.title : 'Practice Mode'}</p>
+                             <h1 class="text-sm font-semibold truncate max-w-[200px] text-foreground">${problem.title}</h1>
+                             <p class="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">${(typeof contest !== 'undefined' && contest) ? contest.title : 'Practice Mode'}</p>
                         </div>
                         <div class="flex items-center gap-3">
                             <div class="relative">
-                                <select id="lang-select" class="appearance-none bg-[#1e1e2e] text-gray-200 text-sm px-4 py-1.5 pr-8 rounded-lg border border-gray-700 outline-none cursor-pointer hover:border-primary/50 transition-colors" onchange="changeLang()">
+                                <select id="lang-select" class="appearance-none bg-secondary text-foreground text-sm px-4 py-1.5 pr-8 rounded-lg border border-border outline-none cursor-pointer hover:border-primary/50 transition-colors font-medium" onchange="changeLang()">
                                     <option value="javascript">JavaScript (Node.js 18)</option>
                                     <option value="python">Python 3.11</option>
                                     <option value="cpp">C++ 17 (GCC)</option>
@@ -190,18 +190,18 @@
                                     <option value="swift">Swift 5.9</option>
                                     <option value="scala">Scala 3.2</option>
                                 </select>
-                                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
+                                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"></i>
                             </div>
-                            <div class="w-px h-6 bg-border/20 mx-1"></div>
-                            <button onclick="copyCode()" class="p-2 rounded-lg hover:bg-white/5 transition-colors group" title="Copy code">
-                                <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
+                            <div class="w-px h-6 bg-border/40 mx-1"></div>
+                            <button onclick="copyCode()" class="p-2 rounded-lg hover:bg-secondary transition-colors group" title="Copy code">
+                                <i data-lucide="copy" class="w-4 h-4 text-muted-foreground group-hover:text-foreground"></i>
                             </button>
-                            <button onclick="resetCode()" class="p-2 rounded-lg hover:bg-white/5 transition-colors group" title="Reset code">
-                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-gray-400 group-hover:text-white"></i>
+                            <button onclick="resetCode()" class="p-2 rounded-lg hover:bg-secondary transition-colors group" title="Reset code">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-muted-foreground group-hover:text-foreground"></i>
                             </button>
-                            <div class="w-px h-6 bg-border/20 mx-1"></div>
-                            <button id="run-btn" onclick="runCode()" class="btn-premium px-4 py-1.5 rounded-md bg-transparent border border-[#3b82f6] hover:bg-[#3b82f6]/20 text-[#3b82f6] hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">RUN</button>
-                            <button id="submit-btn" onclick="submitCode()" class="btn-premium px-4 py-1.5 rounded-md bg-transparent border border-[#10b981] hover:bg-[#10b981]/20 text-[#10b981] hover:text-white text-[10px] font-bold tracking-widest uppercase transition-colors">SUBMIT</button>
+                            <div class="w-px h-6 bg-border/40 mx-1"></div>
+                            <button id="run-btn" onclick="runCode()" class="btn-premium px-4 py-1.5 rounded-md bg-secondary border border-border hover:bg-secondary/80 text-foreground text-[10px] font-bold tracking-widest uppercase transition-colors">RUN</button>
+                            <button id="submit-btn" onclick="submitCode()" class="btn-premium px-4 py-1.5 rounded-md bg-primary hover:bg-primary/95 text-primary-foreground text-[10px] font-bold tracking-widest uppercase transition-colors">SUBMIT</button>
                         </div>
                    `;
                 %>
@@ -217,22 +217,22 @@
             <div id="main-content" class="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 <!-- Left Panel - Problem Description -->
                 <div id="left-panel"
-                    class="w-full lg:w-[42%] xl:w-[38%] flex flex-col border-r border-gray-800/50 bg-[#1a1b26]/80 overflow-hidden flex-shrink-0">
+                    class="w-full lg:w-[42%] xl:w-[38%] flex flex-col border-r border-border/50 bg-card/85 overflow-hidden flex-shrink-0">
                     <!-- Problem tabs with glass effect -->
                     <div
-                        class="flex items-center gap-1 px-4 pt-3 border-b border-gray-800/50 flex-shrink-0 bg-[#16161e]">
+                        class="flex items-center gap-1 px-4 pt-3 border-b border-border/50 flex-shrink-0 bg-secondary">
                         <button onclick="setDescTab('description')"
-                            class="desc-tab flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-all tab-active"
+                            class="desc-tab flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-all tab-active"
                             data-tab="description">
                             <i data-lucide="book-open" class="w-4 h-4"></i> Description
                         </button>
                         <button onclick="setDescTab('hints')"
-                            class="desc-tab flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-all text-gray-400 hover:text-white"
+                            class="desc-tab flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-all text-muted-foreground hover:text-foreground"
                             data-tab="hints">
                             <i data-lucide="lightbulb" class="w-4 h-4"></i> Hints
                         </button>
                         <button onclick="setDescTab('discussion')"
-                            class="desc-tab flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-all text-gray-400 hover:text-white"
+                            class="desc-tab flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-lg transition-all text-muted-foreground hover:text-foreground"
                             data-tab="discussion">
                             <i data-lucide="message-square" class="w-4 h-4"></i> Discuss
                         </button>
@@ -240,18 +240,18 @@
 
                     <!-- Content with custom scrollbar -->
                     <div
-                        class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent p-6">
+                        class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent p-6">
                         <!-- Description tab -->
                         <div id="desc-description" class="desc-content space-y-6">
                             <div>
                                 <div class="flex items-center gap-3 mb-3">
-                                    <h1 class="text-2xl font-bold text-white">
+                                    <h1 class="text-2xl font-black text-foreground italic uppercase">
                                         <%= problem.title %>
                                     </h1>
                                     <span class="px-2 py-1 rounded-full text-xs font-bold uppercase
-                                        <%= problem.difficulty === 'easy' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                           problem.difficulty === 'medium' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                           'bg-rose-500/20 text-rose-400 border border-rose-500/30' %>">
+                                        <%= problem.difficulty === 'easy' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                           problem.difficulty === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                                           'bg-rose-50 text-rose-700 border border-rose-200' %>">
                                         <%= problem.difficulty %>
                                     </span>
                                 </div>
@@ -259,22 +259,22 @@
                                 <!-- Stats badges -->
                                 <div class="flex flex-wrap gap-3 mb-4">
                                     <div
-                                        class="flex items-center gap-1.5 text-sm text-gray-400 bg-gray-800/50 px-3 py-1 rounded-full">
-                                        <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+                                        class="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary px-3 py-1 rounded-full font-bold">
+                                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
                                         <span>
                                             <%= problem.solved || 0 %> solved
                                         </span>
                                     </div>
                                     <div
-                                        class="flex items-center gap-1.5 text-sm text-gray-400 bg-gray-800/50 px-3 py-1 rounded-full">
-                                        <i data-lucide="trending-up" class="w-4 h-4 text-purple-400"></i>
+                                        class="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary px-3 py-1 rounded-full font-bold">
+                                        <i data-lucide="trending-up" class="w-4 h-4 text-primary"></i>
                                         <span>
                                             <%= problem.acceptance || '75%' %> acceptance
                                         </span>
                                     </div>
                                     <div
-                                        class="flex items-center gap-1.5 text-sm text-gray-400 bg-gray-800/50 px-3 py-1 rounded-full">
-                                        <i data-lucide="award" class="w-4 h-4 text-yellow-400"></i>
+                                        class="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary px-3 py-1 rounded-full font-bold">
+                                        <i data-lucide="award" class="w-4 h-4 text-amber-600"></i>
                                         <span>
                                             <%= problem.points || 100 %> points
                                         </span>
@@ -286,7 +286,7 @@
                                     <div class="flex flex-wrap gap-2 mb-4">
                                         <% problem.tags.forEach(function(tag) { %>
                                             <span
-                                                class="text-xs px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30">
+                                                class="text-xs px-3 py-1 rounded-full bg-primary/5 text-primary border border-primary/20 font-bold uppercase tracking-wider">
                                                 <%= tag %>
                                             </span>
                                             <% }); %>
@@ -294,31 +294,31 @@
                                     <% } %>
                             </div>
 
-                            <div class="text-gray-300 leading-relaxed">
-                                <%= problem.description %>
+                            <div class="text-foreground/90 leading-relaxed text-sm">
+                                <%- problem.description %>
                             </div>
 
                             <!-- Examples -->
                             <% if (problem.examples && problem.examples.length> 0) { %>
                                 <% problem.examples.forEach(function(ex, i) { %>
-                                    <div class="rounded-lg border border-gray-800 overflow-hidden">
+                                    <div class="rounded-lg border border-border/50 bg-card overflow-hidden">
                                         <div
-                                            class="px-4 py-2 bg-[#16161e] text-xs font-semibold text-gray-400 border-b border-gray-800">
+                                            class="px-4 py-2 bg-secondary text-xs font-semibold text-muted-foreground border-b border-border/50">
                                             Example <%= i + 1 %>
                                         </div>
                                         <div class="p-4 space-y-3 font-mono text-sm">
                                             <div>
-                                                <span class="text-gray-500">Input: </span>
+                                                <span class="text-muted-foreground font-bold text-xs">Input: </span>
                                                 <code
-                                                    class="text-gray-300 bg-gray-800/50 px-2 py-1 rounded"><%= ex.input %></code>
+                                                    class="text-foreground bg-muted px-2 py-1 rounded"><%= ex.input %></code>
                                             </div>
                                             <div>
-                                                <span class="text-gray-500">Output: </span>
+                                                <span class="text-muted-foreground font-bold text-xs">Output: </span>
                                                 <code
-                                                    class="text-purple-400 bg-gray-800/50 px-2 py-1 rounded"><%= ex.output %></code>
+                                                    class="text-primary bg-primary/5 px-2 py-1 rounded"><%= ex.output %></code>
                                             </div>
                                             <% if (ex.explanation) { %>
-                                                <div class="mt-2 text-gray-500 text-xs italic">
+                                                <div class="mt-2 text-muted-foreground text-xs italic">
                                                     <%= ex.explanation %>
                                                 </div>
                                             <% } %>
@@ -330,11 +330,11 @@
                             <!-- Constraints -->
                             <% if (problem.constraints && problem.constraints.length > 0) { %>
                                 <div class="space-y-3">
-                                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <i data-lucide="shield" class="w-3.5 h-3.5 text-orange-400"></i>
+                                    <h3 class="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                        <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-600"></i>
                                         Constraints
                                     </h3>
-                                    <ul class="list-disc list-inside text-sm text-gray-400 space-y-1 pl-1">
+                                    <ul class="list-disc list-inside text-xs text-muted-foreground font-semibold space-y-1 pl-1">
                                         <% problem.constraints.forEach(function(c) { %>
                                             <li><%= c %></li>
                                         <% }); %>
@@ -345,15 +345,15 @@
                             <!-- Sample Test Cases -->
                             <% if (problem.testCases && problem.testCases.filter(t => !t.isHidden).length > 0) { %>
                                 <div class="space-y-3 mt-6">
-                                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <i data-lucide="check-square" class="w-3.5 h-3.5 text-blue-400"></i>
+                                    <h3 class="text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                                        <i data-lucide="check-square" class="w-3.5 h-3.5 text-primary"></i>
                                         Sample Test Cases
                                     </h3>
                                     <div class="grid grid-cols-1 gap-3">
                                         <% problem.testCases.filter(t => !t.isHidden).forEach(function(tc, i) { %>
-                                            <div class="p-3 bg-[#1e1e2e] border border-gray-800 rounded-lg text-xs font-mono text-gray-300">
-                                                <div class="mb-1"><span class="text-gray-500">Input:</span> <%= tc.input %></div>
-                                                <div><span class="text-gray-500">Expected:</span> <span class="text-purple-400"><%= tc.expected %></span></div>
+                                            <div class="p-3 bg-secondary border border-border/50 rounded-lg text-xs font-mono text-foreground">
+                                                <div class="mb-1"><span class="text-muted-foreground font-semibold">Input:</span> <%= tc.input %></div>
+                                                <div><span class="text-muted-foreground font-semibold">Expected:</span> <span class="text-primary font-bold"><%= tc.expected %></span></div>
                                             </div>
                                         <% }); %>
                                     </div>
@@ -364,19 +364,19 @@
                         <!-- Hints tab -->
                         <div id="desc-hints" class="desc-content hidden space-y-4">
                             <div
-                                class="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
-                                <h3 class="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">
+                                class="p-4 rounded-lg bg-amber-50/50 border border-amber-200">
+                                <h3 class="text-sm font-bold text-amber-700 font-extrabold mb-2 flex items-center gap-2">
                                     <i data-lucide="lightbulb" class="w-4 h-4"></i> Hint 1
                                 </h3>
-                                <p class="text-sm text-gray-300">Think about using a hash map to store values you've
+                                <p class="text-sm text-foreground/90 font-medium">Think about using a hash map to store values you've
                                     already seen.</p>
                             </div>
                             <div
-                                class="p-4 rounded-lg bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
-                                <h3 class="text-sm font-bold text-amber-400 mb-2 flex items-center gap-2">
+                                class="p-4 rounded-lg bg-amber-50/50 border border-amber-200">
+                                <h3 class="text-sm font-bold text-amber-700 font-extrabold mb-2 flex items-center gap-2">
                                     <i data-lucide="lightbulb" class="w-4 h-4"></i> Hint 2
                                 </h3>
-                                <p class="text-sm text-gray-300">For each element, check if target - element exists in
+                                <p class="text-sm text-foreground/90 font-medium">For each element, check if target - element exists in
                                     your hash map.</p>
                             </div>
                         </div>
@@ -390,22 +390,22 @@
                 </div>
 
                 <!-- HORIZONTAL RESIZER -->
-                <div id="resizer-x" class="w-1.5 cursor-col-resize hover:bg-purple-600/50 bg-gray-800/20 active:bg-purple-500 z-40 transition-colors hidden lg:block"></div>
+                <div id="resizer-x" class="w-1.5 cursor-col-resize hover:bg-primary/50 bg-border active:bg-primary z-40 transition-colors hidden lg:block"></div>
 
                 <!-- Right Panel - Editor & Output -->
-                <div id="right-panel" class="flex-1 flex flex-col overflow-hidden bg-[#1a1b26]">
+                <div id="right-panel" class="flex-1 flex flex-col overflow-hidden bg-background">
                     <!-- Editor Container -->
-                    <div id="editor-container" class="flex-1 flex overflow-hidden min-h-0 relative bg-[#1a1b26]" style="background: radial-gradient(circle at center, rgba(138, 43, 226, 0.04) 0%, rgba(26,27,38,1) 100%); box-shadow: inset 0 0 30px rgba(138, 43, 226, 0.05);">
+                    <div id="editor-container" class="flex-1 flex overflow-hidden min-h-0 relative bg-background border-b border-border/50" style="background: hsl(var(--card));">
                         <div id="monaco-editor" class="absolute inset-0 opacity-[0.98]"></div>
                     </div>
 
                     <!-- VERTICAL RESIZER -->
-                    <div id="resizer-y" class="h-1.5 cursor-row-resize hover:bg-purple-600/50 bg-gray-800/20 active:bg-purple-500 z-40 transition-colors flex-shrink-0"></div>
+                    <div id="resizer-y" class="h-1.5 cursor-row-resize hover:bg-primary/50 bg-border active:bg-primary z-40 transition-colors flex-shrink-0"></div>
 
                     <!-- Bottom Panel with Test Cases & Output -->
                     <div id="terminal-container"
-                        class="h-[35%] min-h-[100px] flex flex-col border-t border-gray-800/50 bg-[#16161e] flex-shrink-0">
-                        <div class="flex items-center justify-between px-4 border-b border-gray-800/50 flex-shrink-0">
+                        class="h-[35%] min-h-[100px] flex flex-col border-t border-border/50 bg-secondary flex-shrink-0">
+                        <div class="flex items-center justify-between px-4 border-b border-border/50 flex-shrink-0">
                             <div class="flex items-center gap-2">
                                 <button onclick="setBottomTab('testcases')"
                                     class="bottom-tab flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all tab-active"
@@ -413,7 +413,7 @@
                                     <i data-lucide="book-open" class="w-4 h-4"></i> Test Cases
                                 </button>
                                 <button onclick="setBottomTab('output')"
-                                    class="bottom-tab flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all text-gray-400 hover:text-white"
+                                    class="bottom-tab flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all text-muted-foreground hover:text-foreground"
                                     data-tab="output">
                                     <i data-lucide="terminal" class="w-4 h-4"></i> Output
                                     <span id="pass-badge"
@@ -424,44 +424,44 @@
                             <!-- Status indicator -->
                             <div id="status-indicator" class="hidden flex items-center gap-2">
                                 <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                                <span class="text-xs text-gray-400">Running...</span>
+                                <span class="text-xs text-muted-foreground font-semibold">Running...</span>
                             </div>
                         </div>
 
-                        <div class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 p-4">
+                        <div class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border p-4">
                             <!-- Test cases tab -->
                             <div id="bottom-testcases" class="bottom-content space-y-4">
                                 <div class="flex gap-2 flex-wrap" id="test-case-btns">
                                     <% if (problem.testCases && problem.testCases.length> 0) { %>
                                         <% problem.testCases.forEach(function(tc, i) { %>
                                             <button onclick="selectTestCase(<%= i %>)"
-                                                class="tc-btn px-4 py-2 text-xs font-medium rounded-lg transition-all <%= i === 0 ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' : 'bg-gray-800/40 text-gray-400 hover:text-white hover:bg-gray-800' %>"
+                                                class="tc-btn px-4 py-2 text-xs font-semibold rounded-lg transition-all <%= i === 0 ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-card text-muted-foreground border border-border hover:bg-secondary hover:text-foreground' %>"
                                                 data-idx="<%= i %>">
                                                 Case <%= i + 1 %>
                                             </button>
                                         <% }); %>
                                     <% } else { %>
-                                        <div class="text-gray-500 text-sm p-2 italic w-full text-center">No test cases to display</div>
+                                        <div class="text-muted-foreground text-sm p-2 italic w-full text-center">No test cases to display</div>
                                     <% } %>
                                 </div>
 
                                 <div id="tc-detail"
-                                    class="rounded-lg bg-[#1e1e2e] p-4 font-mono text-sm space-y-3 border border-gray-800">
+                                    class="rounded-lg bg-card p-4 font-mono text-sm space-y-3 border border-border">
                                     <% if (problem.testCases && problem.testCases.length> 0) { %>
                                         <div>
-                                            <span class="text-gray-500 text-xs">Input:</span>
-                                            <div class="text-gray-300 mt-1 bg-gray-900/50 p-2 rounded">
+                                            <span class="text-muted-foreground text-xs font-semibold">Input:</span>
+                                            <div class="text-foreground mt-1 bg-secondary p-2 rounded border border-border/40">
                                                 <%= problem.testCases[0].input %>
                                             </div>
                                         </div>
                                         <div>
-                                            <span class="text-gray-500 text-xs">Expected:</span>
-                                            <div class="text-purple-400 mt-1 bg-gray-900/50 p-2 rounded">
+                                            <span class="text-muted-foreground text-xs font-semibold">Expected:</span>
+                                            <div class="text-primary font-bold mt-1 bg-secondary p-2 rounded border border-border/40">
                                                 <%= problem.testCases[0].expected || problem.testCases[0].output || 'N/A' %>
                                             </div>
                                         </div>
                                     <% } else { %>
-                                        <div class="text-gray-400 text-center py-4">No test cases found in database.</div>
+                                        <div class="text-muted-foreground text-center py-4">No test cases found in database.</div>
                                     <% } %>
                                 </div>
                             </div>
@@ -469,14 +469,14 @@
                             <!-- Output tab -->
                             <div id="bottom-output" class="bottom-content hidden space-y-3">
                                 <div id="output-idle"
-                                    class="flex flex-col items-center justify-center py-8 text-gray-500">
+                                    class="flex flex-col items-center justify-center py-8 text-muted-foreground">
                                     <i data-lucide="terminal" class="w-12 h-12 mb-3 opacity-30"></i>
                                     <p class="text-sm">Run your code to see output</p>
                                 </div>
 
                                 <div id="output-running"
-                                    class="hidden flex items-center gap-3 py-8 justify-center text-gray-400">
-                                    <i data-lucide="loader-2" class="w-5 h-5 animate-spin text-purple-400"></i>
+                                    class="hidden flex items-center gap-3 py-8 justify-center text-muted-foreground">
+                                    <i data-lucide="loader-2" class="w-5 h-5 animate-spin text-primary"></i>
                                     <span class="text-sm">Running test cases...</span>
                                 </div>
 
@@ -511,25 +511,25 @@
                     monaco.editor.getModels().forEach(m => m.dispose());
                 }
 
-                // Register a grayish-black premium theme
-                monaco.editor.defineTheme('premium-dark', {
-                    base: 'vs-dark',
+                // Register a premium light theme
+                monaco.editor.defineTheme('premium-light', {
+                    base: 'vs',
                     inherit: true,
                     rules: [
-                        { background: '1e1e2e' },
-                        { token: 'comment', foreground: '6272a4', fontStyle: 'italic' },
-                        { token: 'keyword', foreground: 'ff79c6' },
-                        { token: 'identifier', foreground: 'f8f8f2' },
-                        { token: 'string', foreground: 'f1fa8c' }
+                        { background: 'ffffff' },
+                        { token: 'comment', foreground: '708090', fontStyle: 'italic' },
+                        { token: 'keyword', foreground: '0971f1', fontStyle: 'bold' },
+                        { token: 'identifier', foreground: '000000' },
+                        { token: 'string', foreground: '0ea5e9' }
                     ],
                     colors: {
-                        'editor.background': '#1e1e2e',
-                        'editor.foreground': '#f8f8f2',
-                        'editorCursor.foreground': '#f8f8f2',
-                        'editor.lineHighlightBackground': '#24253a',
-                        'editorLineNumber.foreground': '#565f89',
-                        'editor.selectionBackground': '#44475a',
-                        'editorIndentGuide.background': '#24253a'
+                        'editor.background': '#ffffff',
+                        'editor.foreground': '#000000',
+                        'editorCursor.foreground': '#000000',
+                        'editor.lineHighlightBackground': '#f3f4f6',
+                        'editorLineNumber.foreground': '#9ca3af',
+                        'editor.selectionBackground': '#bfdbfe',
+                        'editorIndentGuide.background': '#e5e7eb'
                     }
                 });
 
@@ -550,7 +550,7 @@
                 editor = monaco.editor.create(container, {
                     value: starterCode[lang] || starterCode['js'] || defaultStarters[lang] || '',
                     language: monacoLangMap[lang] || lang,
-                    theme: 'premium-dark',
+                    theme: 'premium-light',
                     automaticLayout: true,
                     fontSize: 14,
                     fontFamily: fontFamily,
@@ -683,7 +683,7 @@
             function showToast(message) {
                 // Simple toast implementation
                 const toast = document.createElement('div');
-                toast.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in-up';
+                toast.className = 'fixed bottom-4 right-4 bg-card text-foreground border border-border px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in-up';
                 toast.textContent = message;
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 3000);
@@ -694,14 +694,14 @@
                 document.getElementById('desc-' + tab).classList.remove('hidden');
 
                 document.querySelectorAll('.desc-tab').forEach(btn => {
-                    btn.classList.remove('tab-active', 'text-white', 'border-purple-500');
-                    btn.classList.add('text-gray-400');
+                    btn.classList.remove('tab-active', 'text-foreground', 'border-purple-500');
+                    btn.classList.add('text-muted-foreground');
                 });
 
                 const active = document.querySelector('.desc-tab[data-tab="' + tab + '"]');
                 if (active) {
-                    active.classList.add('tab-active', 'text-white');
-                    active.classList.remove('text-gray-400');
+                    active.classList.add('tab-active', 'text-foreground');
+                    active.classList.remove('text-muted-foreground');
                 }
             }
 
@@ -710,27 +710,27 @@
                 document.getElementById('bottom-' + tab).classList.remove('hidden');
 
                 document.querySelectorAll('.bottom-tab').forEach(btn => {
-                    btn.classList.remove('tab-active', 'text-white');
-                    btn.classList.add('text-gray-400');
+                    btn.classList.remove('tab-active', 'text-foreground');
+                    btn.classList.add('text-muted-foreground');
                 });
 
                 const active = document.querySelector('.bottom-tab[data-tab="' + tab + '"]');
                 if (active) {
-                    active.classList.add('tab-active', 'text-white');
-                    active.classList.remove('text-gray-400');
+                    active.classList.add('tab-active', 'text-foreground');
+                    active.classList.remove('text-muted-foreground');
                 }
             }
 
             function selectTestCase(idx) {
                 document.querySelectorAll('.tc-btn').forEach(btn => {
-                    btn.classList.remove('bg-purple-600/20', 'text-purple-400', 'border', 'border-purple-500/30');
-                    btn.classList.add('bg-gray-800/40', 'text-gray-400');
+                    btn.classList.remove('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                    btn.classList.add('bg-card', 'text-muted-foreground', 'border', 'border-border');
                 });
 
                 const active = document.querySelector('.tc-btn[data-idx="' + idx + '"]');
                 if (active) {
-                    active.classList.add('bg-purple-600/20', 'text-purple-400', 'border', 'border-purple-500/30');
-                    active.classList.remove('bg-gray-800/40', 'text-gray-400');
+                    active.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                    active.classList.remove('bg-card', 'text-muted-foreground', 'border', 'border-border');
                 }
 
                 const tc = testCases[idx];
@@ -738,12 +738,12 @@
                     const expectedVal = tc.expected || tc.output || 'N/A';
                     document.getElementById('tc-detail').innerHTML = `
                         <div>
-                            <span class="text-gray-500 text-xs">Input:</span>
-                            <div class="text-gray-300 mt-1 bg-gray-900/50 p-2 rounded">${tc.input}</div>
+                            <span class="text-muted-foreground text-xs font-semibold">Input:</span>
+                            <div class="text-foreground mt-1 bg-secondary p-2 rounded border border-border/40">${tc.input}</div>
                         </div>
                         <div>
-                            <span class="text-gray-500 text-xs">Expected:</span>
-                            <div class="text-purple-400 mt-1 bg-gray-900/50 p-2 rounded">${expectedVal}</div>
+                            <span class="text-muted-foreground text-xs font-semibold">Expected:</span>
+                            <div class="text-primary font-bold mt-1 bg-secondary p-2 rounded border border-border/40">${expectedVal}</div>
                         </div>
                     `;
                 }
@@ -753,13 +753,13 @@
 
             function selectResultTab(idx) {
                 document.querySelectorAll('.res-tab-btn').forEach(btn => {
-                    btn.classList.remove('bg-gray-800', 'text-white');
-                    btn.classList.add('text-gray-400');
+                    btn.classList.remove('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                    btn.classList.add('text-muted-foreground', 'border-transparent');
                 });
                 const activeBtn = document.querySelector('.res-tab-btn[data-idx="'+idx+'"]');
                 if (activeBtn) {
-                    activeBtn.classList.add('bg-gray-800', 'text-white');
-                    activeBtn.classList.remove('text-gray-400');
+                    activeBtn.classList.add('bg-primary/10', 'text-primary', 'border', 'border-primary/20');
+                    activeBtn.classList.remove('text-muted-foreground', 'border-transparent');
                 }
 
                 const r = currentResults[idx];
@@ -771,15 +771,15 @@
                 let html = `
                     <div class="font-mono text-xs sm:text-sm space-y-4 pb-4">
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="${pass ? 'text-emerald-400' : isError ? 'text-rose-400' : 'text-amber-400'} font-bold text-lg">
+                            <span class="${pass ? 'text-emerald-700' : isError ? 'text-rose-700' : 'text-amber-700'} font-black text-lg uppercase italic">
                                 ${r.input === 'Standard Input' ? 'Execution Result' : 'Test Case ' + (idx + 1)}
                             </span>
                             ${r.input !== 'Standard Input' ? `
-                            <span class="${pass ? 'text-emerald-500 border-emerald-500/30' : 'text-rose-500 border-rose-500/30'} border px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            <span class="${pass ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'} px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
                                 ${pass ? 'Accepted' : 'Wrong Answer'}
                             </span>
                             ` : ''}
-                            <span class="text-gray-500 text-[10px] ml-auto">
+                            <span class="text-muted-foreground text-[10px] ml-auto font-bold">
                                 ${r.time || '0ms'}
                             </span>
                         </div>
@@ -788,8 +788,8 @@
                 if (r.input !== 'Standard Input') {
                     html += `
                         <div class="flex flex-col gap-1">
-                            <span class="text-gray-500 text-xs text-semibold">Input:</span>
-                            <div class="text-gray-300 break-all bg-[#1a1b26] p-3 rounded-lg border border-gray-800/60">${r.input}</div>
+                            <span class="text-muted-foreground text-xs font-semibold">Input:</span>
+                            <div class="text-foreground break-all bg-card p-3 rounded-lg border border-border">${r.input}</div>
                         </div>
                     `;
                 }
@@ -797,24 +797,24 @@
                 if (r.expected !== 'N/A') {
                     html += `
                         <div class="flex flex-col gap-1">
-                            <span class="text-gray-500 text-xs text-semibold">Expected:</span>
-                            <div class="text-purple-400 break-all bg-[#1a1b26] p-3 rounded-lg border border-gray-800/60">${r.expected}</div>
+                            <span class="text-muted-foreground text-xs font-semibold">Expected:</span>
+                            <div class="text-primary font-bold break-all bg-card p-3 rounded-lg border border-border">${r.expected}</div>
                         </div>
                     `;
                 }
 
                 html += `
                         <div class="flex flex-col gap-1">
-                            <span class="text-gray-500 text-xs text-semibold">${r.input === 'Standard Input' ? 'Output:' : 'Actual Output:'}</span>
-                            <div class="${isError ? 'text-rose-400' : 'text-white'} whitespace-pre-wrap break-all bg-[#1a1b26] p-3 rounded-lg border border-gray-800/60">${r.output || (isError ? 'Execution Error' : 'No Output')}</div>
+                            <span class="text-muted-foreground text-xs font-semibold">${r.input === 'Standard Input' ? 'Output:' : 'Actual Output:'}</span>
+                            <div class="${isError ? 'text-rose-700 font-bold bg-rose-50/50 border border-rose-200' : 'text-foreground bg-card border border-border'} whitespace-pre-wrap break-all p-3 rounded-lg">${r.output || (isError ? 'Execution Error' : 'No Output')}</div>
                         </div>
                 `;
 
                 if (r.error) {
                     html += `
                         <div class="flex flex-col gap-1 mt-2">
-                            <span class="text-rose-500 text-xs text-semibold">Errors / Stderr:</span>
-                            <div class="text-rose-400 whitespace-pre-wrap break-all bg-[#1a1b26] p-3 rounded-lg border border-rose-900/30">${r.error}</div>
+                            <span class="text-rose-700 text-xs font-semibold">Errors / Stderr:</span>
+                            <div class="text-rose-700 whitespace-pre-wrap break-all bg-rose-50/50 p-3 rounded-lg border border-rose-200">${r.error}</div>
                         </div>
                     `;
                 }
@@ -833,7 +833,7 @@
                 container.classList.remove('hidden');
 
                 if (!results || results.length === 0) {
-                    container.innerHTML = '<div class="text-gray-400 p-4">No test cases or outputs available.</div>';
+                    container.innerHTML = '<div class="text-muted-foreground p-4 font-semibold italic text-center">No test cases or outputs available.</div>';
                     document.getElementById('pass-badge').classList.add('hidden');
                     return;
                 }
@@ -847,8 +847,8 @@
                 
                 if (results.length > 0 && results[0].input !== 'Standard Input') {
                     badge.textContent = passCount + '/' + totalCount;
-                    badge.className = 'ml-2 text-[10px] px-2 py-0.5 rounded-full font-bold ' +
-                        (passCount === totalCount ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400');
+                    badge.className = 'ml-2 text-[10px] px-2 py-0.5 rounded-full font-extrabold border ' +
+                        (passCount === totalCount ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200');
                 } else {
                     badge.classList.add('hidden');
                 }
@@ -857,10 +857,10 @@
                 let html = '<div class="flex gap-2 flex-wrap mb-4">';
                 results.forEach((r, i) => {
                     const pass = r.status === 'pass' || r.status === 'success';
-                    const iconColor = pass ? 'text-emerald-500' : (r.status === 'fail' || r.status === 'error' ? 'text-rose-500' : 'text-amber-500');
+                    const iconColor = pass ? 'text-emerald-600' : (r.status === 'fail' || r.status === 'error' ? 'text-rose-600' : 'text-amber-600');
                     const name = r.input === 'Standard Input' ? 'Result' : 'Case ' + (i + 1);
                     html += `
-                        <button onclick="selectResultTab(${i})" data-idx="${i}" class="res-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all text-gray-400 hover:text-white hover:bg-gray-800/50">
+                        <button onclick="selectResultTab(${i})" data-idx="${i}" class="res-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary">
                             <div class="w-1.5 h-1.5 rounded-full bg-current ${iconColor}"></div>
                             ${name}
                         </button>

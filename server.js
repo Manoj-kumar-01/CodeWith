@@ -14,6 +14,69 @@ const Problem = require('./models/Problem');
 const Friendship = require('./models/Friendship');
 const Activity = require('./models/Activity');
 const CustomRoom = require('./models/CustomRoom');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+// Nodemailer SMTP Transporter setup (reads from environment, with safe local console fallback)
+let transporter;
+if (process.env.SMTP_HOST) {
+    transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT || 587,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+} else {
+    // In-memory local fallback transporter that prints emails to console
+    transporter = {
+        sendMail: async (mailOptions) => {
+            console.log('\n==================================================');
+            console.log('📬 [MOCK EMAIL SERVICE] VERIFICATION EMAIL SENT!');
+            console.log(`To: ${mailOptions.to}`);
+            console.log(`Subject: ${mailOptions.subject}`);
+            console.log('Body:');
+            console.log(mailOptions.text);
+            console.log('==================================================\n');
+            return { messageId: 'mock-id-' + Date.now() };
+        }
+    };
+}
+
+// Helper function to send Verification Email
+async function sendVerificationEmail(user, req) {
+    const token = crypto.randomBytes(32).toString('hex');
+    user.verificationToken = token;
+    user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    await user.save();
+
+    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const verifyUrl = `${protocol}://${req.get('host')}/verify-email?token=${token}`;
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM || '"CodeWith?" <noreply@codewith.dev>',
+        to: user.email,
+        subject: 'Verify your CodeWith? account',
+        text: `Hello ${user.name},\n\nWelcome to CodeWith?! Please verify your email by clicking the link below:\n\n${verifyUrl}\n\nThis link is valid for 24 hours.\n\nHappy Coding!\nThe CodeWith? Team`,
+        html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #2563eb; margin-bottom: 16px;">Verify your CodeWith? account</h2>
+                <p>Hello <strong>${user.name}</strong>,</p>
+                <p>Welcome to CodeWith?! To activate your account and start competing, please verify your email address by clicking the button below:</p>
+                <div style="text-align: center; margin: 24px 0;">
+                    <a href="${verifyUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+                </div>
+                <p style="font-size: 12px; color: #64748b;">Or copy and paste this link in your browser: <br><a href="${verifyUrl}">${verifyUrl}</a></p>
+                <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                <p style="font-size: 12px; color: #94a3b8;">This link is valid for 24 hours. If you did not create this account, please ignore this email.</p>
+            </div>
+        `
+    };
+
+    await transporter.sendMail(mailOptions);
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -21,6 +84,7 @@ const io = socketIo(server);
 
 // Store io instance for global usage if needed
 app.set('io', io);
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // View engine
@@ -38,7 +102,11 @@ const sessionMiddleware = session({
     resave: false,
     saveUninitialized: false,
     store: process.env.MONGO_URI ? MongoStore.create({ mongoUrl: process.env.MONGO_URI }) : new session.MemoryStore(),
-    cookie: { secure: false } // Session cookie: expires when browser closes
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // Secure in production HTTPS
+        httpOnly: true,
+        sameSite: 'lax'
+    }
 });
 app.use(sessionMiddleware);
 
@@ -179,6 +247,30 @@ const requireAuth = (req, res, next) => {
     res.redirect('/login');
 };
 
+const requireVerified = async (req, res, next) => {
+    if (req.session && req.session.user) {
+        if (dbConnected) {
+            try {
+                const user = await User.findById(req.session.user._id);
+                if (user && !user.isVerified) {
+                    if (req.originalUrl.startsWith('/api/')) {
+                        return res.status(403).json({ error: 'Email verification pending' });
+                    }
+                    return res.redirect('/verify-pending');
+                }
+            } catch(e) {
+                console.error('requireVerified DB error:', e);
+            }
+        } else if (req.session.user.isVerified === false) {
+            if (req.originalUrl.startsWith('/api/')) {
+                return res.status(403).json({ error: 'Email verification pending' });
+            }
+            return res.redirect('/verify-pending');
+        }
+    }
+    next();
+};
+
 // --- Authentication Routes ---
 app.get('/login', (req, res) => {
     if (req.session && req.session.user) return res.redirect('/');
@@ -229,29 +321,124 @@ app.get('/register', (req, res) => {
 app.post('/register', async (req, res) => {
     try {
         const { username, name, email, password } = req.body;
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+
+        // Robust email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email.trim())) {
+            return res.render('register', { error: 'Please enter a valid email address' });
+        }
+
+        // Field validation
+        if (!username || username.trim().length < 3) {
+            return res.render('register', { error: 'Username must be at least 3 characters long' });
+        }
+        if (!password || password.length < 6) {
+            return res.render('register', { error: 'Password must be at least 6 characters long' });
+        }
+
+        const existingUser = await User.findOne({ $or: [{ email: email.trim().toLowerCase() }, { username: username.trim().toLowerCase() }] });
         if (existingUser) return res.render('register', { error: 'Email or username already exists' });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const user = new User({
-            username,
-            name,
-            email,
-            password: hashedPassword
+            username: username.trim(),
+            name: name.trim(),
+            email: email.trim().toLowerCase(),
+            password: hashedPassword,
+            isVerified: false // Needs verification
         });
         await user.save();
 
+        // Trigger welcome verification email in background
+        sendVerificationEmail(user, req).catch(err => console.error('Error sending welcome verification:', err));
+
         req.session.user = user;
         res.cookie('fresh_login', 'true', { maxAge: 10000 });
-        res.redirect('/');
+        res.redirect('/verify-pending');
     } catch (err) {
         console.error('Register error:', err);
         if (err.code === 11000) {
             return res.render('register', { error: 'Email or username already exists' });
         }
         res.render('register', { error: 'Server error' });
+    }
+});
+
+app.get('/verify-pending', requireAuth, (req, res) => {
+    if (req.session.user.isVerified) {
+        return res.redirect('/');
+    }
+    res.render('verify-pending', { user: req.session.user, error: null, success: null });
+});
+
+app.post('/resend-verification', requireAuth, async (req, res) => {
+    try {
+        if (dbConnected) {
+            const user = await User.findById(req.session.user._id);
+            if (user) {
+                if (user.isVerified) {
+                    req.session.user.isVerified = true;
+                    return res.redirect('/');
+                }
+                await sendVerificationEmail(user, req);
+                return res.render('verify-pending', { 
+                    user: req.session.user, 
+                    error: null, 
+                    success: 'Verification email has been resent successfully!' 
+                });
+            }
+        }
+        res.render('verify-pending', { 
+            user: req.session.user, 
+            error: 'Database not connected. Resend failed.', 
+            success: null 
+        });
+    } catch (err) {
+        console.error('Resend verification error:', err);
+        res.render('verify-pending', { 
+            user: req.session.user, 
+            error: 'Server error occurred. Please try again.', 
+            success: null 
+        });
+    }
+});
+
+app.get('/verify-email', async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            return res.render('login', { error: 'Invalid or missing email verification token.', success: null });
+        }
+
+        if (dbConnected) {
+            const user = await User.findOne({
+                verificationToken: token,
+                verificationTokenExpires: { $gt: Date.now() }
+            });
+
+            if (!user) {
+                return res.render('login', { error: 'Verification token is invalid or has expired.', success: null });
+            }
+
+            user.isVerified = true;
+            user.verificationToken = undefined;
+            user.verificationTokenExpires = undefined;
+            await user.save();
+
+            // If the user is currently logged in, update their session!
+            if (req.session && req.session.user && req.session.user._id.toString() === user._id.toString()) {
+                req.session.user.isVerified = true;
+            }
+
+            return res.render('login', { error: null, success: 'Email verified successfully! You can now log in.' });
+        } else {
+            return res.render('login', { error: 'Database not connected. Verification failed.', success: null });
+        }
+    } catch (err) {
+        console.error('Verify email error:', err);
+        return res.render('login', { error: 'An error occurred during verification.', success: null });
     }
 });
 
@@ -834,17 +1021,10 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
             return res.status(403).json({ error: 'This profile is private' });
         }
 
-        const heatmap = [];
-        const today = new Date();
-        for (let i = 364; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
-            const dayOfWeek = d.getDay();
-            let count = (dayOfWeek === 0 || dayOfWeek === 6) ? Math.floor(Math.random() * 2) : Math.floor(Math.random() * 4);
-            heatmap.push({ date: d.toISOString().split('T')[0], count });
-        }
+        let userActivities = [];
         let customRooms = [];
         if (dbConnected) {
+            userActivities = await Activity.find({ username: targetUsername }).sort({ timestamp: -1 }).lean();
             const allRooms = await CustomRoom.find({}).lean();
             customRooms = allRooms.filter(r =>
                 r.host === user.username ||
@@ -852,16 +1032,111 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
             );
         }
 
+        // ── Dynamic Contribution Heatmap Calculation ──
+        const activityMap = new Map();
+        userActivities.forEach(act => {
+            if (act.timestamp || act.createdAt) {
+                const dateKey = new Date(act.timestamp || act.createdAt).toISOString().split('T')[0];
+                activityMap.set(dateKey, (activityMap.get(dateKey) || 0) + 1);
+            }
+        });
+
+        // Fallback to user.activity array if userActivities collection is empty
+        if (activityMap.size === 0 && user.activity && user.activity.length > 0) {
+            user.activity.forEach(act => {
+                if (act.time) {
+                    const dateKey = new Date(act.time).toISOString().split('T')[0];
+                    activityMap.set(dateKey, (activityMap.get(dateKey) || 0) + 1);
+                }
+            });
+        }
+
+        const heatmap = [];
+        const today = new Date();
+        for (let i = 364; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const dateKey = d.toISOString().split('T')[0];
+            const count = activityMap.get(dateKey) || 0;
+            heatmap.push({ date: dateKey, count });
+        }
+
+        // ── Dynamic Recent Activity Timeline ──
+        let activityList = [];
+        if (userActivities && userActivities.length > 0) {
+            activityList = userActivities.map(act => ({
+                type: act.type === 'solved' ? 'solve' : 'activity',
+                title: act.problemTitle ? `Solved "${act.problemTitle}"` : (act.type === 'joined_contest' ? 'Joined a Contest' : 'Logged Activity'),
+                difficulty: act.difficulty || 'medium',
+                time: act.timestamp || act.createdAt
+            }));
+        } else if (user.activity && user.activity.length > 0) {
+            activityList = user.activity.map(act => ({
+                type: 'activity',
+                title: act.title,
+                difficulty: 'medium',
+                time: act.time
+            }));
+        }
+
+        // ── Dynamic Achievements Computation ──
+        const firstBloodEarned = (user.stats && user.stats.solved >= 1) || userActivities.some(a => a.type === 'solved');
+        const firstBloodDate = userActivities.find(a => a.type === 'solved')?.timestamp || user.createdAt || new Date();
+
+        const streakEarned = (user.stats && user.stats.streak >= 7);
+        const streakDate = new Date();
+
+        const veteranEarned = (customRooms.length >= 3);
+        const veteranDate = customRooms[0]?.createdAt || new Date();
+
+        const grandmasterEarned = (user.stats && user.stats.rating >= 1800);
+        const grandmasterDate = user.updatedAt || new Date();
+
+        const polyglotEarned = (user.skills && user.skills.length >= 3);
+        const polyglotDate = user.updatedAt || new Date();
+
+        const achievementsList = [
+            { 
+                name: 'First Blood', 
+                description: 'Solved your first problem', 
+                icon: '🩸', 
+                earned: firstBloodEarned, 
+                date: firstBloodDate 
+            },
+            { 
+                name: 'Streak Master', 
+                description: `Maintain a 7-day streak (Current: ${user.stats?.streak || 0}d)`, 
+                icon: '🔥', 
+                earned: streakEarned, 
+                date: streakDate 
+            },
+            { 
+                name: 'Battle Veteran', 
+                description: `Participate in 3 custom rooms (Current: ${customRooms.length}/3)`, 
+                icon: '⚔️', 
+                earned: veteranEarned, 
+                date: veteranDate 
+            },
+            { 
+                name: 'Grandmaster', 
+                description: `Reach a rating of 1800+ (Current: ${user.stats?.rating || 1200})`, 
+                icon: '🏆', 
+                earned: grandmasterEarned, 
+                date: grandmasterDate 
+            },
+            { 
+                name: 'Polyglot', 
+                description: `Master 3 or more skills (Current: ${user.skills?.length || 0})`, 
+                icon: '💻', 
+                earned: polyglotEarned, 
+                date: polyglotDate 
+            }
+        ];
+
         const fallbackLanguages = [
             { name: 'JavaScript', percentage: 65, color: '#f7df1e' },
             { name: 'Python', percentage: 25, color: '#3776ab' },
             { name: 'HTML/CSS', percentage: 10, color: '#e34c26' }
-        ];
-
-        const fallbackAchievements = [
-            { name: 'First Blood', description: 'Solved your first problem', icon: '🩸', earned: true, date: user.createdAt || new Date() },
-            { name: 'Streak Master', description: 'Maintain a 7-day streak', icon: '🔥', earned: false },
-            { name: 'Battle Veteran', description: 'Participate in 10 custom rooms', icon: '⚔️', earned: false }
         ];
 
         res.json({
@@ -871,8 +1146,8 @@ app.get('/api/user/profile', requireAuth, async (req, res) => {
                 joinedAt: user.createdAt || new Date(),
                 languages: user.languages || fallbackLanguages
             },
-            activity: user.activity || [],
-            achievements: fallbackAchievements,
+            activity: activityList,
+            achievements: achievementsList,
             heatmap,
             customRooms
         });
@@ -1174,6 +1449,16 @@ app.get('/', async (req, res) => {
     try {
         // If user is logged in, show their dashboard
         if (req.session && req.session.user) {
+            // Email Verification Check
+            if (dbConnected) {
+                const checkUser = await User.findById(req.session.user._id);
+                if (checkUser && !checkUser.isVerified) {
+                    return res.redirect('/verify-pending');
+                }
+            } else if (req.session.user.isVerified === false) {
+                return res.redirect('/verify-pending');
+            }
+
             let activeContestsCount = 0;
             let totalParticipants = 0;
             let contests = [];
@@ -2488,9 +2773,9 @@ app.post('/api/invites/respond', requireAuth, (req, res) => {
     }
 });
 
-app.get('/settings', requireAuth, (req, res) => res.render('settings', { currentPath: '/settings' }));
-app.get('/profile', requireAuth, (req, res) => res.render('profile', { currentPath: '/profile' }));
-app.get('/friends', requireAuth, (req, res) => res.render('friends', { currentPath: '/friends' }));
+app.get('/settings', requireAuth, requireVerified, (req, res) => res.render('settings', { currentPath: '/settings' }));
+app.get('/profile', requireAuth, requireVerified, (req, res) => res.render('profile', { currentPath: '/profile' }));
+app.get('/friends', requireAuth, requireVerified, (req, res) => res.render('friends', { currentPath: '/friends' }));
 
 app.use((req, res) => res.status(404).render('404', { currentPath: '' }));
 

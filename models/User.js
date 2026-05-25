@@ -41,7 +41,10 @@ const userSchema = new mongoose.Schema({
         title: String,
         time: { type: Date, default: Date.now }
     }],
-    isAdmin: { type: Boolean, default: false }
+    isAdmin: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: false },
+    verificationToken: String,
+    verificationTokenExpires: Date
 }, { timestamps: true });
 
 // Pre-save hook to generate unique 10-digit numeric ID

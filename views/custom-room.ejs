@@ -2,8 +2,8 @@
 
     <style>
         .slot-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: hsl(var(--secondary) / 0.7);
+            border: 1px dashed hsl(var(--border) / 0.8);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
@@ -11,34 +11,35 @@
             display: flex;
             align-items: center;
             backdrop-filter: blur(8px);
+            color: hsl(var(--muted-foreground));
         }
 
         .slot-card.occupied {
-            background: rgba(255, 255, 255, 0.07);
-            border-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: hsl(var(--card));
+            border-color: hsl(var(--border));
+            box-shadow: 0 4px 12px hsl(var(--primary) / 0.04);
+            border: 1px solid hsl(var(--border));
         }
 
         .slot-card.occupied::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+            background: linear-gradient(135deg, hsl(var(--primary) / 0.02), transparent);
         }
 
         .slot-card:not(.occupied):hover {
-            border-color: rgba(255, 255, 255, 0.4);
-            background: rgba(255, 255, 255, 0.12);
+            border-color: hsl(var(--primary) / 0.4);
+            background: hsl(var(--secondary) / 0.95);
             transform: translateY(-4px) scale(1.02);
         }
 
         /* Glass Effects for containers */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
+            background: hsl(var(--card) / 0.75);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.82);
+            border: 1px solid hsl(var(--border) / 0.5);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
         }
 
         /* FS Overlay */
@@ -46,7 +47,7 @@
             position: fixed;
             inset: 0;
             z-index: 9999;
-            background: #020617;
+            background: hsl(var(--background));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -70,11 +71,11 @@
         }
 
         .start-btn-glow {
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 10px 25px -5px hsl(var(--primary) / 0.3);
         }
 
         .monitor-screen {
-            background: radial-gradient(circle at 50% 50%, #0d1527 0%, #050811 100%) !important;
+            background: hsl(var(--background)) !important;
             position: relative;
             width: 100%;
             height: 100%;
@@ -84,9 +85,9 @@
             content: '';
             position: absolute;
             inset: 0;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-            background-size: 40px 40px;
+            background-image: linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
             background-position: center;
             pointer-events: none;
             z-index: 1;
@@ -99,7 +100,7 @@
             left: 24px;
             width: 320px;
             max-height: 240px;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+            background: linear-gradient(to top, hsl(var(--card) / 0.8), transparent);
             border-radius: 12px;
             display: flex;
             flex-direction: column;
@@ -123,16 +124,16 @@
         }
 
         .chat-messages::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
+            background: transparent;
         }
 
         .chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.3);
+            background: hsl(var(--primary) / 0.2);
             border-radius: 20px;
         }
 
         .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: rgba(59, 130, 246, 0.5);
+            background: hsl(var(--primary) / 0.4);
         }
 
         .chat-msg {
@@ -143,36 +144,37 @@
 
         .chat-msg .name {
             font-weight: 800;
-            color: #60a5fa;
+            color: hsl(var(--primary));
             text-transform: uppercase;
             margin-right: 4px;
         }
 
         .chat-msg.system .content {
-            color: #facc15;
+            color: #d97706;
             font-style: italic;
         }
 
         .chat-msg .content {
-            color: #e2e8f0;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            color: hsl(var(--foreground));
+            text-shadow: none;
         }
 
         .chat-input-wrapper {
             padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.4);
+            background: hsl(var(--card));
             border-radius: 0 0 12px 12px;
             display: flex;
             align-items: center;
             gap: 8px;
             pointer-events: auto;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid hsl(var(--border) / 0.5);
+            box-shadow: 0 -2px 10px hsl(var(--primary) / 0.02);
         }
 
         .chat-input {
             background: transparent;
             border: none;
-            color: white;
+            color: hsl(var(--foreground));
             font-size: 11px;
             flex: 1;
             outline: none;
@@ -195,10 +197,10 @@
             position: fixed;
             z-index: 1000;
             min-width: 160px;
-            background: #0f172a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
             border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
             overflow: hidden;
             animation: menu-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -210,14 +212,14 @@
             gap: 12px;
             font-size: 13px;
             font-weight: 600;
-            color: #94a3b8;
+            color: hsl(var(--muted-foreground));
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .menu-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
+            background: hsl(var(--muted));
+            color: hsl(var(--foreground));
         }
 
         .menu-item.danger {
@@ -225,7 +227,7 @@
         }
 
         .menu-item.danger:hover {
-            background: #ef444415;
+            background: #ef444410;
         }
 
         @keyframes menu-pop {
@@ -245,7 +247,7 @@
             position: fixed;
             inset: 0;
             z-index: 10000;
-            background: rgba(2, 6, 23, 0.8);
+            background: hsl(var(--foreground) / 0.3);
             backdrop-filter: blur(8px);
             display: none;
             align-items: center;
@@ -253,13 +255,13 @@
         }
 
         .confirm-card {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
             padding: 32px;
             border-radius: 24px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
             animation: modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
@@ -293,11 +295,11 @@
         }
     </style>
 
-    <body class="dark bg-[#0f172a] text-slate-200">
+    <body class="min-h-screen bg-background text-foreground overflow-hidden">
         <div id="fs-overlay" onclick="enterLobby()">
             <div class="text-center">
                 <div class="relative w-24 h-24 mb-6 mx-auto">
-                    <div class="absolute inset-0 bg-primary/20 blur-xl animate-pulse rounded-full"></div>
+                    <div class="absolute inset-0 bg-primary/10 blur-xl animate-pulse rounded-full"></div>
                     <div
                         class="relative w-full h-full border-2 border-primary/30 rounded-full flex items-center justify-center">
                         <i data-lucide="shield-check" class="w-10 h-10 text-primary animate-bounce"></i>
@@ -310,7 +312,7 @@
         </div>
 
         <div class="fixed inset-0 w-screen h-screen overflow-hidden">
-            <div class="absolute inset-0 z-0 bg-gradient-to-br from-[#0f172a] via-[#1e3a8a]/20 to-[#0f172a]"></div>
+            <div class="absolute inset-0 z-0 bg-productive-grid"></div>
 
             <div class="relative z-10 w-screen h-screen">
                 <div class="monitor-frame">
@@ -320,28 +322,28 @@
 
 
                                     <main
-                                        class="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-transparent text-slate-200">
+                                        class="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-transparent text-foreground">
                                         <!-- Room Header -->
                                         <div
-                                            class="h-16 border-b border-white/5 bg-[#090d16]/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 z-30">
+                                            class="h-16 border-b border-border/50 bg-card/85 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 z-30">
                                             <div class="flex items-center gap-4">
                                                 <button onclick="leaveRoom()"
-                                                    class="p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
-                                                    <i data-lucide="chevron-left" class="w-5 h-5 text-slate-400"></i>
+                                                    class="p-2 hover:bg-secondary rounded-lg transition-colors cursor-pointer">
+                                                    <i data-lucide="chevron-left" class="w-5 h-5 text-muted-foreground"></i>
                                                 </button>
-                                                <div class="h-8 w-[1px] bg-white/10"></div>
+                                                <div class="h-8 w-[1px] bg-border/50"></div>
                                                 <div>
                                                     <div class="flex items-center gap-2">
                                                         <span
-                                                            class="text-[9px] font-black text-blue-400 tracking-[0.2em] uppercase">Private
+                                                            class="text-[9px] font-black text-primary tracking-[0.2em] uppercase">Private
                                                             Lobby</span>
                                                         <span
-                                                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">#
+                                                            class="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">#
                                                             <%= room.id %>
                                                         </span>
                                                     </div>
                                                     <h2 id="room-name-display"
-                                                        class="font-black text-base uppercase tracking-wider">
+                                                        class="font-black text-base uppercase tracking-wider text-foreground">
                                                         <%= room.name %>
                                                     </h2>
                                                 </div>
@@ -350,16 +352,16 @@
                                             <div class="flex items-center gap-4">
                                                 <div class="hidden sm:flex flex-col items-end">
                                                     <p
-                                                        class="text-[10px] font-black text-white/20 uppercase tracking-tighter">
+                                                        class="text-[10px] font-black text-muted-foreground/50 uppercase tracking-tighter">
                                                         Environment</p>
-                                                    <p id="room-map-display" class="text-xs font-bold text-slate-300">
+                                                    <p id="room-map-display" class="text-xs font-bold text-foreground">
                                                         <%= room.map %>
                                                     </p>
                                                 </div>
                                                 <button onclick="openSettings()"
-                                                    class="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 group">
+                                                    class="p-2.5 bg-secondary hover:bg-muted rounded-xl transition-all border border-border/30 group">
                                                     <i data-lucide="settings"
-                                                        class="w-4 h-4 text-white/40 group-hover:text-white transition-colors"></i>
+                                                        class="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors"></i>
                                                 </button>
                                                 <button onclick="leaveRoom()"
                                                     class="p-2.5 exit-btn-header rounded-xl transition-all group"
@@ -371,9 +373,9 @@
 
                                         <!-- Room Grid -->
                                         <div
-                                            class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center gap-10 scrollbar-thin relative selection:bg-blue-500/30">
+                                            class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center gap-10 scrollbar-thin relative selection:bg-primary/20">
                                             <div
-                                                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10rem] font-black text-white/[0.02] italic tracking-tighter pointer-events-none select-none">
+                                                class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10rem] font-black text-primary/[0.02] italic tracking-tighter pointer-events-none select-none">
                                                 VS</div>
 
                                             <div
@@ -387,8 +389,8 @@
                                                                 class="team-badge py-1.5 px-8 text-white font-black italic tracking-widest text-sm">
                                                                 TEAM 01</div>
                                                                 <span
-                                                                 class="text-xs font-black text-white/30 tabular-nums"><span
-                                                                     id="team1-count" class="text-blue-400">1</span> /
+                                                                 class="text-xs font-black text-muted-foreground tabular-nums"><span
+                                                                     id="team1-count" class="text-blue-600">1</span> /
                                                                  <%- parseInt(room.size.charAt(0)) || 6 %></span>
                                                         </div>
                                                     </div>
@@ -414,20 +416,20 @@
                                                                                             <div
                                                                                                 class="flex items-center gap-3">
                                                                                                 <div
-                                                                                                    class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-black shadow-inner shadow-blue-500/10">
+                                                                                                    class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center font-black shadow-inner">
                                                                                                     <%= playerData.avatar
                                                                                                         %>
                                                                                                 </div>
                                                                                                 <div>
                                                                                                     <p
-                                                                                                        class="font-black text-xs uppercase tracking-wide text-white">
+                                                                                                        class="font-black text-xs uppercase tracking-wide text-foreground">
                                                                                                         <%= playerData.name
                                                                                                             %>
                                                                                                     </p>
                                                                                                     <div
                                                                                                         class="flex items-center gap-1 mt-0.5">
                                                                                                         <span
-                                                                                                            class="text-[9px] font-black uppercase text-blue-500 tracking-tighter">
+                                                                                                            class="text-[9px] font-black uppercase text-blue-600 tracking-tighter">
                                                                                                             <%= playerData.role
                                                                                                                 %>
                                                                                                         </span>
@@ -437,7 +439,7 @@
                                                                                             <% if (playerData.isHost) {
                                                                                                 %>
                                                                                                 <i data-lucide="crown"
-                                                                                                    class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>
+                                                                                                    class="w-4 h-4 text-amber-500"></i>
                                                                                                 <% } %>
                                                                                                     <% } else { %>
                                                                                                     <% } %>
@@ -459,14 +461,15 @@
                                                                 class="team-badge-red py-1.5 px-8 text-white font-black italic tracking-widest text-sm">
                                                                 TEAM 02</div>
                                                                 <span
-                                                                 class="text-xs font-black text-white/30 tabular-nums"><span
-                                                                     id="team2-count" class="text-red-400">0</span> /
+                                                                 class="text-xs font-black text-muted-foreground tabular-nums"><span
+                                                                     id="team2-count" class="text-red-600">0</span> /
                                                                  <%- parseInt(room.size.charAt(0)) || 6 %></span>
                                                         </div>
                                                     </div>
 
                                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="team2-slots">
                                                         <% for(let i=1; i<=teamSize; i++) { 
+                               
                                                             const sid=`team2-${i}`; 
                                                             const playerData=room.slots[sid]; 
                                                             const isLocal=playerData && playerData.username===(locals.currentUsername || '' ); %>
@@ -485,20 +488,20 @@
                                                                                             <div
                                                                                                 class="flex items-center gap-3">
                                                                                                 <div
-                                                                                                    class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 font-black shadow-inner">
+                                                                                                    class="w-10 h-10 rounded-lg bg-red-50 text-red-600 border border-red-100 flex items-center justify-center font-black shadow-inner">
                                                                                                     <%= playerData.avatar
                                                                                                         %>
                                                                                                 </div>
                                                                                                 <div>
                                                                                                     <p
-                                                                                                        class="font-black text-xs uppercase tracking-wide text-white">
+                                                                                                        class="font-black text-xs uppercase tracking-wide text-foreground">
                                                                                                         <%= playerData.name
                                                                                                             %>
                                                                                                     </p>
                                                                                                     <div
                                                                                                         class="flex items-center gap-1 mt-0.5">
                                                                                                         <span
-                                                                                                            class="text-[9px] font-black uppercase text-red-500 tracking-tighter">
+                                                                                                            class="text-[9px] font-black uppercase text-red-600 tracking-tighter">
                                                                                                             <%= playerData.role
                                                                                                                 %>
                                                                                                         </span>
@@ -508,7 +511,7 @@
                                                                                             <% if (playerData.isHost) {
                                                                                                 %>
                                                                                                 <i data-lucide="crown"
-                                                                                                    class="w-4 h-4 text-amber-500 fill-amber-500/20"></i>
+                                                                                                    class="w-4 h-4 text-amber-500"></i>
                                                                                                 <% } %>
                                                                                                     <% } else { %>
                                                                                                     <% } %>
@@ -528,44 +531,40 @@
                                         <div class="chat-container">
                                             <div class="chat-messages" id="chat-feed">
                                                 <div class="chat-msg system">
-                                                    <span class="content">Welcome to the battle lobby. Respect all
-                                                        players.</span>
+                                                    <span class="content">Welcome to the battle lobby. Respect all players.</span>
                                                 </div>
                                             </div>
                                             <div class="chat-input-wrapper">
                                                 <input type="text" id="chat-input" placeholder="Type a message..."
                                                     class="chat-input" autocomplete="off">
                                                 <button onclick="sendChatMessage()"
-                                                    class="p-1.5 rounded-lg hover:bg-white/10 transition-all">
-                                                    <i data-lucide="send" class="w-3 h-3 text-blue-400"></i>
+                                                    class="p-1.5 rounded-lg hover:bg-secondary transition-all">
+                                                    <i data-lucide="send" class="w-3 h-3 text-blue-600"></i>
                                                 </button>
                                             </div>
                                         </div>
 
                                         <!-- Footer Controls -->
                                         <div
-                                            class="h-24 bg-[#090d16]/90 border-t border-white/10 backdrop-blur-2xl shrink-0 z-40 flex items-center justify-between px-8 relative overflow-hidden">
-                                            <div
-                                                class="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent">
-                                            </div>
+                                            class="h-24 bg-card/95 border-t border-border/50 backdrop-blur-2xl shrink-0 z-40 flex items-center justify-between px-8 relative overflow-hidden">
 
                                             <div
                                                 class="hidden xl:flex items-center gap-4 relative z-10 scale-90 origin-left">
-                                                <div class="p-3 bg-white/5 rounded-full border border-white/10">
-                                                    <i data-lucide="volume-2" class="w-4 h-4 text-slate-400"></i>
+                                                <div class="p-3 bg-secondary rounded-full border border-border">
+                                                    <i data-lucide="volume-2" class="w-4 h-4 text-muted-foreground"></i>
                                                 </div>
                                                 <div>
                                                     <p
-                                                        class="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                                        class="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">
                                                         Voice Channel</p>
-                                                    <p class="text-xs font-bold text-slate-300">Lobby Public Channel</p>
+                                                    <p class="text-xs font-bold text-foreground">Lobby Public Channel</p>
                                                 </div>
                                             </div>
 
                                             <div class="flex items-center gap-4 relative z-10 flex-1 justify-center">
                                                 <% if (room.host===(locals.currentUsername || '' )) { %>
                                                     <button onclick="startMatch()" id="footer-start-btn"
-                                                        class="h-14 px-16 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black italic text-sm uppercase tracking-[0.3em] start-btn-glow hover:scale-105 active:scale-95 transition-all">Start
+                                                        class="h-14 px-16 rounded-xl bg-primary text-primary-foreground font-black italic text-sm uppercase tracking-[0.3em] start-btn-glow hover:scale-105 active:scale-95 transition-all">Start
                                                         Match</button>
                                                     <% } %>
                                             </div>
@@ -574,14 +573,14 @@
                                                 class="hidden xl:flex items-center gap-4 relative z-10 scale-90 origin-right">
                                                 <div class="text-right">
                                                     <p
-                                                        class="text-[10px] font-black text-white/20 uppercase tracking-widest">
+                                                        class="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">
                                                         Ping Status</p>
-                                                    <p class="text-xs font-bold text-emerald-400 tabular-nums">12ms
+                                                    <p class="text-xs font-bold text-emerald-600 tabular-nums">12ms
                                                         (Stable)</p>
                                                 </div>
                                                 <div
-                                                    class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                                                    <i data-lucide="wifi" class="w-5 h-5 text-emerald-500"></i>
+                                                    class="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                                    <i data-lucide="wifi" class="w-5 h-5 text-emerald-600"></i>
                                                 </div>
                                             </div>
                                         </div>
@@ -589,13 +588,13 @@
 
                                     <!-- Friends Sidebar Integration -->
                                     <button data-friends-toggle onclick="toggleFriends()"
-                                        class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] p-3 rounded-full bg-black/40 border border-white/10 backdrop-blur-md transition-all shadow-2xl hover:scale-110"
+                                        class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] p-3 rounded-full bg-card border border-border shadow-2xl hover:scale-110"
                                         title="Invite Friends">
-                                        <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+                                        <i data-lucide="users" class="w-5 h-5 text-primary"></i>
                                     </button>
 
                                     <aside id="friends-aside"
-                                        class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-[0_0_50px_rgba(0,0,0,0.5)] hidden">
+                                        class="fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50 animate-slide-in-right shadow-[0_0_50px_rgba(0,0,0,0.05)] hidden">
                                         <%- include('partials/friends-panel', { 
                                             friends: typeof friends !== 'undefined' ? friends : [], 
                                             offlineFriends: typeof offlineFriends !== 'undefined' ? offlineFriends : [] 
@@ -610,46 +609,45 @@
 
         <!-- Settings Modal -->
         <div id="settings-modal"
-            class="fixed inset-0 z-[100] hidden bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+            class="fixed inset-0 z-[100] hidden bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
             <div
-                class="glass-card w-full max-w-lg p-8 animate-in zoom-in-95 duration-200 border-white/10 bg-slate-900 shadow-2xl">
+                class="glass-card w-full max-w-lg p-8 animate-in zoom-in-95 duration-200 border-border bg-card shadow-2xl">
                 <div class="flex items-center justify-between mb-8">
                     <div>
-                        <h2 class="text-2xl font-black uppercase tracking-tight text-white italic">Room Configuration
+                        <h2 class="text-2xl font-black uppercase tracking-tight text-foreground italic">Room Configuration
                         </h2>
-                        <p class="text-[10px] font-bold text-blue-400 tracking-widest uppercase mt-1">Host Privilege
+                        <p class="text-[10px] font-bold text-primary tracking-widest uppercase mt-1">Host Privilege
                             Access Only</p>
                     </div>
-                    <button onclick="closeSettings()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                        <i data-lucide="x" class="w-6 h-6 text-slate-400"></i>
+                    <button onclick="closeSettings()" class="p-2 hover:bg-secondary rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-6 h-6 text-muted-foreground"></i>
                     </button>
                 </div>
 
                 <div class="space-y-6">
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Battle
+                        <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Battle
                             Label</label>
                         <input type="text" id="setting-name" value="<%= room.name %>"
-                            class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-semibold text-white outline-none focus:border-blue-500/50 transition-all">
+                            class="w-full bg-secondary border border-border rounded-xl p-4 text-sm font-semibold text-foreground outline-none focus:border-primary/50 transition-all">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Map
+                            <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Map
                                 Selection</label>
                             <select id="setting-map"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold text-white outline-none appearance-none">
+                                class="w-full bg-secondary border border-border rounded-xl p-4 text-sm font-bold text-foreground outline-none appearance-none">
                                 <option <%=room.map.includes('Bermuda') ? 'selected' : '' %>>Bermuda (Easy)</option>
-                                <option <%=room.map.includes('Purgatory') ? 'selected' : '' %>>Purgatory (Medium)
-                                </option>
+                                <option <%=room.map.includes('Purgatory') ? 'selected' : '' %>>Purgatory (Medium)</option>
                                 <option <%=room.map.includes('Kalahari') ? 'selected' : '' %>>Kalahari (Hard)</option>
                             </select>
                         </div>
                         <div class="space-y-2">
-                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Team
+                            <label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Team
                                 Mode</label>
                             <select id="setting-size"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm font-bold text-white outline-none appearance-none">
+                                class="w-full bg-secondary border border-border rounded-xl p-4 text-sm font-bold text-foreground outline-none appearance-none">
                                 <option value="6vs6" <%=room.size==='6vs6' ? 'selected' : '' %>>6vs6 Battle</option>
                                 <option value="4vs4" <%=room.size==='4vs4' ? 'selected' : '' %>>4vs4 Squad</option>
                                 <option value="2vs2" <%=room.size==='2vs2' ? 'selected' : '' %>>2vs2 Duo</option>
@@ -660,9 +658,9 @@
 
                     <div class="pt-6 flex gap-4">
                         <button onclick="closeSettings()"
-                            class="flex-1 px-6 py-4 rounded-xl font-bold uppercase tracking-widest text-[11px] text-slate-400 hover:bg-white/5 transition-all">Cancel</button>
+                            class="flex-1 px-6 py-4 rounded-xl font-bold uppercase tracking-widest text-[11px] text-muted-foreground hover:bg-secondary transition-all">Cancel</button>
                         <button onclick="saveSettings()"
-                            class="flex-1 px-6 py-4 rounded-xl bg-blue-600 text-white font-black italic uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-blue-500/20 hover:bg-blue-500 transition-all">Apply
+                            class="flex-1 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-black italic uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-primary/20 hover:opacity-90 transition-all">Apply
                             Changes</button>
                     </div>
                 </div>
@@ -681,15 +679,15 @@
         <!-- Custom Confirmation Modal -->
         <div id="confirm-modal">
             <div class="confirm-card">
-                <h3 id="confirm-title" class="text-xl font-black text-white italic tracking-wider mb-2 uppercase">Switch
+                <h3 id="confirm-title" class="text-xl font-black text-foreground italic tracking-wider mb-2 uppercase">Switch
                     Position?</h3>
-                <p id="confirm-msg" class="text-sm text-slate-400 mb-8 leading-relaxed">Are you sure you want to move to
+                <p id="confirm-msg" class="text-sm text-muted-foreground mb-8 leading-relaxed">Are you sure you want to move to
                     this slot?</p>
                 <div class="flex gap-4">
                     <button id="confirm-cancel"
-                        class="flex-1 py-3 px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] text-slate-500 hover:bg-white/5 transition-all">Cancel</button>
+                        class="flex-1 py-3 px-6 rounded-xl font-bold uppercase tracking-widest text-[10px] text-muted-foreground hover:bg-secondary transition-all">Cancel</button>
                     <button id="confirm-action"
-                        class="flex-1 py-3 px-6 rounded-xl bg-blue-600 text-white font-black italic uppercase tracking-widest text-[10px] shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all">Confirm</button>
+                        class="flex-1 py-3 px-6 rounded-xl bg-primary text-primary-foreground font-black italic uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:opacity-90 transition-all">Confirm</button>
                 </div>
             </div>
         </div>
@@ -750,13 +748,19 @@
                         slot.dataset.pRole = playerData.role;
                         slot.dataset.pAvatar = playerData.avatar;
 
+                        const isTeam1 = slotId.startsWith('team1');
+                        const avatarBgClass = isTeam1 
+                            ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-inner' 
+                            : 'bg-red-50 text-red-600 border border-red-100 shadow-inner';
+                        const roleColorClass = isTeam1 ? 'text-blue-600' : 'text-red-600';
+
                         slot.innerHTML = `
                         <div class="flex items-center gap-3 animate-in fade-in duration-300">
-                            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-black shadow-inner shadow-blue-500/10">${playerData.avatar}</div>
+                            <div class="w-10 h-10 rounded-lg ${avatarBgClass} flex items-center justify-center font-black">${playerData.avatar}</div>
                             <div>
-                                <p class="font-black text-xs uppercase tracking-wide text-white">${playerData.name}</p>
+                                <p class="font-black text-xs uppercase tracking-wide text-foreground">${playerData.name}</p>
                                 <div class="flex items-center gap-1 mt-0.5">
-                                    <span class="text-[9px] font-black uppercase text-blue-500 tracking-tighter">${playerData.role}</span>
+                                    <span class="text-[9px] font-black uppercase ${roleColorClass} tracking-tighter">${playerData.role}</span>
                                 </div>
                             </div>
                         </div>
@@ -765,7 +769,7 @@
                     `;
                     } else {
                         slot.classList.remove('occupied', 'local-player', 'justify-between');
-                        slot.classList.add('justify-center', 'cursor-pointer', 'group', 'hover:bg-white/5', 'border-dashed', 'border-white/20');
+                        slot.classList.add('justify-center', 'cursor-pointer', 'group', 'hover:bg-secondary', 'border-dashed', 'border-border/50');
                         slot.innerHTML = `
                             <span class="absolute top-2 right-3 font-mono text-[10px] opacity-10 uppercase slot-idx">${slotIdx}</span>
                         `;
